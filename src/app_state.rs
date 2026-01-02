@@ -1,5 +1,5 @@
-use crate::ui::particle_search::ParticleSearchState;
 use crate::ui::ConsoleState;
+use crate::ui::particle_search::ParticleSearchState;
 use bevy::window::PrimaryWindow;
 use bevy::{prelude::*, window::CursorOptions};
 use bevy_egui::{EguiContexts, EguiPrimaryContextPass};
@@ -9,7 +9,7 @@ pub struct StatesPlugin;
 
 impl Plugin for StatesPlugin {
     fn build(&self, app: &mut App) {
-        app.configure_sets(Update, AppStateDetectionSet)
+        app.configure_sets(Update, AppStateDetectionSystems)
             .init_state::<AppState>()
             .add_sub_state::<UiState>()
             .add_sub_state::<CanvasState>()
@@ -33,7 +33,7 @@ impl Plugin for StatesPlugin {
 }
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct AppStateDetectionSet;
+pub struct AppStateDetectionSystems;
 
 #[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
 pub enum AppState {

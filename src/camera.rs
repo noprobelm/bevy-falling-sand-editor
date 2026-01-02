@@ -1,7 +1,7 @@
 use bevy::{input::mouse::MouseWheel, prelude::*};
 use bevy_falling_sand::prelude::ChunkLoader;
 
-use crate::app_state::{AppState, AppStateDetectionSet, CanvasState};
+use crate::app_state::{AppState, AppStateDetectionSystems, CanvasState};
 
 pub(super) struct CameraPlugin;
 
@@ -13,7 +13,7 @@ impl Plugin for CameraPlugin {
             (pan_camera, zoom_camera, smooth_zoom)
                 .chain()
                 .run_if(in_state(AppState::Canvas).and(in_state(CanvasState::Interact)))
-                .before(AppStateDetectionSet),
+                .before(AppStateDetectionSystems),
         );
     }
 }
