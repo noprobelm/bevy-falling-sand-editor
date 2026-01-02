@@ -1,6 +1,10 @@
 [package]
 name = "bfs_editor"
 authors = ["Jeff Barfield <jeffreybarfield@protonmail.com>"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/noprobelm/bevy-falling-sand-editor"
+description = "Editing tool for the bevy_falling_sand plugin"
+keywords = ["bevy", "falling-sand", "simulation", "particles"]
 version = "0.1.0"
 edition = "2024"
 
