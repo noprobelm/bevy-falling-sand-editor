@@ -29,6 +29,7 @@ fn main() {
                 primary_window: Some(Window {
                     title: "Falling Sand Editor".into(),
                     mode: WindowMode::BorderlessFullscreen(MonitorSelection::Primary),
+                    fit_canvas_to_parent: true,
                     ..default()
                 }),
                 ..default()
