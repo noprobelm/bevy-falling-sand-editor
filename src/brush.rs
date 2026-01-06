@@ -2,7 +2,7 @@ use crate::{
     cursor::CursorPosition, particles::SelectedParticle, physics::DynamicRigidBodyParticle,
 };
 use bevy::{input::mouse::MouseWheel, platform::collections::HashSet, prelude::*};
-use bevy_falling_sand::color::ForceColor;
+use bevy_falling_sand::color::{ForceColor, SpawnParticleSignalColorExt};
 use bevy_falling_sand::prelude::{DespawnParticleSignal, Particle, SpawnParticleSignal};
 
 pub(crate) struct BrushPlugin;
@@ -17,13 +17,13 @@ impl Plugin for BrushPlugin {
             },
         )
         .init_resource::<MaxBrushSize>()
-            .init_resource::<BrushForceColor>()
-            .init_resource::<BrushOverwriteExisting>()
-            .init_state::<BrushType>()
-            .init_state::<BrushMode>()
-            .add_sub_state::<BrushModeSpawnState>()
-            .add_systems(Startup, setup)
-            .add_systems(Update, update_brush_gizmos);
+        .init_resource::<BrushForceColor>()
+        .init_resource::<BrushOverwriteExisting>()
+        .init_state::<BrushType>()
+        .init_state::<BrushMode>()
+        .add_sub_state::<BrushModeSpawnState>()
+        .add_systems(Startup, setup)
+        .add_systems(Update, update_brush_gizmos);
     }
 }
 
@@ -340,7 +340,11 @@ pub fn spawn_particles(
                 );
             } else if spawn_dynamic_rigid_body_particle {
                 commands.spawn((
-                    Transform::from_xyz(cursor_position.current.x.floor(), cursor_position.current.y.floor(), 0.0),
+                    Transform::from_xyz(
+                        cursor_position.current.x.floor(),
+                        cursor_position.current.y.floor(),
+                        0.0,
+                    ),
                     DynamicRigidBodyParticle,
                 ));
             } else {
