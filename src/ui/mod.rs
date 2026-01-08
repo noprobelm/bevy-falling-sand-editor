@@ -11,7 +11,7 @@ mod top_bar;
 use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 use bevy_falling_sand::prelude::{
     ActiveParticleCount, ChunkMovementMode, DynamicParticleCount, LoadSceneMessage, MovementSource,
-    ParticleTypeMaterialsParam, ParticleTypeRegistry, ResetParticleChildrenSignal, RigidBodyCount,
+    ParticleTypeMaterialsParam, ParticleTypeRegistry, ResetParticleTypeChildrenSignal, RigidBodyCount,
     SaveSceneMessage, TotalParticleCount, WallParticleCount,
 };
 use console::core::{ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration};
@@ -104,7 +104,7 @@ type UiSystemParams<'w, 's> = (
     MessageWriter<'w, LoadParticleIntoEditor>,
     MessageWriter<'w, CreateNewParticle>,
     MessageWriter<'w, ApplyEditorChangesAndReset>,
-    MessageWriter<'w, ResetParticleChildrenSignal>,
+    MessageWriter<'w, ResetParticleTypeChildrenSignal>,
     Res<'w, ParticleTypeRegistry>,
     Res<'w, ParticleFileDialog>,
 );

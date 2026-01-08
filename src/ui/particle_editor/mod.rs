@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use bevy_egui::egui;
 use bevy_falling_sand::color::{ColorAssignment, ColorGradient, ColorSource, Palette};
 use bevy_falling_sand::prelude::{
-    ParticleTypeMaterialsParam, ParticleTypeRegistry, ResetParticleChildrenSignal,
+    ParticleTypeMaterialsParam, ParticleTypeRegistry, ResetParticleTypeChildrenSignal,
 };
 
 use particle_editor_registry::*;
@@ -52,7 +52,7 @@ impl ParticleEditor {
         load_particle_messages: &mut MessageWriter<LoadParticleIntoEditor>,
         create_particle_messages: &mut MessageWriter<CreateNewParticle>,
         apply_editor_and_reset_messages: &mut MessageWriter<ApplyEditorChangesAndReset>,
-        reset_particle_children_messages: &mut MessageWriter<ResetParticleChildrenSignal>,
+        reset_particle_children_messages: &mut MessageWriter<ResetParticleTypeChildrenSignal>,
         particle_type_map: &ParticleTypeRegistry,
     ) {
         let text_color = egui::Color32::from_rgb(204, 204, 204);
@@ -93,7 +93,7 @@ impl ParticleEditor {
         create_particle_messages: &mut MessageWriter<CreateNewParticle>,
         current_editor: &CurrentEditorSelection,
         apply_editor_and_reset_messages: &mut MessageWriter<ApplyEditorChangesAndReset>,
-        _reset_particle_children_messages: &mut MessageWriter<ResetParticleChildrenSignal>,
+        _reset_particle_children_messages: &mut MessageWriter<ResetParticleTypeChildrenSignal>,
         _particle_type_map: &ParticleTypeRegistry,
         current_particle_name: Option<String>,
     ) {

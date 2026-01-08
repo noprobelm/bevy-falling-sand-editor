@@ -259,7 +259,7 @@ impl ConsoleCommand for ParticlesDespawnNamedCommand {
             "Despawning all '{}' particles from the world",
             { &name }
         )));
-        commands.trigger(DespawnParticleTypeChildrenSignal::from_name(name));
+        commands.trigger(DespawnParticleTypeChildrenSignal::from_name(&name));
     }
 }
 

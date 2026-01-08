@@ -700,7 +700,7 @@ pub fn handle_apply_editor_changes_and_reset(
     mut particle_type_map: ResMut<ParticleTypeRegistry>,
     mut particle_editor_registry: ResMut<ParticleEditorRegistry>,
     mut reset_particle_children_messages: MessageWriter<
-        bevy_falling_sand::prelude::ResetParticleChildrenSignal,
+        bevy_falling_sand::prelude::ResetParticleTypeChildrenSignal,
     >,
 ) {
     for message in apply_messages.read() {
@@ -721,7 +721,7 @@ pub fn handle_apply_editor_changes_and_reset(
             editor_data.mark_saved();
 
             reset_particle_children_messages.write(
-                bevy_falling_sand::prelude::ResetParticleChildrenSignal::from_entity(
+                bevy_falling_sand::prelude::ResetParticleTypeChildrenSignal::from_parent_handle(
                     particle_entity,
                 ),
             );
