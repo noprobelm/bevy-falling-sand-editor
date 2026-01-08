@@ -8,10 +8,10 @@ mod scenes;
 mod ui;
 
 use app_state::StatesPlugin;
-#[cfg(debug_assertions)]
 use avian2d::prelude::PhysicsDebugPlugin;
 use avian2d::prelude::PhysicsGizmos;
 use bevy_falling_sand::prelude::{FallingSandDebugPlugin, FallingSandPlugin};
+use bevy_framepace::FramepacePlugin;
 use brush::*;
 use camera::*;
 use cursor::*;
@@ -34,9 +34,9 @@ fn main() {
                 }),
                 ..default()
             }),
+            FramepacePlugin,
             FallingSandPlugin::default(),
             FallingSandDebugPlugin,
-            #[cfg(debug_assertions)]
             PhysicsDebugPlugin,
             ParticleSetupPlugin,
             CursorPlugin,
