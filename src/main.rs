@@ -10,7 +10,9 @@ mod ui;
 use app_state::StatesPlugin;
 use avian2d::prelude::PhysicsDebugPlugin;
 use avian2d::prelude::PhysicsGizmos;
-use bevy_falling_sand::prelude::{FallingSandDebugPlugin, FallingSandPlugin};
+use bevy_falling_sand::prelude::{
+    FallingSandDebugPlugin, FallingSandPersistencePlugin, FallingSandPlugin,
+};
 use bevy_framepace::FramepacePlugin;
 use brush::*;
 use camera::*;
@@ -34,10 +36,11 @@ fn main() {
                 }),
                 ..default()
             }),
-            FramepacePlugin,
             FallingSandPlugin::default(),
+            FallingSandPersistencePlugin::new(get_config_dir()),
             FallingSandDebugPlugin,
             PhysicsDebugPlugin,
+            FramepacePlugin,
             ParticleSetupPlugin,
             CursorPlugin,
             CameraPlugin,

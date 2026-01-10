@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::ui::file_browser::{FileBrowser, FileBrowserState};
 use bevy::prelude::*;
 use bevy_egui::egui;
@@ -81,3 +83,14 @@ struct ShowLoadSceneDialogMarker;
 
 #[derive(Component)]
 struct ShowSaveSceneDialogMarker;
+
+#[must_use]
+pub fn get_config_dir() -> PathBuf {
+    if let Ok(home) = std::env::var("HOME") {
+        PathBuf::from(home)
+            .join(".config")
+            .join("bevy_falling_sand")
+    } else {
+        PathBuf::from(".")
+    }
+}
