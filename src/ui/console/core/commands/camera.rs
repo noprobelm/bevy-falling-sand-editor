@@ -21,19 +21,23 @@ enum PositionParseError {
 }
 
 fn parse_position(position: &[String]) -> Result<Vec2, PositionParseError> {
-    if position.len() < 2 {
-        return Err(PositionParseError::Invalid(position.join(" ")));
-    }
-
-    let parse_coord = |s: &String| -> Result<f32, PositionParseError> {
+    let parse_coord = |s: &str| -> Result<f32, PositionParseError> {
         let filtered: String = s.chars().filter(|c| c.is_numeric() || *c == '.').collect();
         filtered
             .parse::<f32>()
-            .map_err(|_| PositionParseError::Invalid(s.clone()))
+            .map_err(|_| PositionParseError::Invalid(s.to_string()))
     };
 
-    let x = parse_coord(&position[0])?;
-    let y = parse_coord(&position[1])?;
+    let (x_str, y_str) = if let Some((x, y)) = position.first().and_then(|s| s.split_once(',')) {
+        (x.to_string(), y.to_string())
+    } else if position.len() >= 2 {
+        (position[0].clone(), position[1].clone())
+    } else {
+        return Err(PositionParseError::Invalid(position.join(" ")));
+    };
+
+    let x = parse_coord(&x_str)?;
+    let y = parse_coord(&y_str)?;
 
     Ok(Vec2::new(x, y))
 }
@@ -80,7 +84,7 @@ impl ConsoleCommand for CameraResetCommand {
         commands: &mut Commands,
     ) {
         console_writer.write(PrintConsoleLine::new(
-            "Oning reset camera event...".to_string(),
+            "Onging set camera position command...".to_string(),
         ));
         commands.trigger(CameraResetEvent);
     }
@@ -122,7 +126,7 @@ impl ConsoleCommand for CameraSetPositionCommand {
         commands: &mut Commands,
     ) {
         console_writer.write(PrintConsoleLine::new(
-            "Oning reset camera event...".to_string(),
+            "Onging reset camera command...".to_string(),
         ));
         match parse_position(args) {
             Ok(position) => {
