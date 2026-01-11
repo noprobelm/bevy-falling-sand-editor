@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use thiserror::Error;
 
 use crate::camera::{MainCamera, ZoomSpeed, ZoomTarget};
 
@@ -8,12 +9,40 @@ pub struct CameraCommandPlugin;
 
 impl Plugin for CameraCommandPlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(on_reset_camera);
+        app.add_observer(on_camera_reset)
+            .add_observer(on_camera_set_position);
     }
 }
 
+#[derive(Debug, Error)]
+enum PositionParseError {
+    #[error("invalid position {0}.")]
+    Invalid(String),
+}
+
+fn parse_position(position: &[String]) -> Result<Vec2, PositionParseError> {
+    if position.len() < 2 {
+        return Err(PositionParseError::Invalid(position.join(" ")));
+    }
+
+    let parse_coord = |s: &String| -> Result<f32, PositionParseError> {
+        let filtered: String = s.chars().filter(|c| c.is_numeric() || *c == '.').collect();
+        filtered
+            .parse::<f32>()
+            .map_err(|_| PositionParseError::Invalid(s.clone()))
+    };
+
+    let x = parse_coord(&position[0])?;
+    let y = parse_coord(&position[1])?;
+
+    Ok(Vec2::new(x, y))
+}
+
 #[derive(Event)]
-pub struct ResetCameraEvent;
+pub struct CameraResetEvent;
+
+#[derive(Event)]
+pub struct CameraSetPositionEvent(pub Vec2);
 
 #[derive(Default)]
 pub struct CameraCommand;
@@ -28,7 +57,7 @@ impl ConsoleCommand for CameraCommand {
     }
 
     fn subcommand_types(&self) -> Vec<Box<dyn ConsoleCommand>> {
-        vec![Box::new(CameraResetCommand)]
+        vec![Box::new(CameraResetCommand), Box::new(CameraSetCommand)]
     }
 }
 
@@ -53,12 +82,61 @@ impl ConsoleCommand for CameraResetCommand {
         console_writer.write(PrintConsoleLine::new(
             "Oning reset camera event...".to_string(),
         ));
-        commands.trigger(ResetCameraEvent);
+        commands.trigger(CameraResetEvent);
     }
 }
 
-fn on_reset_camera(
-    _trigger: On<ResetCameraEvent>,
+#[derive(Default)]
+pub struct CameraSetCommand;
+
+impl ConsoleCommand for CameraSetCommand {
+    fn name(&self) -> &'static str {
+        "set"
+    }
+
+    fn description(&self) -> &'static str {
+        "Set camera parameters"
+    }
+
+    fn subcommand_types(&self) -> Vec<Box<dyn ConsoleCommand>> {
+        vec![Box::new(CameraSetPositionCommand)]
+    }
+}
+
+#[derive(Default)]
+pub struct CameraSetPositionCommand;
+
+impl ConsoleCommand for CameraSetPositionCommand {
+    fn name(&self) -> &'static str {
+        "position"
+    }
+
+    fn description(&self) -> &'static str {
+        "Set camera position"
+    }
+
+    fn execute_action(
+        &self,
+        args: &[String],
+        console_writer: &mut MessageWriter<PrintConsoleLine>,
+        commands: &mut Commands,
+    ) {
+        console_writer.write(PrintConsoleLine::new(
+            "Oning reset camera event...".to_string(),
+        ));
+        match parse_position(args) {
+            Ok(position) => {
+                commands.trigger(CameraSetPositionEvent(position));
+            }
+            Err(e) => {
+                console_writer.write(PrintConsoleLine::new(e.to_string()));
+            }
+        };
+    }
+}
+
+fn on_camera_reset(
+    _trigger: On<CameraResetEvent>,
     camera_query: Query<Entity, With<MainCamera>>,
     mut commands: Commands,
 ) -> Result {
@@ -79,5 +157,15 @@ fn on_reset_camera(
         ZoomSpeed(8.0),
         Transform::default(),
     ));
+    Ok(())
+}
+
+fn on_camera_set_position(
+    trigger: On<CameraSetPositionEvent>,
+    mut camera_query: Query<&mut Transform, With<MainCamera>>,
+) -> Result {
+    let mut transform = camera_query.single_mut()?;
+    transform.translation.x = trigger.event().0.x;
+    transform.translation.y = trigger.event().0.y;
     Ok(())
 }

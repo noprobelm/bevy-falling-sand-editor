@@ -815,7 +815,7 @@ dependencies = [
 [[package]]
 name = "bevy_falling_sand"
 version = "0.7.0-dev"
-source = "git+https://github.com/noprobelm/bevy_falling_sand?branch=experimental#201b4857807b5e76fe1b6297ebba488790bef8c0"
+source = "git+https://github.com/noprobelm/bevy_falling_sand?branch=experimental#e36d2930ce7de8271e64eaf2454789938e94b1be"
 dependencies = [
  "anyhow",
  "avian2d",
@@ -1754,6 +1754,7 @@ dependencies = [
  "ron 0.12.0",
  "serde",
  "shlex",
+ "thiserror 2.0.17",
  "tracing",
  "trie-rs",
 ]

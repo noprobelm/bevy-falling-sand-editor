@@ -464,6 +464,7 @@ pub fn handle_create_new_particle(
             &editor_data,
             &mut particle_type_map,
             true,
+            None, // New particle, no existing index to preserve
         );
 
         let mut final_editor_data = editor_data;
@@ -501,6 +502,7 @@ fn apply_editor_data_to_particle_type(
     editor_data: &ParticleEditorData,
     particle_type_map: &mut ResMut<ParticleTypeRegistry>,
     create_new: bool,
+    existing_color_index: Option<usize>,
 ) -> Entity {
     let entity = if create_new {
         let static_name: &'static str = Box::leak(editor_data.name.clone().into_boxed_str());
@@ -537,8 +539,16 @@ fn apply_editor_data_to_particle_type(
         commands.entity(entity).insert(Momentum::ZERO);
     }
 
+    // Preserve the existing color index when updating, to avoid resetting gradient progress
+    let mut color_source = editor_data.color_source.clone();
+    if let Some(index) = existing_color_index {
+        match &mut color_source {
+            ColorSource::Palette(p) => p.index = index,
+            ColorSource::Gradient(g) => g.index = index,
+        }
+    }
     commands.entity(entity).insert(ColorProfile {
-        source: editor_data.color_source.clone(),
+        source: color_source,
         assignment: editor_data.color_assignment.clone(),
     });
 
@@ -665,6 +675,7 @@ pub fn auto_save_editor_changes(
     mut editor_data_query: Query<(Entity, &mut ParticleEditorData), Changed<ParticleEditorData>>,
     mut particle_type_map: ResMut<ParticleTypeRegistry>,
     mut particle_editor_registry: ResMut<ParticleEditorRegistry>,
+    color_profile_query: Query<&ColorProfile, With<ParticleType>>,
 ) {
     for (editor_entity, mut editor_data) in editor_data_query.iter_mut() {
         // Skip if this is a new particle that hasn't been saved yet
@@ -677,11 +688,21 @@ pub fn auto_save_editor_changes(
             continue;
         }
 
+        // Get the existing color index to preserve it during auto-save
+        let existing_color_index = particle_type_map
+            .get(&editor_data.name)
+            .and_then(|&entity| color_profile_query.get(entity).ok())
+            .map(|cp| match &cp.source {
+                ColorSource::Palette(p) => p.index,
+                ColorSource::Gradient(g) => g.index,
+            });
+
         apply_editor_data_to_particle_type(
             &mut commands,
             &editor_data,
             &mut particle_type_map,
             false,
+            existing_color_index,
         );
 
         // Update the registry if needed
@@ -702,16 +723,27 @@ pub fn handle_apply_editor_changes_and_reset(
     mut reset_particle_children_messages: MessageWriter<
         bevy_falling_sand::prelude::ResetParticleTypeChildrenSignal,
     >,
+    color_profile_query: Query<&ColorProfile, With<ParticleType>>,
 ) {
     for message in apply_messages.read() {
         if let Ok(mut editor_data) = editor_data_query.get_mut(message.editor_entity) {
             let create_new = editor_data.is_new || !particle_type_map.contains(&editor_data.name);
+
+            // Preserve the existing color index when applying changes
+            let existing_color_index = particle_type_map
+                .get(&editor_data.name)
+                .and_then(|&entity| color_profile_query.get(entity).ok())
+                .map(|cp| match &cp.source {
+                    ColorSource::Palette(p) => p.index,
+                    ColorSource::Gradient(g) => g.index,
+                });
 
             let particle_entity = apply_editor_data_to_particle_type(
                 &mut commands,
                 &editor_data,
                 &mut particle_type_map,
                 create_new,
+                existing_color_index,
             );
 
             if create_new {
@@ -733,3 +765,4 @@ pub fn handle_apply_editor_changes_and_reset(
 pub struct CurrentEditorSelection {
     pub selected_entity: Option<Entity>,
 }
+
