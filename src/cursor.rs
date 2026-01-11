@@ -1,6 +1,8 @@
 use bevy::{camera::ViewportConversionError, prelude::*, window::PrimaryWindow};
 use bevy_falling_sand::{core::ParticleMap, prelude::Particle};
 
+use crate::particles::SelectedParticle;
+
 use super::camera::MainCamera;
 
 pub struct CursorPlugin;
@@ -72,4 +74,13 @@ fn update_hovered_particle(
         hovered_particle.particle = None
     }
     Ok(())
+}
+
+pub fn sample_hovered_particle(
+    hovered_particle: Res<HoveredParticle>,
+    mut selected_particle: ResMut<SelectedParticle>,
+) {
+    if let Some(particle) = &hovered_particle.particle {
+        selected_particle.0 = particle.clone();
+    }
 }

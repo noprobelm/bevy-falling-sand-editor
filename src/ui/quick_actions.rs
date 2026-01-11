@@ -6,17 +6,17 @@ use bevy_falling_sand::prelude::*;
 
 use crate::{
     app_state::{
-        step_simulation, toggle_particle_movement_logic, toggle_resource, toggle_simulation_run,
-        AppState, CanvasState,
+        AppState, CanvasState, step_simulation, toggle_particle_movement_logic, toggle_resource,
+        toggle_simulation_run,
     },
     brush::{
-        despawn_particles, resize_brush, spawn_particles, update_brush_spawn_state,
-        update_brush_type_state, BrushMode,
+        BrushMode, despawn_particles, resize_brush, spawn_particles, update_brush_spawn_state,
+        update_brush_type_state,
     },
-    cursor::update_cursor_position,
+    cursor::{sample_hovered_particle, update_cursor_position},
 };
 
-use super::{overlays::DrawCursorGuide, settings::SettingsState, RenderGui};
+use super::{RenderGui, overlays::DrawCursorGuide, settings::SettingsState};
 
 pub(super) struct QuickActionsPlugin;
 
@@ -55,10 +55,9 @@ impl Plugin for QuickActionsPlugin {
                     .before(ParticleSimulationSet)
                     .after(update_cursor_position),
                 // Settings window
-                toggle_settings_window.run_if(
-                    input_just_pressed(KeyCode::KeyS)
-                        .and(input_pressed(KeyCode::AltLeft)),
-                ),
+                toggle_settings_window
+                    .run_if(input_just_pressed(KeyCode::KeyS).and(input_pressed(KeyCode::AltLeft))),
+                sample_hovered_particle.run_if(input_just_pressed(MouseButton::Middle)),
             ),
         );
     }
