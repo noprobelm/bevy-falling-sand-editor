@@ -1,7 +1,7 @@
 use bevy::{input::mouse::MouseWheel, prelude::*};
 use bevy_falling_sand::prelude::ChunkLoader;
 
-use crate::app_state::{AppState, AppStateDetectionSystems, CanvasState};
+use crate::app_state::{AppState, CanvasState};
 
 pub(super) struct CameraPlugin;
 
@@ -10,11 +10,11 @@ impl Plugin for CameraPlugin {
         app.add_systems(Startup, setup_camera);
         app.add_systems(
             Update,
-            (pan_camera, zoom_camera, smooth_zoom)
+            (pan_camera, zoom_camera)
                 .chain()
-                .run_if(in_state(AppState::Canvas).and(in_state(CanvasState::Interact)))
-                .before(AppStateDetectionSystems),
+                .run_if(in_state(AppState::Canvas).and(in_state(CanvasState::Interact))),
         );
+        app.add_systems(Update, smooth_zoom);
     }
 }
 
@@ -74,7 +74,7 @@ fn pan_camera(
 }
 
 fn zoom_camera(
-    mut ev_scroll: MessageReader<MouseWheel>,
+    mut msgr_scroll: MessageReader<MouseWheel>,
     mut camera_query: Query<&mut ZoomTarget, With<MainCamera>>,
 ) {
     const ZOOM_IN_FACTOR: f32 = 0.9;
@@ -82,13 +82,13 @@ fn zoom_camera(
     const MIN_SCALE: f32 = 0.01;
     const MAX_SCALE: f32 = 10.0;
 
-    if !ev_scroll.is_empty() {
+    if !msgr_scroll.is_empty() {
         let mut zoom_target = match camera_query.single_mut() {
             Ok(z) => z,
             Err(_) => return,
         };
 
-        ev_scroll.read().for_each(|ev| {
+        msgr_scroll.read().for_each(|ev| {
             if ev.y < 0. {
                 zoom_target.target_scale =
                     (zoom_target.target_scale * ZOOM_OUT_FACTOR).min(MAX_SCALE);
