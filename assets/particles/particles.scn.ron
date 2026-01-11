@@ -105,6 +105,7 @@
         ),
         "bfs_movement::material::Liquid": (
           fluidity: 1,
+          liquid_resistance: 0.3,
         ),
         "bfs_movement::particle::Density": (850),
         "bfs_movement::particle::Momentum": ((0, 0)),
@@ -308,6 +309,7 @@
         ),
         "bfs_movement::material::Liquid": (
           fluidity: 5,
+          liquid_resistance: 0.2,
         ),
         "bfs_movement::particle::Density": (800),
         "bfs_movement::particle::Momentum": ((0, 0)),
@@ -392,6 +394,7 @@
         ),
         "bfs_movement::material::Liquid": (
           fluidity: 5,
+          liquid_resistance: 0.15,
         ),
         "bfs_movement::particle::Density": (850),
         "bfs_movement::particle::Momentum": ((0, 0)),
@@ -660,6 +663,7 @@
         ),
         "bfs_movement::material::Liquid": (
           fluidity: 3,
+          liquid_resistance: 0.25,
         ),
         "bfs_movement::particle::Density": (730),
         "bfs_movement::particle::Momentum": ((0, 0)),
@@ -1316,6 +1320,7 @@
         ),
         "bfs_movement::material::Liquid": (
           fluidity: 5,
+          liquid_resistance: 0.1,
         ),
         "bfs_movement::particle::Density": (750),
         "bfs_movement::particle::Momentum": ((0, 0)),
@@ -1407,6 +1412,7 @@
         ),
         "bfs_movement::material::Liquid": (
           fluidity: 1,
+          liquid_resistance: 0.4,
         ),
         "bfs_movement::particle::Density": (850),
         "bfs_movement::particle::Momentum": ((0, 0)),

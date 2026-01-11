@@ -209,6 +209,8 @@ impl ParticleEditorData {
                 Some(movable_solid.liquid_resistance),
                 Some(movable_solid.air_resistance),
             )
+        } else if let Some(liquid) = liquid {
+            (Some(liquid.liquid_resistance), None)
         } else {
             (None, None)
         };
@@ -464,7 +466,7 @@ pub fn handle_create_new_particle(
             &editor_data,
             &mut particle_type_map,
             true,
-            None, // New particle, no existing index to preserve
+            None, // New particle, no existing index to track
         );
 
         let mut final_editor_data = editor_data;
@@ -605,7 +607,10 @@ fn apply_editor_data_to_particle_type(
         }
         MaterialState::Liquid => {
             let fluidity = editor_data.fluidity.unwrap_or(3);
-            commands.entity(entity).insert(Liquid::new(fluidity.into()));
+            let liquid_resistance = editor_data.liquid_resistance.unwrap_or(0.0);
+            commands
+                .entity(entity)
+                .insert(Liquid::with_resistance(fluidity.into(), liquid_resistance));
         }
         MaterialState::Gas => {
             let fluidity = editor_data.fluidity.unwrap_or(3);

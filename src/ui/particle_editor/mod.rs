@@ -280,6 +280,9 @@ impl ParticleEditor {
                         if editor_data.fluidity.is_none() {
                             editor_data.fluidity = Some(3);
                         }
+                        if editor_data.liquid_resistance.is_none() {
+                            editor_data.liquid_resistance = Some(0.0);
+                        }
                         if previous_state == MaterialState::Gas {
                             editor_data.has_momentum = true;
                         }
@@ -414,8 +417,11 @@ impl ParticleEditor {
                     ui.end_row();
                 }
 
-                // Liquid Resistance (for MovableSolid)
-                if matches!(editor_data.material_state, MaterialState::MovableSolid) {
+                // Liquid Resistance (for MovableSolid and Liquid)
+                if matches!(
+                    editor_data.material_state,
+                    MaterialState::MovableSolid | MaterialState::Liquid
+                ) {
                     ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
                         ui.label("Liquid Resistance:");
                     });
@@ -446,7 +452,10 @@ impl ParticleEditor {
                         }
                     });
                     ui.end_row();
+                }
 
+                // Air Resistance (for MovableSolid only)
+                if matches!(editor_data.material_state, MaterialState::MovableSolid) {
                     ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
                         ui.label("Air Resistance:");
                     });
@@ -1251,3 +1260,4 @@ impl ParticleEditor {
         }
     }
 }
+
