@@ -10,7 +10,8 @@ pub struct CameraCommandPlugin;
 impl Plugin for CameraCommandPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(on_camera_reset)
-            .add_observer(on_camera_set_position);
+            .add_observer(on_camera_set_position)
+            .add_observer(on_camera_set_scale);
     }
 }
 
@@ -48,6 +49,9 @@ pub struct CameraResetEvent;
 #[derive(Event)]
 pub struct CameraSetPositionEvent(pub Vec2);
 
+#[derive(Event)]
+pub struct CameraSetScaleEvent(pub f32);
+
 #[derive(Default)]
 pub struct CameraCommand;
 
@@ -84,7 +88,7 @@ impl ConsoleCommand for CameraResetCommand {
         commands: &mut Commands,
     ) {
         console_writer.write(PrintConsoleLine::new(
-            "Onging set camera position command...".to_string(),
+            "Onging camera reset command...".to_string(),
         ));
         commands.trigger(CameraResetEvent);
     }
@@ -103,7 +107,10 @@ impl ConsoleCommand for CameraSetCommand {
     }
 
     fn subcommand_types(&self) -> Vec<Box<dyn ConsoleCommand>> {
-        vec![Box::new(CameraSetPositionCommand)]
+        vec![
+            Box::new(CameraSetPositionCommand),
+            Box::new(CameraSetScaleCommand),
+        ]
     }
 }
 
@@ -126,7 +133,7 @@ impl ConsoleCommand for CameraSetPositionCommand {
         commands: &mut Commands,
     ) {
         console_writer.write(PrintConsoleLine::new(
-            "Onging reset camera command...".to_string(),
+            "Onging set camera position command...".to_string(),
         ));
         match parse_position(args) {
             Ok(position) => {
@@ -136,6 +143,45 @@ impl ConsoleCommand for CameraSetPositionCommand {
                 console_writer.write(PrintConsoleLine::new(e.to_string()));
             }
         };
+    }
+}
+
+#[derive(Default)]
+pub struct CameraSetScaleCommand;
+
+impl ConsoleCommand for CameraSetScaleCommand {
+    fn name(&self) -> &'static str {
+        "scale"
+    }
+
+    fn description(&self) -> &'static str {
+        "Set camera scale"
+    }
+
+    fn execute_action(
+        &self,
+        args: &[String],
+        console_writer: &mut MessageWriter<PrintConsoleLine>,
+        commands: &mut Commands,
+    ) {
+        console_writer.write(PrintConsoleLine::new(
+            "Onging scale camera command...".to_string(),
+        ));
+        if let Some(s) = args.first() {
+            match s.parse::<f32>() {
+                Ok(scale) => {
+                    commands.trigger(CameraSetScaleEvent(scale));
+                }
+                Err(_) => {
+                    console_writer
+                        .write(PrintConsoleLine::new(format!("Invalid scale value: {s}")));
+                }
+            }
+        } else {
+            console_writer.write(PrintConsoleLine::new(
+                "No camera scale value passed!".to_string(),
+            ));
+        }
     }
 }
 
@@ -171,5 +217,14 @@ fn on_camera_set_position(
     let mut transform = camera_query.single_mut()?;
     transform.translation.x = trigger.event().0.x;
     transform.translation.y = trigger.event().0.y;
+    Ok(())
+}
+
+fn on_camera_set_scale(
+    trigger: On<CameraSetScaleEvent>,
+    mut camera_query: Query<&mut ZoomTarget, With<MainCamera>>,
+) -> Result {
+    let mut zoom_target = camera_query.single_mut()?;
+    zoom_target.target_scale = trigger.event().0;
     Ok(())
 }

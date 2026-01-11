@@ -9,8 +9,7 @@ pub struct StatesPlugin;
 
 impl Plugin for StatesPlugin {
     fn build(&self, app: &mut App) {
-        app.configure_sets(Update, AppStateDetectionSystems)
-            .init_state::<AppState>()
+        app.init_state::<AppState>()
             .add_sub_state::<UiState>()
             .add_sub_state::<CanvasState>()
             .init_state::<InitializationState>()
@@ -31,9 +30,6 @@ impl Plugin for StatesPlugin {
             .add_systems(OnEnter(AppState::Ui), show_cursor);
     }
 }
-
-#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct AppStateDetectionSystems;
 
 #[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
 pub enum AppState {
