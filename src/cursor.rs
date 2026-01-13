@@ -67,8 +67,8 @@ fn update_hovered_particle(
         cursor_position.current.x.floor() as i32,
         cursor_position.current.y.floor() as i32,
     );
-    if let Some(entity) = map.get(&position) {
-        let particle = particle_query.get(*entity)?;
+    if let Some(entity) = map.get_entity(position) {
+        let particle = particle_query.get(entity)?;
         hovered_particle.particle = Some(particle.clone());
     } else {
         hovered_particle.particle = None

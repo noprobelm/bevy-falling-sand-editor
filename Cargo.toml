@@ -18,7 +18,7 @@ tracing = { version = "0.1", features = [
     "max_level_debug",
     "release_max_level_warn",
 ] }
-bevy_falling_sand = { git = "https://github.com/noprobelm/bevy_falling_sand", branch = "experimental" }
+bevy_falling_sand = { git = "https://github.com/noprobelm/bevy_falling_sand", branch = "devel" }
 serde = "1.0.228"
 bevy_egui = "0.37.0"
 avian2d = "0.4.1"
