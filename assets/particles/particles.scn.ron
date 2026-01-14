@@ -140,7 +140,7 @@
         "bfs_movement::particle::Speed": (
           current: 1,
           threshold: 0,
-          max: 7,
+          max: 2,
         ),
       },
     ),
@@ -371,7 +371,7 @@
         "bfs_movement::particle::Speed": (
           current: 1,
           threshold: 0,
-          max: 7,
+          max: 3,
         ),
       },
     ),
@@ -457,7 +457,7 @@
         "bfs_movement::particle::Speed": (
           current: 1,
           threshold: 0,
-          max: 7,
+          max: 3,
         ),
       },
     ),
@@ -717,7 +717,7 @@
         "bfs_movement::particle::Speed": (
           current: 1,
           threshold: 0,
-          max: 7,
+          max: 3,
         ),
         "bfs_reactions::particle::Burns": (
           duration: (
@@ -1395,7 +1395,7 @@
         "bfs_movement::particle::Speed": (
           current: 1,
           threshold: 0,
-          max: 7,
+          max: 3,
         ),
       },
     ),
@@ -1464,7 +1464,7 @@
         "bfs_movement::particle::Speed": (
           current: 1,
           threshold: 0,
-          max: 7,
+          max: 2,
         ),
       },
     ),
