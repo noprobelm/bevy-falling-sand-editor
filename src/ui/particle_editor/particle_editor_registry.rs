@@ -47,6 +47,7 @@ pub struct ParticleEditorData {
     pub material_state: MaterialState,
 
     pub density: u32,
+    pub speed_threshold: u8,
     pub max_speed: u8,
     pub has_momentum: bool,
 
@@ -134,6 +135,7 @@ impl Default for ParticleEditorData {
             name: "New Particle".to_string(),
             material_state: MaterialState::Solid,
             density: 100,
+            speed_threshold: 10,
             max_speed: 3,
             has_momentum: false,
             color_source: ColorSource::Palette(Palette {
@@ -287,6 +289,7 @@ impl ParticleEditorData {
             name,
             material_state,
             density: density.map(|d| d.0).unwrap_or(100),
+            speed_threshold: speed.map(|v| v.threshold()).unwrap_or(10),
             max_speed: speed.map(|v| v.max()).unwrap_or(3),
             has_momentum: momentum.is_some(),
             color_source,
@@ -533,9 +536,11 @@ fn apply_editor_data_to_particle_type(
         .remove::<AllMaterialComponents>();
 
     commands.entity(entity).insert(Density(editor_data.density));
-    commands
-        .entity(entity)
-        .insert(Speed::new(1, editor_data.max_speed));
+    commands.entity(entity).insert(Speed::new(
+        1,
+        editor_data.speed_threshold,
+        editor_data.max_speed,
+    ));
 
     if editor_data.has_momentum {
         commands.entity(entity).insert(Momentum::ZERO);
@@ -770,4 +775,3 @@ pub fn handle_apply_editor_changes_and_reset(
 pub struct CurrentEditorSelection {
     pub selected_entity: Option<Entity>,
 }
-

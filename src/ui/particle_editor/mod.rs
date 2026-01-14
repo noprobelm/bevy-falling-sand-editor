@@ -349,6 +349,37 @@ impl ParticleEditor {
                 });
                 ui.end_row();
 
+                // Speed threshold
+                ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                    ui.label("Speed Threshold:");
+                });
+                ui.horizontal(|ui| {
+                    let mut speed_f32 = editor_data.speed_threshold as f32;
+                    if ui
+                        .add(
+                            egui::Slider::new(&mut speed_f32, 0.0..=100.0)
+                                .step_by(1.0)
+                                .show_value(false),
+                        )
+                        .changed()
+                    {
+                        editor_data.speed_threshold = speed_f32 as u8;
+                    }
+                    let drag_width = 50.0;
+                    ui.add_space(ui.available_width() - drag_width);
+                    let mut speed_drag = editor_data.speed_threshold as u32;
+                    if ui
+                        .add_sized(
+                            [drag_width, 18.0],
+                            egui::DragValue::new(&mut speed_drag).range(0..=100),
+                        )
+                        .changed()
+                    {
+                        editor_data.speed_threshold = speed_drag as u8;
+                    }
+                });
+                ui.end_row();
+
                 // Max Speed
                 ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
                     ui.label("Max Speed:");
@@ -357,7 +388,7 @@ impl ParticleEditor {
                     let mut speed_f32 = editor_data.max_speed as f32;
                     if ui
                         .add(
-                            egui::Slider::new(&mut speed_f32, 1.0..=5.0)
+                            egui::Slider::new(&mut speed_f32, 1.0..=10.0)
                                 .step_by(1.0)
                                 .show_value(false),
                         )
@@ -371,7 +402,7 @@ impl ParticleEditor {
                     if ui
                         .add_sized(
                             [drag_width, 18.0],
-                            egui::DragValue::new(&mut speed_drag).range(1..=5),
+                            egui::DragValue::new(&mut speed_drag).range(1..=10),
                         )
                         .changed()
                     {
@@ -1260,4 +1291,3 @@ impl ParticleEditor {
         }
     }
 }
-
