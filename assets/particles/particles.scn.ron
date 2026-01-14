@@ -45,6 +45,7 @@
         "bfs_movement::particle::Density": (100),
         "bfs_movement::particle::Speed": (
           current: 1,
+          threshold: 0,
           max: 3,
         ),
         "bfs_physics::StaticRigidBodyParticle": (),
@@ -138,7 +139,8 @@
         ),
         "bfs_movement::particle::Speed": (
           current: 1,
-          max: 2,
+          threshold: 0,
+          max: 7,
         ),
       },
     ),
@@ -168,6 +170,7 @@
         "bfs_movement::particle::Density": (100),
         "bfs_movement::particle::Speed": (
           current: 1,
+          threshold: 0,
           max: 3,
         ),
         "bfs_physics::StaticRigidBodyParticle": (),
@@ -219,6 +222,7 @@
         "bfs_movement::particle::Density": (100),
         "bfs_movement::particle::Speed": (
           current: 1,
+          threshold: 0,
           max: 3,
         ),
         "bfs_physics::StaticRigidBodyParticle": (),
@@ -366,7 +370,8 @@
         ),
         "bfs_movement::particle::Speed": (
           current: 1,
-          max: 3,
+          threshold: 0,
+          max: 7,
         ),
       },
     ),
@@ -451,7 +456,8 @@
         ),
         "bfs_movement::particle::Speed": (
           current: 1,
-          max: 3,
+          threshold: 0,
+          max: 7,
         ),
       },
     ),
@@ -499,6 +505,7 @@
         "bfs_movement::particle::Density": (100),
         "bfs_movement::particle::Speed": (
           current: 1,
+          threshold: 0,
           max: 3,
         ),
         "bfs_physics::StaticRigidBodyParticle": (),
@@ -634,7 +641,8 @@
         ),
         "bfs_movement::particle::Speed": (
           current: 1,
-          max: 3,
+          threshold: 5,
+          max: 10,
         ),
         "bfs_physics::StaticRigidBodyParticle": (),
       },
@@ -708,7 +716,8 @@
         ),
         "bfs_movement::particle::Speed": (
           current: 1,
-          max: 3,
+          threshold: 0,
+          max: 7,
         ),
         "bfs_reactions::particle::Burns": (
           duration: (
@@ -825,6 +834,7 @@
         ),
         "bfs_movement::particle::Speed": (
           current: 1,
+          threshold: 0,
           max: 1,
         ),
       },
@@ -861,6 +871,7 @@
         "bfs_movement::particle::Density": (100),
         "bfs_movement::particle::Speed": (
           current: 1,
+          threshold: 0,
           max: 3,
         ),
         "bfs_physics::StaticRigidBodyParticle": (),
@@ -917,7 +928,8 @@
         ),
         "bfs_movement::particle::Speed": (
           current: 1,
-          max: 3,
+          threshold: 5,
+          max: 10,
         ),
         "bfs_physics::StaticRigidBodyParticle": (),
       },
@@ -972,6 +984,7 @@
         "bfs_movement::particle::Density": (100),
         "bfs_movement::particle::Speed": (
           current: 1,
+          threshold: 0,
           max: 3,
         ),
         "bfs_physics::StaticRigidBodyParticle": (),
@@ -1029,6 +1042,7 @@
         ),
         "bfs_movement::particle::Speed": (
           current: 1,
+          threshold: 0,
           max: 1,
         ),
         "bfs_reactions::particle::Burns": (
@@ -1140,7 +1154,8 @@
         ),
         "bfs_movement::particle::Speed": (
           current: 1,
-          max: 3,
+          threshold: 5,
+          max: 10,
         ),
         "bfs_physics::StaticRigidBodyParticle": (),
       },
@@ -1221,6 +1236,7 @@
         ),
         "bfs_movement::particle::Speed": (
           current: 1,
+          threshold: 0,
           max: 3,
         ),
         "bfs_reactions::particle::Burns": (
@@ -1291,6 +1307,7 @@
         ),
         "bfs_movement::particle::Speed": (
           current: 1,
+          threshold: 0,
           max: 3,
         ),
         "bfs_physics::StaticRigidBodyParticle": (),
@@ -1377,7 +1394,8 @@
         ),
         "bfs_movement::particle::Speed": (
           current: 1,
-          max: 3,
+          threshold: 0,
+          max: 7,
         ),
       },
     ),
@@ -1445,7 +1463,8 @@
         ),
         "bfs_movement::particle::Speed": (
           current: 1,
-          max: 2,
+          threshold: 0,
+          max: 7,
         ),
       },
     ),
@@ -1513,6 +1532,7 @@
         ),
         "bfs_movement::particle::Speed": (
           current: 1,
+          threshold: 0,
           max: 1,
         ),
         "bfs_reactions::particle::Burns": (
@@ -1588,7 +1608,8 @@
         ),
         "bfs_movement::particle::Speed": (
           current: 1,
-          max: 3,
+          threshold: 5,
+          max: 10,
         ),
         "bfs_physics::StaticRigidBodyParticle": (),
       },
@@ -1631,6 +1652,7 @@
         "bfs_movement::particle::Density": (100),
         "bfs_movement::particle::Speed": (
           current: 1,
+          threshold: 0,
           max: 3,
         ),
         "bfs_physics::StaticRigidBodyParticle": (),
@@ -1687,7 +1709,8 @@
         ),
         "bfs_movement::particle::Speed": (
           current: 1,
-          max: 3,
+          threshold: 5,
+          max: 10,
         ),
         "bfs_physics::StaticRigidBodyParticle": (),
       },
