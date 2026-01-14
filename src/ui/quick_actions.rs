@@ -31,6 +31,7 @@ impl Plugin for QuickActionsPlugin {
                 toggle_resource::<DebugParticleMap>.run_if(input_just_pressed(KeyCode::F1)),
                 toggle_resource::<DrawCursorGuide>.run_if(input_just_pressed(KeyCode::F2)),
                 toggle_resource::<DebugDirtyRects>.run_if(input_just_pressed(KeyCode::F3)),
+                toggle_resource::<ChunkLoadingRun>.run_if(input_just_pressed(KeyCode::F5)),
                 toggle_particle_movement_logic.run_if(input_just_pressed(KeyCode::F4)),
                 toggle_simulation_run
                     .run_if(input_just_pressed(KeyCode::Space))
