@@ -7,7 +7,7 @@ pub struct UiCommandPlugin;
 
 impl Plugin for UiCommandPlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(on_set_ui_scale_event);
+        app.add_observer(on_ui_set_scale_event);
     }
 }
 
@@ -16,9 +16,8 @@ pub struct SetUiScaleEvent {
     pub scale_factor: f32,
 }
 
-fn on_set_ui_scale_event(
+fn on_ui_set_scale_event(
     trigger: On<SetUiScaleEvent>,
-    //ui_scale_factor: Res<UiScaleFactor>,
     egui_context: Single<&mut EguiContextSettings>,
 ) {
     let ev = trigger.event();
@@ -39,14 +38,14 @@ impl ConsoleCommand for UiCommand {
     }
 
     fn subcommand_types(&self) -> Vec<Box<dyn ConsoleCommand>> {
-        vec![Box::new(Set)]
+        vec![Box::new(UiSetCommand)]
     }
 }
 
 #[derive(Default)]
-pub struct Set;
+pub struct UiSetCommand;
 
-impl ConsoleCommand for Set {
+impl ConsoleCommand for UiSetCommand {
     fn name(&self) -> &'static str {
         "set"
     }
@@ -56,14 +55,14 @@ impl ConsoleCommand for Set {
     }
 
     fn subcommand_types(&self) -> Vec<Box<dyn ConsoleCommand>> {
-        vec![Box::new(Scale)]
+        vec![Box::new(UiSetScaleCommand)]
     }
 }
 
 #[derive(Default)]
-pub struct Scale;
+pub struct UiSetScaleCommand;
 
-impl ConsoleCommand for Scale {
+impl ConsoleCommand for UiSetScaleCommand {
     fn name(&self) -> &'static str {
         "scale"
     }
@@ -112,3 +111,4 @@ impl ConsoleCommand for Scale {
         ));
     }
 }
+
