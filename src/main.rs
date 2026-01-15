@@ -36,7 +36,7 @@ fn main() {
                 }),
                 ..default()
             }),
-            FallingSandPlugin::default(),
+            FallingSandPlugin::default().with_chunk_size(64),
             FallingSandPersistencePlugin::new(get_config_dir()),
             FallingSandDebugPlugin,
             PhysicsDebugPlugin,
