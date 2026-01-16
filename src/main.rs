@@ -29,7 +29,8 @@ fn main() {
             AppStatePlugin,
             StartupPlugin::default(),
             FallingSandPlugin::default().with_chunk_size(64),
-            //FallingSandPersistencePlugin::new(get_config_dir()),
+            // Fall back to /tmp until `WorldPathReady` state indicates `Complete`
+            FallingSandPersistencePlugin::new("/tmp/bfs_fallback"),
             FallingSandDebugPlugin,
             PhysicsDebugPlugin,
         ))
