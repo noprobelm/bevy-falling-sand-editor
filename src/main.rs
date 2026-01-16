@@ -1,25 +1,15 @@
 mod app_state;
-mod brush;
-mod camera;
-mod cursor;
-mod particles;
-mod physics;
-mod scenes;
+mod startup;
 mod ui;
 
-use app_state::StatesPlugin;
 use avian2d::prelude::PhysicsDebugPlugin;
 use avian2d::prelude::PhysicsGizmos;
 use bevy_falling_sand::prelude::{
     FallingSandDebugPlugin, FallingSandPersistencePlugin, FallingSandPlugin,
 };
-use bevy_framepace::FramepacePlugin;
-use brush::*;
-use camera::*;
-use cursor::*;
-use particles::*;
-use physics::*;
-use scenes::*;
+
+use app_state::*;
+use startup::*;
 use ui::*;
 
 use bevy::{prelude::*, window::WindowMode};
@@ -36,19 +26,12 @@ fn main() {
                 }),
                 ..default()
             }),
+            AppStatePlugin,
+            StartupPlugin::default(),
             FallingSandPlugin::default().with_chunk_size(64),
-            FallingSandPersistencePlugin::new(get_config_dir()),
+            //FallingSandPersistencePlugin::new(get_config_dir()),
             FallingSandDebugPlugin,
             PhysicsDebugPlugin,
-            FramepacePlugin,
-            ParticleSetupPlugin,
-            CursorPlugin,
-            CameraPlugin,
-            BrushPlugin,
-            StatesPlugin,
-            ScenesPlugin,
-            UiPlugin,
-            PhysicsPlugin,
         ))
         .insert_gizmo_config(
             PhysicsGizmos {
