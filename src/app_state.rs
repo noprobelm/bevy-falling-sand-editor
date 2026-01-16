@@ -14,26 +14,3 @@ pub enum ConfigPathLoadedState {
     Incomplete,
     Complete,
 }
-
-#[derive(SubStates, Copy, Clone, Default, Eq, PartialEq, Hash, Debug, Reflect)]
-#[source(ConfigPathLoadedState = ConfigPathLoadedState::Complete)]
-pub enum SettingsLoadedState {
-    #[default]
-    Incomplete,
-    Complete,
-}
-
-#[derive(SubStates, Copy, Clone, Default, Eq, PartialEq, Hash, Debug, Reflect)]
-#[source(ConfigPathLoadedState = ConfigPathLoadedState::Complete)]
-pub enum WorldLoadedState {
-    #[default]
-    Incomplete,
-    Complete,
-}
-
-#[derive(States, Copy, Clone, Default, Eq, PartialEq, Hash, Debug, Reflect)]
-pub enum ConfigLoadedState {
-    #[default]
-    Incomplete,
-    Complete,
-}
