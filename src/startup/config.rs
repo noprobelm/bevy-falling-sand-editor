@@ -3,13 +3,13 @@ use std::{fs, path::PathBuf};
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::app_state::ConfigPathLoadedState;
+use crate::app_state::{ConfigPathReadyState, ParticleTypesPathReadyState, WorldPathReadyState};
 
-pub struct ConfigPlugin {
+pub struct ConfigStartupPlugin {
     pub config_path: PathBuf,
 }
 
-impl Default for ConfigPlugin {
+impl Default for ConfigStartupPlugin {
     fn default() -> Self {
         let config_path = PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| ".".to_string()))
             .join(".config")
@@ -18,23 +18,30 @@ impl Default for ConfigPlugin {
     }
 }
 
-impl Plugin for ConfigPlugin {
+impl Plugin for ConfigStartupPlugin {
     fn build(&self, app: &mut App) {
         let config_path = self.config_path.clone();
         app.add_systems(
             Startup,
-            move |mut commands: Commands, mut state: ResMut<NextState<ConfigPathLoadedState>>| {
+            move |mut commands: Commands, mut state: ResMut<NextState<ConfigPathReadyState>>| {
                 if let Err(e) = fs::create_dir_all(&config_path) {
-                    warn!("Failed to create config directory {:?}: {}", config_path, e);
+                    let warning =
+                        format!("Failed to create config directory {:?}: {}", config_path, e);
+                    warn!(warning);
+                    state.set(ConfigPathReadyState::Failed(warning));
                     return;
                 }
                 commands.insert_resource(ConfigPath(config_path.clone()));
-                state.set(ConfigPathLoadedState::Complete)
+                state.set(ConfigPathReadyState::Complete)
             },
         )
         .add_systems(
-            OnEnter(ConfigPathLoadedState::Complete),
-            (setup_settings_path, setup_world_path),
+            OnEnter(ConfigPathReadyState::Complete),
+            (
+                setup_settings_path,
+                setup_world_path,
+                setup_particle_types_path,
+            ),
         );
     }
 }
@@ -43,15 +50,45 @@ impl Plugin for ConfigPlugin {
 pub struct ConfigPath(pub PathBuf);
 
 #[derive(Resource, Clone, Default, Eq, PartialEq, Hash, Debug, Serialize, Deserialize, Reflect)]
+pub struct ParticleTypesPath(pub PathBuf);
+
+#[derive(Resource, Clone, Default, Eq, PartialEq, Hash, Debug, Serialize, Deserialize, Reflect)]
 pub struct SettingsPath(pub PathBuf);
 
 #[derive(Resource, Clone, Default, Eq, PartialEq, Hash, Debug, Serialize, Deserialize, Reflect)]
 pub struct WorldPath(pub PathBuf);
 
-fn setup_settings_path(mut commands: Commands, config_path: Res<ConfigPath>) {
-    commands.insert_resource(SettingsPath(config_path.0.join("settings.ron")));
+macro_rules! setup_path_system {
+    ($fn_name:ident, $resource:ident, $state:ty, $($path_segment:expr),+) => {
+        fn $fn_name(
+            mut commands: Commands,
+            config_path: Res<ConfigPath>,
+            mut state: ResMut<NextState<$state>>,
+        ) {
+            let path = config_path.0 $(.join($path_segment))+;
+            if let Err(e) = fs::create_dir_all(&path) {
+                let warning = format!("Failed to create config directory {:?}: {}", path, e);
+                warn!(warning);
+                state.set(<$state>::Failed(warning));
+                return;
+            }
+            commands.insert_resource($resource(path));
+            state.set(<$state>::Complete);
+        }
+    };
 }
 
-fn setup_world_path(mut commands: Commands, config_path: Res<ConfigPath>) {
-    commands.insert_resource(SettingsPath(config_path.0.join("world")));
-}
+setup_path_system!(
+    setup_settings_path,
+    SettingsPath,
+    ConfigPathReadyState,
+    "settings.ron"
+);
+setup_path_system!(setup_world_path, WorldPath, WorldPathReadyState, "world");
+setup_path_system!(
+    setup_particle_types_path,
+    ParticleTypesPath,
+    ParticleTypesPathReadyState,
+    "particles",
+    "particles.scn.ron"
+);
