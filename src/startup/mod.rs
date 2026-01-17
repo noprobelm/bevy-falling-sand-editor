@@ -1,3 +1,4 @@
+mod camera;
 mod config;
 mod particle_types;
 
@@ -5,8 +6,9 @@ use std::path::PathBuf;
 
 use bevy::prelude::*;
 
+pub use camera::*;
 pub use config::*;
-pub use particle_types::*;
+use particle_types::*;
 
 pub struct StartupPlugin {
     pub config_path: PathBuf,
@@ -28,6 +30,7 @@ impl Plugin for StartupPlugin {
             ParticleTypeStartupPlugin {
                 particle_types_init_file: self.particle_types_init_file.clone(),
             },
+            CameraSetupPlugin,
         ));
     }
 }

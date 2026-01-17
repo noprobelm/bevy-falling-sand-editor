@@ -1,10 +1,8 @@
 use bevy::prelude::*;
 
-use crate::startup::ParticleTypesPath;
+pub struct ConfigStatePlugin;
 
-pub struct AppStatePlugin;
-
-impl Plugin for AppStatePlugin {
+impl Plugin for ConfigStatePlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<ConfigPathReadyState>()
             .add_sub_state::<ParticleTypesPathReadyState>()

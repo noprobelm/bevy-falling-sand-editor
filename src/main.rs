@@ -1,16 +1,19 @@
 mod app_state;
+mod camera;
 mod startup;
 mod ui;
 
 use avian2d::prelude::PhysicsDebugPlugin;
 use avian2d::prelude::PhysicsGizmos;
+use bevy_falling_sand::core::Particle;
+use bevy_falling_sand::core::SpawnParticleSignal;
 use bevy_falling_sand::prelude::{
     FallingSandDebugPlugin, FallingSandPersistencePlugin, FallingSandPlugin,
 };
 
 use app_state::*;
+use camera::*;
 use startup::*;
-use ui::*;
 
 use bevy::{prelude::*, window::WindowMode};
 
@@ -27,11 +30,11 @@ fn main() {
                 ..default()
             }),
             AppStatePlugin,
+            CameraPlugin,
             StartupPlugin::default(),
             FallingSandPlugin::default().with_chunk_size(64),
             // Fall back to /tmp until `WorldPathReady` state indicates `Complete`
             FallingSandPersistencePlugin::new("/tmp/bfs_fallback"),
-            FallingSandDebugPlugin,
             PhysicsDebugPlugin,
         ))
         .insert_gizmo_config(
@@ -42,5 +45,15 @@ fn main() {
             GizmoConfig::default(),
         )
         .insert_resource(ClearColor(Color::srgba(0.17, 0.16, 0.15, 1.0)))
+        .add_systems(Update, spawn_particles)
         .run();
+}
+
+fn spawn_particles(mut msgw_spawn_particle: MessageWriter<SpawnParticleSignal>) {
+    for y in 0..10 {
+        msgw_spawn_particle.write(SpawnParticleSignal::new(
+            Particle::new("Water"),
+            IVec2::new(0, y),
+        ));
+    }
 }
