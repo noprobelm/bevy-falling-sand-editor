@@ -1,5 +1,5 @@
-mod resources;
 mod setup;
+mod signals;
 mod states;
 
 use std::path::PathBuf;
@@ -7,9 +7,12 @@ use std::path::PathBuf;
 use bevy::asset::io::AssetSource;
 use bevy::prelude::*;
 
-pub use resources::*;
+use serde::{Deserialize, Serialize};
 pub use setup::*;
+pub use signals::*;
 pub use states::*;
+
+use crate::camera::CameraConfig;
 
 pub struct ConfigPlugin {
     pub config_path: PathBuf,
@@ -45,7 +48,6 @@ impl Plugin for ConfigPlugin {
             AssetSource::build()
                 .with_reader(move || AssetSource::get_default_reader(config_path_str.clone())()),
         );
-
         app.add_plugins((
             SetupPlugin {
                 config_path,
@@ -54,6 +56,44 @@ impl Plugin for ConfigPlugin {
                 particle_types_path,
             },
             StatesPlugin,
+            SignalsPlugin,
         ));
+        app.configure_sets(Update, SaveWorldSystems);
     }
+}
+
+/// System set for saving the world to disk.
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct SaveWorldSystems;
+
+#[derive(Resource, Clone, Default, Eq, PartialEq, Hash, Debug, Serialize, Deserialize, Reflect)]
+pub struct ConfigPath(pub PathBuf);
+
+#[derive(Resource, Clone, Default, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
+pub struct ParticleTypesPath(pub PathBuf);
+
+#[derive(Resource, Clone, Default, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
+pub struct SettingsPath(pub PathBuf);
+
+#[derive(Resource, Clone, Default, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
+pub struct WorldPath(pub PathBuf);
+
+#[derive(Resource, Clone, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
+pub struct InitConfig {
+    settings_init_file: PathBuf,
+    particle_types_init_file: PathBuf,
+}
+
+impl Default for InitConfig {
+    fn default() -> Self {
+        Self {
+            settings_init_file: PathBuf::from("settings.toml"),
+            particle_types_init_file: PathBuf::from("particles.scn.ron"),
+        }
+    }
+}
+
+#[derive(Resource, Clone, Default, Debug, Serialize, Deserialize)]
+pub struct WorldConfig {
+    pub camera: CameraConfig,
 }

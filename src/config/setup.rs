@@ -81,12 +81,12 @@ impl Plugin for SetupPlugin {
         .add_systems(OnEnter(WorldPathReadyState::Complete), load_world_config)
         .add_systems(
             OnEnter(WorldPathReadyState::Complete),
-            update_bevy_falling_sand_persistence_path,
+            set_bevy_falling_sand_persistence_path,
         );
     }
 }
 
-fn update_bevy_falling_sand_persistence_path(
+fn set_bevy_falling_sand_persistence_path(
     world_path: Res<WorldPath>,
     mut persistence_config: ResMut<ParticlePersistenceConfig>,
 ) {

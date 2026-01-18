@@ -20,9 +20,14 @@ fn setup_camera(
     world_config: Res<Persistent<WorldConfig>>,
     mut state: ResMut<NextState<CameraLoadedState>>,
 ) {
+    commands.insert_resource(world_config.camera.clone());
     commands.spawn((
         Camera2d,
-        world_config.get().camera.projection.clone(),
+        Projection::Orthographic(OrthographicProjection {
+            near: -1000.0,
+            scale: world_config.get().camera.scale,
+            ..OrthographicProjection::default_2d()
+        }),
         MainCamera,
         ChunkLoader,
         ZoomTarget {

@@ -1,5 +1,5 @@
 mod components;
-mod resources;
+mod config;
 mod setup;
 mod signals;
 mod states;
@@ -8,9 +8,9 @@ mod systems;
 use bevy::prelude::*;
 
 pub use components::*;
-pub use resources::*;
+pub use config::*;
 use setup::*;
-pub use signals::*;
+use signals::*;
 pub use states::*;
 pub use systems::*;
 
