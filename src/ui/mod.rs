@@ -2,7 +2,7 @@ mod states;
 
 use bevy::prelude::*;
 
-use states::*;
+pub use states::*;
 
 pub(super) struct UiPlugin;
 
