@@ -8,6 +8,7 @@ impl Plugin for StatesPlugin {
             .add_sub_state::<ParticleTypesPathReadyState>()
             .add_sub_state::<ParticleTypesInitFileReadyState>()
             .add_sub_state::<WorldPathReadyState>()
+            .add_sub_state::<WorldConfigReadyState>()
             .add_sub_state::<SettingsPathReadyState>()
             .add_sub_state::<ParticleTypesLoadedState>();
     }
@@ -42,6 +43,15 @@ pub enum ParticleTypesInitFileReadyState {
 #[derive(SubStates, Clone, Default, Eq, PartialEq, Hash, Debug, Reflect)]
 #[source(ConfigPathReadyState = ConfigPathReadyState::Complete)]
 pub enum WorldPathReadyState {
+    #[default]
+    Incomplete,
+    Complete,
+    Failed(String),
+}
+
+#[derive(SubStates, Clone, Default, Eq, PartialEq, Hash, Debug, Reflect)]
+#[source(WorldPathReadyState = WorldPathReadyState::Complete)]
+pub enum WorldConfigReadyState {
     #[default]
     Incomplete,
     Complete,

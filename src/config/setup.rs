@@ -2,7 +2,7 @@ use std::{fs, path::PathBuf};
 
 use crate::config::{
     ConfigPath, ConfigPathReadyState, InitConfig, ParticleTypesPath, ParticleTypesPathReadyState,
-    SettingsPath, WorldPath, WorldPathReadyState,
+    SettingsPath, WorldConfig, WorldConfigReadyState, WorldPath, WorldPathReadyState,
 };
 use bevy::prelude::*;
 use bevy_falling_sand::persistence::ParticlePersistenceConfig;
@@ -78,6 +78,7 @@ impl Plugin for SetupPlugin {
             ),
         )
         .add_systems(OnEnter(ConfigPathReadyState::Complete), load_init_config)
+        .add_systems(OnEnter(WorldPathReadyState::Complete), load_world_config)
         .add_systems(
             OnEnter(WorldPathReadyState::Complete),
             update_bevy_falling_sand_persistence_path,
@@ -102,4 +103,21 @@ fn load_init_config(mut commands: Commands, config_path: Res<ConfigPath>) {
             .build()
             .expect("Failed to load init.toml"),
     );
+}
+
+fn load_world_config(
+    mut commands: Commands,
+    config_path: Res<ConfigPath>,
+    mut state: ResMut<NextState<WorldConfigReadyState>>,
+) {
+    commands.insert_resource(
+        Persistent::<WorldConfig>::builder()
+            .name("world_meta")
+            .format(StorageFormat::Toml)
+            .path(config_path.0.clone().join("world.toml"))
+            .default(WorldConfig::default())
+            .build()
+            .expect("Failed to load world.toml"),
+    );
+    state.set(WorldConfigReadyState::Complete);
 }

@@ -1,7 +1,7 @@
 use bevy::{input::mouse::MouseWheel, prelude::*};
 
 use crate::{
-    camera::{MainCamera, ZoomSpeed, ZoomTarget},
+    camera::{CameraLoadedState, MainCamera, ZoomSpeed, ZoomTarget},
     ui::AppState,
 };
 
@@ -14,6 +14,7 @@ impl Plugin for SystemsPlugin {
             (pan_camera, update_zoom_target)
                 .chain()
                 .run_if(in_state(AppState::Canvas))
+                .run_if(in_state(CameraLoadedState::Complete))
                 .in_set(CameraSystems),
         );
         app.add_systems(Update, smooth_zoom);
