@@ -38,7 +38,7 @@ fn main() {
             FallingSandPlugin::default().with_chunk_size(64),
             FallingSandDebugPlugin,
             // Fall back to /tmp until `WorldPathReady` state indicates `Complete`
-            FallingSandPersistencePlugin::new("/tmp/bfs_fallback"),
+            FallingSandPersistencePlugin::new("/tmp/bfs"),
             PhysicsDebugPlugin,
         ))
         .insert_gizmo_config(

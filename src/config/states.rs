@@ -4,74 +4,48 @@ pub(super) struct StatesPlugin;
 
 impl Plugin for StatesPlugin {
     fn build(&self, app: &mut App) {
-        app.init_state::<ConfigPathReadyState>()
-            .add_sub_state::<ParticleTypesPathReadyState>()
-            .add_sub_state::<ParticleTypesInitFileReadyState>()
-            .add_sub_state::<WorldBasePathReadyState>()
-            .add_sub_state::<WorldConfigReadyState>()
-            .add_sub_state::<SettingsPathReadyState>()
-            .add_sub_state::<ParticleTypesLoadedState>();
+        app.init_state::<ConfigPathState>()
+            .add_sub_state::<InitConfigState>()
+            .add_sub_state::<WorldConfigState>()
+            .add_sub_state::<ParticleTypesConfigState>()
+            .init_state::<CameraInitState>();
     }
 }
 
 #[derive(States, Clone, Default, Eq, PartialEq, Hash, Debug, Reflect)]
-pub enum ConfigPathReadyState {
+pub enum ConfigPathState {
     #[default]
-    Incomplete,
-    Complete,
-    Failed(String),
+    Initializing,
+    Initialized,
 }
 
 #[derive(SubStates, Clone, Default, Eq, PartialEq, Hash, Debug, Reflect)]
-#[source(ConfigPathReadyState = ConfigPathReadyState::Complete)]
-pub enum ParticleTypesPathReadyState {
+#[source(ConfigPathState = ConfigPathState::Initialized)]
+pub enum InitConfigState {
     #[default]
-    Incomplete,
-    Complete,
-    Failed(String),
+    Initializing,
+    Initialized,
 }
 
 #[derive(SubStates, Clone, Default, Eq, PartialEq, Hash, Debug, Reflect)]
-#[source(ParticleTypesPathReadyState = ParticleTypesPathReadyState::Complete)]
-pub enum ParticleTypesInitFileReadyState {
+#[source(InitConfigState = InitConfigState::Initialized)]
+pub enum WorldConfigState {
     #[default]
-    Incomplete,
-    Complete,
-    Failed(String),
+    Initializing,
+    Initialized,
 }
 
 #[derive(SubStates, Clone, Default, Eq, PartialEq, Hash, Debug, Reflect)]
-#[source(ConfigPathReadyState = ConfigPathReadyState::Complete)]
-pub enum WorldBasePathReadyState {
+#[source(ConfigPathState = ConfigPathState::Initialized)]
+pub enum ParticleTypesConfigState {
     #[default]
-    Incomplete,
-    Complete,
-    Failed(String),
+    Initializing,
+    Initialized,
 }
 
-#[derive(SubStates, Clone, Default, Eq, PartialEq, Hash, Debug, Reflect)]
-#[source(WorldBasePathReadyState = WorldBasePathReadyState::Complete)]
-pub enum WorldConfigReadyState {
+#[derive(States, Clone, Default, Eq, PartialEq, Hash, Debug, Reflect)]
+pub enum CameraInitState {
     #[default]
-    Incomplete,
-    Complete,
-    Failed(String),
-}
-
-#[derive(SubStates, Clone, Default, Eq, PartialEq, Hash, Debug, Reflect)]
-#[source(ConfigPathReadyState = ConfigPathReadyState::Complete)]
-pub enum SettingsPathReadyState {
-    #[default]
-    Incomplete,
-    Complete,
-    Failed(String),
-}
-
-#[derive(SubStates, Clone, Default, Eq, PartialEq, Hash, Debug, Reflect)]
-#[source(ConfigPathReadyState = ConfigPathReadyState::Complete)]
-pub enum ParticleTypesLoadedState {
-    #[default]
-    Incomplete,
-    Complete,
-    Failed(String),
+    Initializing,
+    Initialized,
 }

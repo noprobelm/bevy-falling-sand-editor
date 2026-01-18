@@ -3,22 +3,22 @@ use bevy_falling_sand::prelude::ChunkLoader;
 use bevy_persistent::Persistent;
 
 use crate::{
-    camera::{CameraLoadedState, MainCamera, ZoomTarget},
-    config::{WorldConfig, WorldConfigReadyState},
+    camera::{MainCamera, ZoomTarget},
+    config::{CameraInitState, WorldConfig, WorldConfigState},
 };
 
 pub(super) struct SetupPlugin;
 
 impl Plugin for SetupPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(WorldConfigReadyState::Complete), setup_camera);
+        app.add_systems(OnEnter(WorldConfigState::Initialized), setup_camera);
     }
 }
 
 fn setup_camera(
     mut commands: Commands,
     world_config: Res<Persistent<WorldConfig>>,
-    mut state: ResMut<NextState<CameraLoadedState>>,
+    mut state: ResMut<NextState<CameraInitState>>,
 ) {
     commands.insert_resource(world_config.camera.clone());
     commands.spawn((
@@ -36,5 +36,5 @@ fn setup_camera(
         },
         world_config.get().camera.zoom_speed.clone(),
     ));
-    state.set(CameraLoadedState::Complete)
+    state.set(CameraInitState::Initialized)
 }

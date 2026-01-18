@@ -12,13 +12,12 @@ pub use setup::*;
 pub use signals::*;
 pub use states::*;
 
-use crate::camera::CameraConfig;
+use crate::camera::ZoomSpeed;
 
 pub struct ConfigPlugin {
     pub config_path: PathBuf,
     pub settings_path: PathBuf,
     pub world_path: PathBuf,
-    pub particle_types_path: PathBuf,
 }
 
 impl Default for ConfigPlugin {
@@ -29,7 +28,6 @@ impl Default for ConfigPlugin {
         Self {
             settings_path: config_path.join("settings"),
             world_path: config_path.join("world"),
-            particle_types_path: config_path.join("particles"),
             config_path,
         }
     }
@@ -40,7 +38,6 @@ impl Plugin for ConfigPlugin {
         let config_path = self.config_path.clone();
         let settings_path = self.settings_path.clone();
         let world_path = self.world_path.clone();
-        let particle_types_path = self.particle_types_path.clone();
 
         let config_path_str = config_path.to_string_lossy().to_string();
         app.register_asset_source(
@@ -53,7 +50,6 @@ impl Plugin for ConfigPlugin {
                 config_path,
                 settings_path,
                 world_path,
-                particle_types_path,
             },
             StatesPlugin,
             SignalsPlugin,
@@ -70,13 +66,7 @@ pub struct SaveWorldSystems;
 pub struct ConfigPath(pub PathBuf);
 
 #[derive(Resource, Clone, Default, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
-pub struct ParticleTypesPath(pub PathBuf);
-
-#[derive(Resource, Clone, Default, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
-pub struct SettingsPath(pub PathBuf);
-
-#[derive(Resource, Clone, Default, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
-pub struct WorldBasePath(pub PathBuf);
+pub struct ActiveWorldPath(pub PathBuf);
 
 #[derive(Resource, Clone, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
 pub struct InitConfig {
@@ -95,7 +85,46 @@ impl Default for InitConfig {
     }
 }
 
+impl InitConfig {
+    pub fn active_world_path(&self) -> &PathBuf {
+        &self.active_world_path
+    }
+}
+
 #[derive(Resource, Clone, Default, Debug, Serialize, Deserialize)]
 pub struct WorldConfig {
     pub camera: CameraConfig,
+}
+
+#[derive(Resource, Clone, Debug, Serialize, Deserialize)]
+pub struct CameraConfig {
+    pub scale: f32,
+    pub zoom_speed: ZoomSpeed,
+    pub position: Vec2,
+}
+
+impl Default for CameraConfig {
+    fn default() -> Self {
+        let scale = 0.25;
+        Self {
+            scale,
+            zoom_speed: ZoomSpeed(8.0),
+            position: Vec2::ZERO,
+        }
+    }
+}
+
+impl CameraConfig {
+    pub fn from_query(query: &Single<(&Transform, &ZoomSpeed, &Projection)>) -> Self {
+        let scale = match query.2 {
+            Projection::Orthographic(ortho) => ortho.scale,
+            _ => unreachable!(),
+        };
+        let position = Vec2::new(query.0.translation.x, query.0.translation.y);
+        Self {
+            scale,
+            zoom_speed: query.1.clone(),
+            position,
+        }
+    }
 }
