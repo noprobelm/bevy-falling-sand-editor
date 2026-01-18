@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
-pub struct UiStatePlugin;
+pub(super) struct StatesPlugin;
 
-impl Plugin for UiStatePlugin {
+impl Plugin for StatesPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<AppState>();
     }

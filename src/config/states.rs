@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
-pub struct ConfigStatePlugin;
+pub(super) struct StatesPlugin;
 
-impl Plugin for ConfigStatePlugin {
+impl Plugin for StatesPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<ConfigPathReadyState>()
             .add_sub_state::<ParticleTypesPathReadyState>()

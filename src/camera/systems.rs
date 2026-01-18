@@ -2,7 +2,7 @@ use bevy::{input::mouse::MouseWheel, prelude::*};
 
 use crate::{
     app_state::AppState,
-    startup::{MainCamera, ZoomSpeed, ZoomTarget},
+    camera::{MainCamera, ZoomSpeed, ZoomTarget},
 };
 
 pub(super) struct SystemsPlugin;

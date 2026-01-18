@@ -2,27 +2,45 @@ use std::path::PathBuf;
 
 use bevy::prelude::*;
 use bevy_falling_sand::prelude::*;
+use serde::{Deserialize, Serialize};
 
-use crate::app_state::{
-    ParticleTypesInitFileReadyState, ParticleTypesLoadedState, ParticleTypesPathReadyState,
+use crate::config::{
+    ParticleTypesInitFileReadyState, ParticleTypesLoadedState, ParticleTypesPath,
+    ParticleTypesPathReadyState,
 };
-use crate::startup::ParticleTypesInitFile;
 
 const DEFAULT_PARTICLES_ASSET: &str = "assets/particles/particles.scn.ron";
 
-pub(crate) struct ParticleTypeStartupPlugin {
+#[derive(Resource, Clone, Default, Eq, PartialEq, Hash, Debug, Serialize, Deserialize, Reflect)]
+pub struct ParticleTypesInitFile(pub PathBuf);
+
+pub struct ParticlesPlugin {
     pub particle_types_init_file: PathBuf,
 }
 
-impl Plugin for ParticleTypeStartupPlugin {
+impl Default for ParticlesPlugin {
+    fn default() -> Self {
+        Self {
+            particle_types_init_file: PathBuf::from("particles.scn.ron"),
+        }
+    }
+}
+
+impl Plugin for ParticlesPlugin {
     fn build(&self, app: &mut App) {
         let particle_types_init_file = self.particle_types_init_file.clone();
         app.add_systems(
             OnEnter(ParticleTypesPathReadyState::Complete),
             move |mut commands: Commands,
+                  particle_types_path: Res<ParticleTypesPath>,
                   mut state: ResMut<NextState<ParticleTypesInitFileReadyState>>| {
+                let particle_types_init_file =
+                    particle_types_path.0.join(particle_types_init_file.clone());
+
                 if !particle_types_init_file.exists() {
-                    let default_path = PathBuf::from(DEFAULT_PARTICLES_ASSET);
+                    let default_path = particle_types_path
+                        .0
+                        .join(PathBuf::from(DEFAULT_PARTICLES_ASSET));
                     if default_path.exists() {
                         if let Err(e) = std::fs::copy(&default_path, &particle_types_init_file) {
                             let warning = format!(

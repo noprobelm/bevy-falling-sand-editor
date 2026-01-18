@@ -1,6 +1,6 @@
-mod app_state;
 mod camera;
-mod startup;
+mod config;
+mod particles;
 mod ui;
 
 use avian2d::prelude::PhysicsDebugPlugin;
@@ -11,11 +11,13 @@ use bevy_falling_sand::prelude::{
     FallingSandDebugPlugin, FallingSandPersistencePlugin, FallingSandPlugin,
 };
 
-use app_state::*;
 use camera::*;
-use startup::*;
+use config::*;
+use particles::*;
 
 use bevy::{prelude::*, window::WindowMode};
+
+use crate::ui::UiPlugin;
 
 fn main() {
     App::new()
@@ -29,10 +31,12 @@ fn main() {
                 }),
                 ..default()
             }),
-            AppStatePlugin,
+            UiPlugin,
+            ConfigPlugin::default(),
             CameraPlugin,
-            StartupPlugin::default(),
+            ParticlesPlugin::default(),
             FallingSandPlugin::default().with_chunk_size(64),
+            FallingSandDebugPlugin,
             // Fall back to /tmp until `WorldPathReady` state indicates `Complete`
             FallingSandPersistencePlugin::new("/tmp/bfs_fallback"),
             PhysicsDebugPlugin,
