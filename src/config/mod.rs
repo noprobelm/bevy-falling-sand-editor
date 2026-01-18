@@ -1,4 +1,5 @@
 mod resources;
+mod setup;
 
 use std::path::PathBuf;
 
@@ -6,6 +7,7 @@ use bevy::asset::io::AssetSource;
 use bevy::prelude::*;
 
 pub use resources::*;
+pub use setup::*;
 
 pub struct ConfigPlugin {
     pub config_path: PathBuf,
@@ -42,7 +44,7 @@ impl Plugin for ConfigPlugin {
                 .with_reader(move || AssetSource::get_default_reader(config_path_str.clone())()),
         );
 
-        app.add_plugins((ResourcesPlugin {
+        app.add_plugins((SetupPlugin {
             config_path,
             settings_path,
             world_path,
