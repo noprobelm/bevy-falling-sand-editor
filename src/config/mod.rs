@@ -76,12 +76,13 @@ pub struct ParticleTypesPath(pub PathBuf);
 pub struct SettingsPath(pub PathBuf);
 
 #[derive(Resource, Clone, Default, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
-pub struct WorldPath(pub PathBuf);
+pub struct WorldBasePath(pub PathBuf);
 
 #[derive(Resource, Clone, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
 pub struct InitConfig {
     settings_init_file: PathBuf,
     particle_types_init_file: PathBuf,
+    active_world_path: PathBuf,
 }
 
 impl Default for InitConfig {
@@ -89,6 +90,7 @@ impl Default for InitConfig {
         Self {
             settings_init_file: PathBuf::from("settings.toml"),
             particle_types_init_file: PathBuf::from("particles.scn.ron"),
+            active_world_path: PathBuf::from("default"),
         }
     }
 }

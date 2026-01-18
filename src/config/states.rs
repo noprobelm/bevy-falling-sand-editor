@@ -7,7 +7,7 @@ impl Plugin for StatesPlugin {
         app.init_state::<ConfigPathReadyState>()
             .add_sub_state::<ParticleTypesPathReadyState>()
             .add_sub_state::<ParticleTypesInitFileReadyState>()
-            .add_sub_state::<WorldPathReadyState>()
+            .add_sub_state::<WorldBasePathReadyState>()
             .add_sub_state::<WorldConfigReadyState>()
             .add_sub_state::<SettingsPathReadyState>()
             .add_sub_state::<ParticleTypesLoadedState>();
@@ -42,7 +42,7 @@ pub enum ParticleTypesInitFileReadyState {
 
 #[derive(SubStates, Clone, Default, Eq, PartialEq, Hash, Debug, Reflect)]
 #[source(ConfigPathReadyState = ConfigPathReadyState::Complete)]
-pub enum WorldPathReadyState {
+pub enum WorldBasePathReadyState {
     #[default]
     Incomplete,
     Complete,
@@ -50,7 +50,7 @@ pub enum WorldPathReadyState {
 }
 
 #[derive(SubStates, Clone, Default, Eq, PartialEq, Hash, Debug, Reflect)]
-#[source(WorldPathReadyState = WorldPathReadyState::Complete)]
+#[source(WorldBasePathReadyState = WorldBasePathReadyState::Complete)]
 pub enum WorldConfigReadyState {
     #[default]
     Incomplete,

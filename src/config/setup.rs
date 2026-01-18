@@ -2,7 +2,7 @@ use std::{fs, path::PathBuf};
 
 use crate::config::{
     ConfigPath, ConfigPathReadyState, InitConfig, ParticleTypesPath, ParticleTypesPathReadyState,
-    SettingsPath, WorldConfig, WorldConfigReadyState, WorldPath, WorldPathReadyState,
+    SettingsPath, WorldBasePath, WorldBasePathReadyState, WorldConfig, WorldConfigReadyState,
 };
 use bevy::prelude::*;
 use bevy_falling_sand::persistence::ParticlePersistenceConfig;
@@ -59,15 +59,15 @@ impl Plugin for SetupPlugin {
                 {
                     let path = world_path;
                     move |mut commands: Commands,
-                          mut state: ResMut<NextState<WorldPathReadyState>>| {
+                          mut state: ResMut<NextState<WorldBasePathReadyState>>| {
                         if let Err(e) = fs::create_dir_all(&path) {
                             let warning = format!("Failed to create directory {:?}: {}", path, e);
                             warn!(warning);
-                            state.set(<WorldPathReadyState>::Failed(warning));
+                            state.set(<WorldBasePathReadyState>::Failed(warning));
                             return;
                         }
-                        commands.insert_resource(WorldPath(path.clone()));
-                        state.set(<WorldPathReadyState>::Complete);
+                        commands.insert_resource(WorldBasePath(path.clone()));
+                        state.set(<WorldBasePathReadyState>::Complete);
                     }
                 },
                 setup_config_path!(
@@ -78,16 +78,19 @@ impl Plugin for SetupPlugin {
             ),
         )
         .add_systems(OnEnter(ConfigPathReadyState::Complete), load_init_config)
-        .add_systems(OnEnter(WorldPathReadyState::Complete), load_world_config)
         .add_systems(
-            OnEnter(WorldPathReadyState::Complete),
+            OnEnter(WorldBasePathReadyState::Complete),
+            load_world_config,
+        )
+        .add_systems(
+            OnEnter(WorldBasePathReadyState::Complete),
             set_bevy_falling_sand_persistence_path,
         );
     }
 }
 
 fn set_bevy_falling_sand_persistence_path(
-    world_path: Res<WorldPath>,
+    world_path: Res<WorldBasePath>,
     mut persistence_config: ResMut<ParticlePersistenceConfig>,
 ) {
     persistence_config.save_path = world_path.0.clone();
