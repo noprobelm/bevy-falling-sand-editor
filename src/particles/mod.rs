@@ -55,8 +55,6 @@ impl Plugin for ParticlesPlugin {
                 }
 
                 commands.insert_resource(ParticleTypesInitFile(particle_types_file.clone()));
-
-                // Load particle types
                 msgw_load_particles_scene.write(LoadParticleTypesSignal(particle_types_file));
             },
         );
