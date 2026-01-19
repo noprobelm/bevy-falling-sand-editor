@@ -11,14 +11,9 @@ pub(super) struct SignalsPlugin;
 impl Plugin for SignalsPlugin {
     fn build(&self, app: &mut App) {
         app.add_message::<SaveWorldSignal>()
-            .add_systems(Update, (save_camera, save_world).chain())
-            .configure_sets(Update, SaveWorldSystems);
+            .add_systems(Update, (save_camera, save_world).chain());
     }
 }
-
-/// System set for saving the world to disk.
-#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct SaveWorldSystems;
 
 #[derive(Event, Message, Default, Eq, PartialEq, Hash, Debug, Reflect)]
 pub struct SaveWorldSignal;
