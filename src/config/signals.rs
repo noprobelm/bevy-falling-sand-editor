@@ -11,10 +11,7 @@ pub(super) struct SignalsPlugin;
 impl Plugin for SignalsPlugin {
     fn build(&self, app: &mut App) {
         app.add_message::<SaveWorldSignal>()
-            .add_systems(
-                Update,
-                (extract_camera_config, persist_world_config).chain(),
-            )
+            .add_systems(Update, (save_camera, save_world).chain())
             .configure_sets(Update, SaveWorldSystems);
     }
 }
@@ -26,7 +23,7 @@ pub struct SaveWorldSystems;
 #[derive(Event, Message, Default, Eq, PartialEq, Hash, Debug, Reflect)]
 pub struct SaveWorldSignal;
 
-fn extract_camera_config(
+fn save_camera(
     msgr_save_world: MessageReader<SaveWorldSignal>,
     mut commands: Commands,
     query: Single<(&Transform, &ZoomSpeed, &Projection)>,
@@ -36,7 +33,7 @@ fn extract_camera_config(
     }
 }
 
-fn persist_world_config(
+fn save_world(
     msgr_save_world: MessageReader<SaveWorldSignal>,
     mut persistent: ResMut<Persistent<WorldConfig>>,
     camera_config: Res<CameraConfig>,
