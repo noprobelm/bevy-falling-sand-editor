@@ -6,7 +6,7 @@ use crate::{
 };
 use bevy::prelude::*;
 use bevy_falling_sand::{
-    assets::LoadParticleTypesSignal, core::ChunkLoader, persistence::ParticlePersistenceConfig,
+    core::ChunkLoader, persistence::ParticlePersistenceConfig, prelude::LoadParticleTypesSignal,
 };
 use bevy_persistent::{Persistent, StorageFormat};
 
