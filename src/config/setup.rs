@@ -12,6 +12,7 @@ use bevy_persistent::{Persistent, StorageFormat};
 
 const SETTINGS_PATH: &str = "settings";
 const WORLD_PATH: &str = "world";
+const DATA_PATH: &str = "data";
 const PARTICLE_TYPES_FILE: &str = "particles.scn.ron";
 const DEFAULT_PARTICLES_ASSET: &str = "assets/particles/particles.scn.ron";
 
@@ -23,7 +24,7 @@ impl Plugin for SetupPlugin {
     fn build(&self, app: &mut App) {
         let config_path = self.config_path.clone();
 
-        // Create config path
+        // Create base config path
         app.add_systems(
             Startup,
             (
@@ -33,12 +34,19 @@ impl Plugin for SetupPlugin {
                     });
                     commands.insert_resource(ConfigPath(config_path.clone()));
                 },
-                load_init_config,
+                // Setup subpaths in base config path
                 setup_settings_path,
                 setup_world_path,
-                load_world_config,
-                load_particle_types,
-                setup_bevy_falling_sand_persistence_path,
+                // Load init.toml for startup information
+                load_init_config,
+                // From init.toml, load the necessary config subpaths
+                setup_active_world_path,
+                setup_particle_types_path,
+                // Load the particle types file from the active world path
+                load_particle_types_file,
+                // Configure bfs persistence to update from fallback path to active world path
+                configure_bfs_persistence,
+                // Load camera settings from init.toml
                 setup_camera,
             )
                 .chain(),
@@ -90,7 +98,7 @@ fn setup_world_path(config_path: Res<ConfigPath>) {
 /// # Panics
 ///
 /// Panics if we fail to create any critical path or load the `world.toml` file.
-fn load_world_config(
+fn setup_active_world_path(
     mut commands: Commands,
     config_path: Res<ConfigPath>,
     init_config: Res<Persistent<InitConfig>>,
@@ -107,7 +115,7 @@ fn load_world_config(
         )
     });
 
-    let data_path = active_world_path.join("data");
+    let data_path = active_world_path.join(DATA_PATH);
     fs::create_dir_all(&data_path)
         .unwrap_or_else(|_| panic!("Failed to create data directory {:?}", data_path));
 
@@ -125,10 +133,7 @@ fn load_world_config(
 }
 
 /// Try to load the particle types set for this world.
-fn load_particle_types(
-    active_world_path: Res<ActiveWorldPath>,
-    mut msgw_load_particles_scene: MessageWriter<LoadParticleTypesSignal>,
-) {
+fn setup_particle_types_path(active_world_path: Res<ActiveWorldPath>) {
     let particle_types_file = active_world_path.0.join(PARTICLE_TYPES_FILE);
     if !particle_types_file.exists() {
         let default_path = PathBuf::from(DEFAULT_PARTICLES_ASSET);
@@ -145,15 +150,21 @@ fn load_particle_types(
             warn!("Default particles file not found at {:?}", default_path);
         }
     }
+}
 
+fn load_particle_types_file(
+    active_world_path: Res<ActiveWorldPath>,
+    mut msgw_load_particles_scene: MessageWriter<LoadParticleTypesSignal>,
+) {
+    let particle_types_file = active_world_path.0.join(PARTICLE_TYPES_FILE);
     msgw_load_particles_scene.write(LoadParticleTypesSignal(particle_types_file));
 }
 
-fn setup_bevy_falling_sand_persistence_path(
+fn configure_bfs_persistence(
     active_world_path: Res<ActiveWorldPath>,
     mut persistence_config: ResMut<ParticlePersistenceConfig>,
 ) {
-    persistence_config.save_path = active_world_path.0.join("data");
+    persistence_config.save_path = active_world_path.0.join(DATA_PATH);
 }
 
 fn setup_camera(mut commands: Commands, world_config: Res<Persistent<WorldConfig>>) {
