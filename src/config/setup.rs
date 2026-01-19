@@ -1,96 +1,115 @@
 use std::{fs, path::PathBuf};
 
-use crate::config::{
-    ActiveWorldPath, ConfigPath, ConfigPathState, InitConfig, InitConfigState, WorldConfig,
-    WorldConfigState,
+use crate::{
+    camera::{MainCamera, ZoomTarget},
+    config::{ActiveWorldPath, ConfigPath, InitConfig, WorldConfig},
 };
 use bevy::prelude::*;
-use bevy_falling_sand::persistence::ParticlePersistenceConfig;
+use bevy_falling_sand::{
+    assets::LoadParticleTypesSignal, core::ChunkLoader, persistence::ParticlePersistenceConfig,
+};
 use bevy_persistent::{Persistent, StorageFormat};
+
+const SETTINGS_PATH: &str = "settings";
+const WORLD_PATH: &str = "world";
+const PARTICLE_TYPES_FILE: &str = "particles.scn.ron";
+const DEFAULT_PARTICLES_ASSET: &str = "assets/particles/particles.scn.ron";
 
 pub struct SetupPlugin {
     pub config_path: PathBuf,
-    pub settings_path: PathBuf,
-    pub world_path: PathBuf,
 }
 
 impl Plugin for SetupPlugin {
     fn build(&self, app: &mut App) {
         let config_path = self.config_path.clone();
-        let settings_path = self.settings_path.clone();
-        let world_path = self.world_path.clone();
 
-        // Step 1: Create config path on startup
+        // Create config path
         app.add_systems(
             Startup,
-            move |mut commands: Commands, mut state: ResMut<NextState<ConfigPathState>>| {
-                fs::create_dir_all(&config_path).expect(&format!(
-                    "Failed to create config directory {:?}",
-                    config_path
-                ));
-                commands.insert_resource(ConfigPath(config_path.clone()));
-                state.set(ConfigPathState::Initialized)
-            },
-        );
-
-        // Step 2: Create subpaths and load init.toml
-        app.add_systems(OnEnter(ConfigPathState::Initialized), {
-            let settings_path = settings_path.clone();
-            let world_path = world_path.clone();
-            move |mut commands: Commands,
-                  config_path: Res<ConfigPath>,
-                  mut state: ResMut<NextState<InitConfigState>>| {
-                fs::create_dir_all(&settings_path).expect(&format!(
-                    "Failed to create settings directory {:?}",
-                    settings_path
-                ));
-
-                fs::create_dir_all(&world_path).expect(&format!(
-                    "Failed to create world directory {:?}",
-                    world_path
-                ));
-
-                commands.insert_resource(
-                    Persistent::<InitConfig>::builder()
-                        .name("init")
-                        .format(StorageFormat::Toml)
-                        .path(config_path.0.clone().join("init.toml"))
-                        .default(InitConfig::default())
-                        .build()
-                        .expect("Failed to load init.toml"),
-                );
-
-                state.set(InitConfigState::Initialized);
-            }
-        });
-
-        // Step 3: Create active world path and load world.toml
-        app.add_systems(
-            OnEnter(InitConfigState::Initialized),
-            (load_world_config, set_bevy_falling_sand_persistence_path).chain(),
+            (
+                move |mut commands: Commands| {
+                    fs::create_dir_all(&config_path).unwrap_or_else(|_| {
+                        panic!("Failed to create config directory {:?}", config_path)
+                    });
+                    commands.insert_resource(ConfigPath(config_path.clone()));
+                },
+                load_init_config,
+                setup_settings_path,
+                setup_world_path,
+                load_world_config,
+                load_particle_types,
+                setup_bevy_falling_sand_persistence_path,
+                setup_camera,
+            )
+                .chain(),
         );
     }
 }
 
+/// Load init.toml to an `InitConfig` resource.
+///
+/// # Panics
+///
+/// Panics if `init.toml` fails to load.
+fn load_init_config(mut commands: Commands, config_path: Res<ConfigPath>) {
+    commands.insert_resource(
+        Persistent::<InitConfig>::builder()
+            .name("init")
+            .format(StorageFormat::Toml)
+            .path(config_path.0.clone().join("init.toml"))
+            .default(InitConfig::default())
+            .build()
+            .expect("Failed to load init.toml"),
+    );
+}
+
+/// Try to create the `settings` subpath.
+///
+///# Panics
+///
+/// Panics if path creation fails.
+fn setup_settings_path(config_path: Res<ConfigPath>) {
+    let settings_path = config_path.0.clone().join(SETTINGS_PATH);
+    fs::create_dir_all(&settings_path)
+        .unwrap_or_else(|_| panic!("Failed to create settings path {:?}", settings_path));
+}
+
+/// Try to create the `world` subpath.
+///
+/// # Panics
+///
+/// Panics if path creation fails.
+fn setup_world_path(config_path: Res<ConfigPath>) {
+    let world_path = config_path.0.clone().join(WORLD_PATH);
+    fs::create_dir_all(&world_path)
+        .unwrap_or_else(|_| panic!("Failed to create world path {:?}", world_path));
+}
+
+/// Try to load the config data for this world.
+///
+/// # Panics
+///
+/// Panics if we fail to create any critical path or load the `world.toml` file.
 fn load_world_config(
     mut commands: Commands,
     config_path: Res<ConfigPath>,
     init_config: Res<Persistent<InitConfig>>,
-    mut state: ResMut<NextState<WorldConfigState>>,
 ) {
     let active_world_path = config_path
         .0
-        .join("world")
+        .join(WORLD_PATH)
         .join(init_config.get().active_world_path());
 
-    fs::create_dir_all(&active_world_path).expect(&format!(
-        "Failed to create active world directory {:?}",
-        active_world_path
-    ));
+    fs::create_dir_all(&active_world_path).unwrap_or_else(|_| {
+        panic!(
+            "Failed to create active world directory {:?}",
+            active_world_path
+        )
+    });
 
     let data_path = active_world_path.join("data");
     fs::create_dir_all(&data_path)
-        .expect(&format!("Failed to create data directory {:?}", data_path));
+        .unwrap_or_else(|_| panic!("Failed to create data directory {:?}", data_path));
 
     commands.insert_resource(ActiveWorldPath(active_world_path.clone()));
 
@@ -103,13 +122,55 @@ fn load_world_config(
             .build()
             .expect("Failed to load world.toml"),
     );
-
-    state.set(WorldConfigState::Initialized);
 }
 
-fn set_bevy_falling_sand_persistence_path(
+/// Try to load the particle types set for this world.
+fn load_particle_types(
+    active_world_path: Res<ActiveWorldPath>,
+    mut msgw_load_particles_scene: MessageWriter<LoadParticleTypesSignal>,
+) {
+    let particle_types_file = active_world_path.0.join(PARTICLE_TYPES_FILE);
+    if !particle_types_file.exists() {
+        let default_path = PathBuf::from(DEFAULT_PARTICLES_ASSET);
+        if default_path.exists() {
+            if let Err(e) = std::fs::copy(&default_path, &particle_types_file) {
+                warn!(
+                    "Failed to copy default particles file to {:?}: {}",
+                    particle_types_file, e
+                );
+                return;
+            }
+            info!("Copied default particles file to {:?}", particle_types_file);
+        } else {
+            warn!("Default particles file not found at {:?}", default_path);
+        }
+    }
+
+    msgw_load_particles_scene.write(LoadParticleTypesSignal(particle_types_file));
+}
+
+fn setup_bevy_falling_sand_persistence_path(
     active_world_path: Res<ActiveWorldPath>,
     mut persistence_config: ResMut<ParticlePersistenceConfig>,
 ) {
     persistence_config.save_path = active_world_path.0.join("data");
+}
+
+fn setup_camera(mut commands: Commands, world_config: Res<Persistent<WorldConfig>>) {
+    commands.insert_resource(world_config.camera.clone());
+    commands.spawn((
+        Camera2d,
+        Projection::Orthographic(OrthographicProjection {
+            near: -1000.0,
+            scale: world_config.get().camera.scale,
+            ..OrthographicProjection::default_2d()
+        }),
+        MainCamera,
+        ChunkLoader,
+        ZoomTarget {
+            target_scale: world_config.get().camera.scale,
+            current_scale: world_config.get().camera.scale,
+        },
+        world_config.get().camera.zoom_speed.clone(),
+    ));
 }

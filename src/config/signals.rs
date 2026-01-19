@@ -3,22 +3,25 @@ use bevy_persistent::Persistent;
 
 use crate::{
     camera::ZoomSpeed,
-    config::{CameraConfig, SaveWorldSystems, WorldConfig, WorldConfigState},
+    config::{CameraConfig, WorldConfig},
 };
 
 pub(super) struct SignalsPlugin;
 
 impl Plugin for SignalsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_message::<SaveWorldSignal>().add_systems(
-            Update,
-            (extract_camera_config, persist_world_config)
-                .chain()
-                .run_if(in_state(WorldConfigState::Initialized))
-                .after(SaveWorldSystems),
-        );
+        app.add_message::<SaveWorldSignal>()
+            .add_systems(
+                Update,
+                (extract_camera_config, persist_world_config).chain(),
+            )
+            .configure_sets(Update, SaveWorldSystems);
     }
 }
+
+/// System set for saving the world to disk.
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct SaveWorldSystems;
 
 #[derive(Event, Message, Default, Eq, PartialEq, Hash, Debug, Reflect)]
 pub struct SaveWorldSignal;
