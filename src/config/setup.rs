@@ -13,6 +13,10 @@ use bevy_persistent::{Persistent, StorageFormat};
 const SETTINGS_PATH: &str = "settings";
 const WORLD_PATH: &str = "world";
 const DATA_PATH: &str = "data";
+
+const INIT_TOML_FILE: &str = "init.toml";
+const WORLD_TOML_FILE: &str = "world.toml";
+
 const PARTICLE_TYPES_FILE: &str = "particles.scn.ron";
 const DEFAULT_PARTICLES_ASSET: &str = "assets/particles/particles.scn.ron";
 
@@ -42,13 +46,15 @@ impl Plugin for SetupPlugin {
                 // From init.toml, load the necessary config subpaths
                 setup_active_world_path,
                 setup_particle_types_path,
+                // Load world.toml for the world configuration
+                load_world_config,
                 // Load the particle types file from the active world path
                 load_particle_types_file,
                 // Configure bfs persistence to update from fallback path to active world path
                 configure_bfs_persistence,
                 // Load camera settings from init.toml. This has the `ChunkLoader` component, so it
                 // must be ran after we configure the `ParticlePersistenceConfig` resource.
-                load_camera_config,
+                load_camera_world_config,
             )
                 .chain(),
         );
@@ -65,10 +71,10 @@ fn load_init_config(mut commands: Commands, config_path: Res<ConfigPath>) {
         Persistent::<InitConfig>::builder()
             .name("init")
             .format(StorageFormat::Toml)
-            .path(config_path.0.clone().join("init.toml"))
+            .path(config_path.0.clone().join(INIT_TOML_FILE))
             .default(InitConfig::default())
             .build()
-            .expect("Failed to load init.toml"),
+            .expect("Failed to load {INIT_TOML_FILE}"),
     );
 }
 
@@ -120,16 +126,19 @@ fn setup_active_world_path(
     fs::create_dir_all(&data_path)
         .unwrap_or_else(|_| panic!("Failed to create data directory {:?}", data_path));
 
-    commands.insert_resource(ActiveWorldPath(active_world_path.clone()));
+    commands.insert_resource(ActiveWorldPath(active_world_path));
+}
 
+// Try to load the world.toml file
+fn load_world_config(mut commands: Commands, active_world_path: Res<ActiveWorldPath>) {
     commands.insert_resource(
         Persistent::<WorldConfig>::builder()
             .name("world_meta")
             .format(StorageFormat::Toml)
-            .path(active_world_path.join("world.toml"))
+            .path(active_world_path.0.join(WORLD_TOML_FILE))
             .default(WorldConfig::default())
             .build()
-            .expect("Failed to load world.toml"),
+            .expect("Failed to load {WORLD_TOML_FILE}"),
     );
 }
 
@@ -168,7 +177,7 @@ fn configure_bfs_persistence(
     persistence_config.save_path = active_world_path.0.join(DATA_PATH);
 }
 
-fn load_camera_config(mut commands: Commands, world_config: Res<Persistent<WorldConfig>>) {
+fn load_camera_world_config(mut commands: Commands, world_config: Res<Persistent<WorldConfig>>) {
     commands.insert_resource(world_config.camera.clone());
     commands.spawn((
         Camera2d,
