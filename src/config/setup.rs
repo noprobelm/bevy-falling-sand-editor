@@ -14,7 +14,6 @@ use bevy_falling_sand::{
 use bevy_persistent::{Persistent, StorageFormat};
 use leafwing_input_manager::prelude::InputMap;
 
-const SETTINGS_PATH: &str = "settings";
 const WORLD_PATH: &str = "world";
 const DATA_PATH: &str = "data";
 
@@ -36,11 +35,12 @@ const DEFAULT_PARTICLES_ASSET: &str = "assets/particles/particles.scn.ron";
 ///    chunks/particle spatial information
 /// 2. Settings setup
 ///    a. Load `settings.toml` as a `Persistent<SettingsConfig>` resource
+///    b. Load the camera settings from the `Persistent<SettingsConfig`> resource
 /// 3. World Setup
 ///    a. Load the active world's `world.toml` file as a `Persistent<WorldConfig>` resource
 ///    b. Load the active world's particle types file using the `LoadParticleTypesSignal`. Also,
 ///    insert the `ParticleTypesFile` resource.
-///    c. Load the camera configuration from the `WorldConfig` and `SettingsConfig` resources.
+///    c. Load the camera configuration from the `Persistent<WorldConfig>` resource.
 pub struct SetupPlugin {
     pub config_path: PathBuf,
 }
@@ -59,12 +59,11 @@ impl Plugin for SetupPlugin {
                     });
                     commands.insert_resource(ConfigPath(config_path.clone()));
                 },
-                // Setup subpaths in base config path
-                load_settings_base_path,
+                // Setup world subpath
                 load_world_base_path,
                 // Load init.toml for the startup configuration
-                load_init_config_file,
                 load_settings_config_file,
+                load_init_config_file,
                 // From init.toml, load the necessary config subpaths
                 load_active_world_path,
                 // Configure bfs persistence to update from fallback path to active world path
@@ -85,6 +84,30 @@ impl Plugin for SetupPlugin {
     }
 }
 
+/// Try to create the `world` subpath.
+///
+/// # Panics
+///
+/// Panics if path creation fails.
+fn load_world_base_path(config_path: Res<ConfigPath>) {
+    let world_path = config_path.0.clone().join(WORLD_PATH);
+    fs::create_dir_all(&world_path)
+        .unwrap_or_else(|_| panic!("Failed to create world path {:?}", world_path));
+}
+
+// Try to load the `settings.toml` file
+fn load_settings_config_file(mut commands: Commands, config_path: Res<ConfigPath>) {
+    commands.insert_resource(
+        Persistent::<SettingsConfig>::builder()
+            .name("settings")
+            .format(StorageFormat::Toml)
+            .path(config_path.0.join(SETTINGS_TOML_FILE))
+            .default(SettingsConfig::default())
+            .build()
+            .expect("Failed to load {SETTINGS_TOML_FILE}"),
+    );
+}
+
 /// Load init.toml to an `InitConfig` resource.
 ///
 /// # Panics
@@ -100,28 +123,6 @@ fn load_init_config_file(mut commands: Commands, config_path: Res<ConfigPath>) {
             .build()
             .expect("Failed to load {INIT_TOML_FILE}"),
     );
-}
-
-/// Try to create the `settings` subpath.
-///
-///# Panics
-///
-/// Panics if path creation fails.
-fn load_settings_base_path(config_path: Res<ConfigPath>) {
-    let settings_path = config_path.0.clone().join(SETTINGS_PATH);
-    fs::create_dir_all(&settings_path)
-        .unwrap_or_else(|_| panic!("Failed to create settings path {:?}", settings_path));
-}
-
-/// Try to create the `world` subpath.
-///
-/// # Panics
-///
-/// Panics if path creation fails.
-fn load_world_base_path(config_path: Res<ConfigPath>) {
-    let world_path = config_path.0.clone().join(WORLD_PATH);
-    fs::create_dir_all(&world_path)
-        .unwrap_or_else(|_| panic!("Failed to create world path {:?}", world_path));
 }
 
 /// Try to load the config data for this world.
@@ -158,19 +159,6 @@ fn configure_bfs_persistence(
     mut persistence_config: ResMut<ParticlePersistenceConfig>,
 ) {
     persistence_config.save_path = active_world_path.0.join(DATA_PATH);
-}
-
-// Try to load the `settings.toml` file
-fn load_settings_config_file(mut commands: Commands, config_path: Res<ConfigPath>) {
-    commands.insert_resource(
-        Persistent::<SettingsConfig>::builder()
-            .name("settings")
-            .format(StorageFormat::Toml)
-            .path(config_path.0.join(SETTINGS_TOML_FILE))
-            .default(SettingsConfig::default())
-            .build()
-            .expect("Failed to load {SETTINGS_TOML_FILE}"),
-    );
 }
 
 // Try to load the `world.toml` file
