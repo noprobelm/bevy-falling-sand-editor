@@ -3,8 +3,8 @@ use std::{fs, path::PathBuf};
 use crate::{
     camera::{MainCamera, ZoomTarget},
     config::{
-        ActiveWorldPath, CameraAction, ConfigPath, InitConfig, ParticleTypesFile, SettingsConfig,
-        WorldConfig,
+        ActiveSettingsPath, ActiveWorldPath, CameraAction, ConfigPath, InitConfig,
+        ParticleTypesFile, SettingsConfig, WorldConfig,
     },
 };
 use bevy::prelude::*;
@@ -19,24 +19,23 @@ const DATA_PATH: &str = "data";
 
 const INIT_TOML_FILE: &str = "init.toml";
 const WORLD_TOML_FILE: &str = "world.toml";
-const SETTINGS_TOML_FILE: &str = "settings.toml";
 
 // JAB TODO: A temporary solution until we have the editor up and running. It's currently helpful
 // to have some default particles to fall back to.
 const DEFAULT_PARTICLES_ASSET: &str = "assets/particles/particles.scn.ron";
 
 /// Loads the application configuration in several stages:
-/// 1. Initial Configuration Setup
+/// 1. Load initial configuration
 ///    a. Ensure the base configuration path and subpaths are set up
 ///    b. Load `init.toml` as a `Persistent<InitConfig>` resource
 ///    c. From `init.toml`, ensure the active world path is set up and insert the `ActiveWorldPath`
 ///    resource.
 ///    d. Update the `ParticlePersistenceConfig` to point to our active world data path for saving
 ///    chunks/particle spatial information
-/// 2. Settings setup
+/// 2. Load settings
 ///    a. Load `settings.toml` as a `Persistent<SettingsConfig>` resource
 ///    b. Load the camera settings from the `Persistent<SettingsConfig`> resource
-/// 3. World Setup
+/// 3. Load world configuration
 ///    a. Load the active world's `world.toml` file as a `Persistent<WorldConfig>` resource
 ///    b. Load the active world's particle types file using the `LoadParticleTypesSignal`. Also,
 ///    insert the `ParticleTypesFile` resource.
@@ -61,9 +60,10 @@ impl Plugin for SetupPlugin {
                 },
                 // Setup world subpath
                 load_world_base_path,
-                // Load init.toml for the startup configuration
-                load_settings_config_file,
+                // Load settings.toml for the initialization info
                 load_init_config_file,
+                // Load settings.toml for the settings info
+                load_settings_config_file,
                 // From init.toml, load the necessary config subpaths
                 load_active_world_path,
                 // Configure bfs persistence to update from fallback path to active world path
@@ -95,19 +95,6 @@ fn load_world_base_path(config_path: Res<ConfigPath>) {
         .unwrap_or_else(|_| panic!("Failed to create world path {:?}", world_path));
 }
 
-// Try to load the `settings.toml` file
-fn load_settings_config_file(mut commands: Commands, config_path: Res<ConfigPath>) {
-    commands.insert_resource(
-        Persistent::<SettingsConfig>::builder()
-            .name("settings")
-            .format(StorageFormat::Toml)
-            .path(config_path.0.join(SETTINGS_TOML_FILE))
-            .default(SettingsConfig::default())
-            .build()
-            .expect("Failed to load {SETTINGS_TOML_FILE}"),
-    );
-}
-
 /// Load init.toml to an `InitConfig` resource.
 ///
 /// # Panics
@@ -123,6 +110,29 @@ fn load_init_config_file(mut commands: Commands, config_path: Res<ConfigPath>) {
             .build()
             .expect("Failed to load {INIT_TOML_FILE}"),
     );
+}
+
+// Try to load the `settings.toml` file
+fn load_settings_config_file(
+    mut commands: Commands,
+    config_path: Res<ConfigPath>,
+    init_config: Res<Persistent<InitConfig>>,
+) {
+    let settings_file_path = config_path
+        .0
+        .join(WORLD_PATH)
+        .join(init_config.get().settings_init_file());
+
+    commands.insert_resource(
+        Persistent::<SettingsConfig>::builder()
+            .name("settings")
+            .format(StorageFormat::Toml)
+            .path(&settings_file_path)
+            .default(SettingsConfig::default())
+            .build()
+            .expect("Failed to load {settings_file_path}"),
+    );
+    commands.insert_resource(ActiveSettingsPath(settings_file_path));
 }
 
 /// Try to load the config data for this world.
