@@ -1,5 +1,6 @@
 mod camera;
 mod config;
+mod setup;
 mod ui;
 
 use avian2d::prelude::PhysicsDebugPlugin;
@@ -12,6 +13,7 @@ use bevy_falling_sand::prelude::{
 
 use camera::*;
 use config::*;
+use setup::*;
 
 use bevy::{prelude::*, window::WindowMode};
 
@@ -29,8 +31,9 @@ fn main() {
                 }),
                 ..default()
             }),
+            SetupPlugin::default(),
+            ConfigPlugin,
             UiPlugin,
-            ConfigPlugin::default(),
             CameraPlugin,
             FallingSandPlugin::default().with_chunk_size(64),
             FallingSandDebugPlugin,
