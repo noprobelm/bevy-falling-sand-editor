@@ -46,8 +46,9 @@ impl Plugin for SetupPlugin {
                 load_particle_types_file,
                 // Configure bfs persistence to update from fallback path to active world path
                 configure_bfs_persistence,
-                // Load camera settings from init.toml
-                setup_camera,
+                // Load camera settings from init.toml. This has the `ChunkLoader` component, so it
+                // must be ran after we configure the `ParticlePersistenceConfig` resource.
+                load_camera_config,
             )
                 .chain(),
         );
@@ -167,7 +168,7 @@ fn configure_bfs_persistence(
     persistence_config.save_path = active_world_path.0.join(DATA_PATH);
 }
 
-fn setup_camera(mut commands: Commands, world_config: Res<Persistent<WorldConfig>>) {
+fn load_camera_config(mut commands: Commands, world_config: Res<Persistent<WorldConfig>>) {
     commands.insert_resource(world_config.camera.clone());
     commands.spawn((
         Camera2d,
