@@ -1,7 +1,9 @@
 use bevy::{input::mouse::MouseWheel, prelude::*};
+use leafwing_input_manager::prelude::ActionState;
 
 use crate::{
     camera::{MainCamera, ZoomSpeed, ZoomTarget},
+    config::CameraAction,
     ui::AppState,
 };
 
@@ -25,24 +27,24 @@ pub struct CameraSystems;
 
 fn pan_camera(
     mut camera_query: Query<(&mut Transform, &ZoomTarget), With<MainCamera>>,
-    keys: Res<ButtonInput<KeyCode>>,
+    action_state: Single<&ActionState<CameraAction>>,
 ) -> Result {
     let (mut transform, zoom_target) = camera_query.single_mut()?;
     let pan_speed = 10. * zoom_target.current_scale;
 
-    if keys.pressed(KeyCode::KeyW) {
+    if action_state.pressed(&CameraAction::PanUp) {
         transform.translation.y += pan_speed;
     }
 
-    if keys.pressed(KeyCode::KeyA) {
+    if action_state.pressed(&CameraAction::PanLeft) {
         transform.translation.x -= pan_speed;
     }
 
-    if keys.pressed(KeyCode::KeyS) {
+    if action_state.pressed(&CameraAction::PanDown) {
         transform.translation.y -= pan_speed;
     }
 
-    if keys.pressed(KeyCode::KeyD) {
+    if action_state.pressed(&CameraAction::PanRight) {
         transform.translation.x += pan_speed;
     }
     Ok(())

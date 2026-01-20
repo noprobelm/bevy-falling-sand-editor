@@ -26,6 +26,7 @@ impl Default for ConfigPlugin {
 
 impl Plugin for ConfigPlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugins(ResourcesPlugin);
         let config_path = self.config_path.clone();
         let config_path_str = config_path.to_string_lossy().to_string();
         app.register_asset_source(

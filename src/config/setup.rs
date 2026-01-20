@@ -2,13 +2,17 @@ use std::{fs, path::PathBuf};
 
 use crate::{
     camera::{MainCamera, ZoomTarget},
-    config::{ActiveWorldPath, ConfigPath, InitConfig, WorldConfig},
+    config::{
+        ActiveWorldPath, CameraAction, ConfigPath, InitConfig, ParticleTypesFile, SettingsConfig,
+        WorldConfig,
+    },
 };
 use bevy::prelude::*;
 use bevy_falling_sand::{
     core::ChunkLoader, persistence::ParticlePersistenceConfig, prelude::LoadParticleTypesSignal,
 };
 use bevy_persistent::{Persistent, StorageFormat};
+use leafwing_input_manager::prelude::InputMap;
 
 const SETTINGS_PATH: &str = "settings";
 const WORLD_PATH: &str = "world";
@@ -16,10 +20,27 @@ const DATA_PATH: &str = "data";
 
 const INIT_TOML_FILE: &str = "init.toml";
 const WORLD_TOML_FILE: &str = "world.toml";
+const SETTINGS_TOML_FILE: &str = "settings.toml";
 
-const PARTICLE_TYPES_FILE: &str = "particles.scn.ron";
+// JAB TODO: A temporary solution until we have the editor up and running. It's currently helpful
+// to have some default particles to fall back to.
 const DEFAULT_PARTICLES_ASSET: &str = "assets/particles/particles.scn.ron";
 
+/// Loads the application configuration in several stages:
+/// 1. Initial Configuration Setup
+///    a. Ensure the base configuration path and subpaths are set up
+///    b. Load `init.toml` as a `Persistent<InitConfig>` resource
+///    c. From `init.toml`, ensure the active world path is set up and insert the `ActiveWorldPath`
+///    resource.
+///    d. Update the `ParticlePersistenceConfig` to point to our active world data path for saving
+///    chunks/particle spatial information
+/// 2. Settings setup
+///    a. Load `settings.toml` as a `Persistent<SettingsConfig>` resource
+/// 3. World Setup
+///    a. Load the active world's `world.toml` file as a `Persistent<WorldConfig>` resource
+///    b. Load the active world's particle types file using the `LoadParticleTypesSignal`. Also,
+///    insert the `ParticleTypesFile` resource.
+///    c. Load the camera configuration from the `WorldConfig` and `SettingsConfig` resources.
 pub struct SetupPlugin {
     pub config_path: PathBuf,
 }
@@ -39,22 +60,25 @@ impl Plugin for SetupPlugin {
                     commands.insert_resource(ConfigPath(config_path.clone()));
                 },
                 // Setup subpaths in base config path
-                setup_settings_path,
-                setup_world_path,
-                // Load init.toml for startup information
-                load_init_config,
+                load_settings_base_path,
+                load_world_base_path,
+                // Load init.toml for the startup configuration
+                load_init_config_file,
+                load_settings_file,
                 // From init.toml, load the necessary config subpaths
-                setup_active_world_path,
-                setup_particle_types_path,
-                // Load world.toml for the world configuration
-                load_world_config,
-                // Load the particle types file from the active world path
-                load_particle_types_file,
+                load_active_world_path,
                 // Configure bfs persistence to update from fallback path to active world path
                 configure_bfs_persistence,
-                // Load camera settings from init.toml. This has the `ChunkLoader` component, so it
-                // must be ran after we configure the `ParticlePersistenceConfig` resource.
-                load_camera_world_config,
+                // Load world.toml for the active world configuration
+                load_world_config_file,
+                // Load the particle types from `world.toml`
+                load_world_particle_types_file,
+                // Spawn the `MainCamera` entity
+                spawn_camera,
+                // Load camera state information from `world.toml`
+                load_camera_world_state,
+                // Load camera settings from `settings.toml`
+                load_camera_settings,
             )
                 .chain(),
         );
@@ -66,7 +90,7 @@ impl Plugin for SetupPlugin {
 /// # Panics
 ///
 /// Panics if `init.toml` fails to load.
-fn load_init_config(mut commands: Commands, config_path: Res<ConfigPath>) {
+fn load_init_config_file(mut commands: Commands, config_path: Res<ConfigPath>) {
     commands.insert_resource(
         Persistent::<InitConfig>::builder()
             .name("init")
@@ -83,7 +107,7 @@ fn load_init_config(mut commands: Commands, config_path: Res<ConfigPath>) {
 ///# Panics
 ///
 /// Panics if path creation fails.
-fn setup_settings_path(config_path: Res<ConfigPath>) {
+fn load_settings_base_path(config_path: Res<ConfigPath>) {
     let settings_path = config_path.0.clone().join(SETTINGS_PATH);
     fs::create_dir_all(&settings_path)
         .unwrap_or_else(|_| panic!("Failed to create settings path {:?}", settings_path));
@@ -94,7 +118,7 @@ fn setup_settings_path(config_path: Res<ConfigPath>) {
 /// # Panics
 ///
 /// Panics if path creation fails.
-fn setup_world_path(config_path: Res<ConfigPath>) {
+fn load_world_base_path(config_path: Res<ConfigPath>) {
     let world_path = config_path.0.clone().join(WORLD_PATH);
     fs::create_dir_all(&world_path)
         .unwrap_or_else(|_| panic!("Failed to create world path {:?}", world_path));
@@ -105,7 +129,7 @@ fn setup_world_path(config_path: Res<ConfigPath>) {
 /// # Panics
 ///
 /// Panics if we fail to create any critical path or load the `world.toml` file.
-fn setup_active_world_path(
+fn load_active_world_path(
     mut commands: Commands,
     config_path: Res<ConfigPath>,
     init_config: Res<Persistent<InitConfig>>,
@@ -129,8 +153,28 @@ fn setup_active_world_path(
     commands.insert_resource(ActiveWorldPath(active_world_path));
 }
 
-// Try to load the world.toml file
-fn load_world_config(mut commands: Commands, active_world_path: Res<ActiveWorldPath>) {
+fn configure_bfs_persistence(
+    active_world_path: Res<ActiveWorldPath>,
+    mut persistence_config: ResMut<ParticlePersistenceConfig>,
+) {
+    persistence_config.save_path = active_world_path.0.join(DATA_PATH);
+}
+
+// Try to load the `settings.toml` file
+fn load_settings_file(mut commands: Commands, config_path: Res<ConfigPath>) {
+    commands.insert_resource(
+        Persistent::<SettingsConfig>::builder()
+            .name("settings")
+            .format(StorageFormat::Toml)
+            .path(config_path.0.join(SETTINGS_TOML_FILE))
+            .default(SettingsConfig::default())
+            .build()
+            .expect("Failed to load {SETTINGS_TOML_FILE}"),
+    );
+}
+
+// Try to load the `world.toml` file
+fn load_world_config_file(mut commands: Commands, active_world_path: Res<ActiveWorldPath>) {
     commands.insert_resource(
         Persistent::<WorldConfig>::builder()
             .name("world_meta")
@@ -142,10 +186,20 @@ fn load_world_config(mut commands: Commands, active_world_path: Res<ActiveWorldP
     );
 }
 
-/// Try to load the particle types set for this world.
-fn setup_particle_types_path(active_world_path: Res<ActiveWorldPath>) {
-    let particle_types_file = active_world_path.0.join(PARTICLE_TYPES_FILE);
+/// Try to load the particle types file
+fn load_world_particle_types_file(
+    mut commands: Commands,
+    active_world_path: Res<ActiveWorldPath>,
+    world_config: Res<Persistent<WorldConfig>>,
+    mut msgw_load_particles_scene: MessageWriter<LoadParticleTypesSignal>,
+) {
+    let particle_types_file = active_world_path
+        .0
+        .join(world_config.get().particle_types_file.clone());
+
     if !particle_types_file.exists() {
+        // JAB TODO: A temporary solution until we have the editor up and running. It's currently helpful
+        // to have some default particles to fall back to.
         let default_path = PathBuf::from(DEFAULT_PARTICLES_ASSET);
         if default_path.exists() {
             if let Err(e) = std::fs::copy(&default_path, &particle_types_file) {
@@ -160,33 +214,31 @@ fn setup_particle_types_path(active_world_path: Res<ActiveWorldPath>) {
             warn!("Default particles file not found at {:?}", default_path);
         }
     }
+
+    commands.insert_resource(ParticleTypesFile(
+        active_world_path.0.join(particle_types_file.clone()),
+    ));
+
+    msgw_load_particles_scene.write(LoadParticleTypesSignal(particle_types_file.clone()));
 }
 
-fn load_particle_types_file(
-    active_world_path: Res<ActiveWorldPath>,
-    mut msgw_load_particles_scene: MessageWriter<LoadParticleTypesSignal>,
+fn spawn_camera(mut commands: Commands) {
+    commands.spawn(MainCamera);
+}
+
+fn load_camera_world_state(
+    mut commands: Commands,
+    camera: Single<(Entity, &MainCamera)>,
+    world_config: Res<Persistent<WorldConfig>>,
 ) {
-    let particle_types_file = active_world_path.0.join(PARTICLE_TYPES_FILE);
-    msgw_load_particles_scene.write(LoadParticleTypesSignal(particle_types_file));
-}
-
-fn configure_bfs_persistence(
-    active_world_path: Res<ActiveWorldPath>,
-    mut persistence_config: ResMut<ParticlePersistenceConfig>,
-) {
-    persistence_config.save_path = active_world_path.0.join(DATA_PATH);
-}
-
-fn load_camera_world_config(mut commands: Commands, world_config: Res<Persistent<WorldConfig>>) {
     commands.insert_resource(world_config.camera.clone());
-    commands.spawn((
+    commands.entity(camera.0).insert((
         Camera2d,
         Projection::Orthographic(OrthographicProjection {
             near: -1000.0,
             scale: world_config.get().camera.scale,
             ..OrthographicProjection::default_2d()
         }),
-        MainCamera,
         ChunkLoader,
         ZoomTarget {
             target_scale: world_config.get().camera.scale,
@@ -194,4 +246,30 @@ fn load_camera_world_config(mut commands: Commands, world_config: Res<Persistent
         },
         world_config.get().camera.zoom_speed.clone(),
     ));
+}
+
+fn load_camera_settings(
+    mut commands: Commands,
+    camera: Single<(Entity, &MainCamera)>,
+    settings_config: Res<Persistent<SettingsConfig>>,
+) {
+    let mut input_map = InputMap::default();
+    input_map.insert(
+        CameraAction::PanUp,
+        settings_config.get().camera.pan_camera_up,
+    );
+    input_map.insert(
+        CameraAction::PanLeft,
+        settings_config.get().camera.pan_camera_left,
+    );
+    input_map.insert(
+        CameraAction::PanDown,
+        settings_config.get().camera.pan_camera_down,
+    );
+    input_map.insert(
+        CameraAction::PanRight,
+        settings_config.get().camera.pan_camera_right,
+    );
+
+    commands.entity(camera.0).insert(input_map);
 }

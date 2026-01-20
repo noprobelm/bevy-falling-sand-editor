@@ -1,9 +1,11 @@
+use std::path::PathBuf;
+
 use bevy::prelude::*;
 use bevy_persistent::Persistent;
 
 use crate::{
     camera::ZoomSpeed,
-    config::{CameraConfig, WorldConfig},
+    config::{CameraConfig, ParticleTypesFile, WorldConfig},
 };
 
 pub(super) struct SignalsPlugin;
@@ -32,10 +34,12 @@ fn save_world(
     msgr_save_world: MessageReader<SaveWorldSignal>,
     mut persistent: ResMut<Persistent<WorldConfig>>,
     camera_config: Res<CameraConfig>,
+    particle_types_file: Res<ParticleTypesFile>,
 ) -> Result {
     if !msgr_save_world.is_empty() {
         let world_config = WorldConfig {
             camera: camera_config.clone(),
+            particle_types_file: PathBuf::from(particle_types_file.0.file_name().unwrap()),
         };
         persistent.set(world_config)?;
     }

@@ -1,8 +1,17 @@
 pub use base::*;
+use bevy::app::Plugin;
 pub use settings::*;
 pub use world::*;
 
-pub mod base {
+pub(super) struct ResourcesPlugin;
+
+impl Plugin for ResourcesPlugin {
+    fn build(&self, app: &mut bevy::app::App) {
+        app.add_plugins(SettingsPlugin);
+    }
+}
+
+pub(super) mod base {
     use bevy::prelude::*;
     use serde::{Deserialize, Serialize};
     use std::path::PathBuf;
@@ -23,7 +32,6 @@ pub mod base {
     #[derive(Resource, Clone, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
     pub struct InitConfig {
         settings_init_file: PathBuf,
-        particle_types_init_file: PathBuf,
         active_world_path: PathBuf,
     }
 
@@ -31,7 +39,6 @@ pub mod base {
         fn default() -> Self {
             Self {
                 settings_init_file: PathBuf::from("settings.toml"),
-                particle_types_init_file: PathBuf::from("particles.scn.ron"),
                 active_world_path: PathBuf::from("default"),
             }
         }
@@ -44,15 +51,27 @@ pub mod base {
     }
 }
 
-pub mod world {
+pub(super) mod world {
+    use std::path::PathBuf;
+
     use bevy::prelude::*;
     use serde::{Deserialize, Serialize};
 
     use crate::camera::ZoomSpeed;
 
-    #[derive(Resource, Clone, Default, Debug, Serialize, Deserialize)]
+    #[derive(Resource, Clone, Debug, Serialize, Deserialize)]
     pub struct WorldConfig {
         pub camera: CameraConfig,
+        pub particle_types_file: PathBuf,
+    }
+
+    impl Default for WorldConfig {
+        fn default() -> Self {
+            Self {
+                camera: CameraConfig::default(),
+                particle_types_file: PathBuf::from("particles.scn.ron"),
+            }
+        }
     }
 
     #[derive(Resource, Clone, Debug, Serialize, Deserialize)]
@@ -89,17 +108,48 @@ pub mod world {
     }
 }
 
-pub mod settings {
+pub(super) mod settings {
     use bevy::prelude::*;
+    use leafwing_input_manager::{Actionlike, plugin::InputManagerPlugin};
     use serde::{Deserialize, Serialize};
 
-    #[derive(Resource, Clone, Default, Debug, Serialize, Deserialize)]
-    pub struct SettingsConfig {}
+    pub(super) struct SettingsPlugin;
 
-    pub struct KeyBindings {
+    impl Plugin for SettingsPlugin {
+        fn build(&self, app: &mut App) {
+            app.add_plugins(InputManagerPlugin::<CameraAction>::default());
+        }
+    }
+
+    #[derive(Actionlike, Resource, PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
+    pub enum CameraAction {
+        PanUp,
+        PanRight,
+        PanDown,
+        PanLeft,
+    }
+
+    #[derive(Resource, Clone, Default, Debug, Serialize, Deserialize)]
+    pub struct SettingsConfig {
+        pub camera: CameraKeyBindings,
+    }
+
+    #[derive(Resource, Clone, Debug, Serialize, Deserialize)]
+    pub struct CameraKeyBindings {
         pub pan_camera_up: KeyCode,
-        pub pan_camera_right: KeyCode,
-        pub pan_camera_down: KeyCode,
         pub pan_camera_left: KeyCode,
+        pub pan_camera_down: KeyCode,
+        pub pan_camera_right: KeyCode,
+    }
+
+    impl Default for CameraKeyBindings {
+        fn default() -> Self {
+            CameraKeyBindings {
+                pan_camera_up: KeyCode::KeyW,
+                pan_camera_left: KeyCode::KeyA,
+                pan_camera_down: KeyCode::KeyS,
+                pan_camera_right: KeyCode::KeyD,
+            }
+        }
     }
 }
