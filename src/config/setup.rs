@@ -64,7 +64,7 @@ impl Plugin for SetupPlugin {
                 load_world_base_path,
                 // Load init.toml for the startup configuration
                 load_init_config_file,
-                load_settings_file,
+                load_settings_config_file,
                 // From init.toml, load the necessary config subpaths
                 load_active_world_path,
                 // Configure bfs persistence to update from fallback path to active world path
@@ -161,7 +161,7 @@ fn configure_bfs_persistence(
 }
 
 // Try to load the `settings.toml` file
-fn load_settings_file(mut commands: Commands, config_path: Res<ConfigPath>) {
+fn load_settings_config_file(mut commands: Commands, config_path: Res<ConfigPath>) {
     commands.insert_resource(
         Persistent::<SettingsConfig>::builder()
             .name("settings")
