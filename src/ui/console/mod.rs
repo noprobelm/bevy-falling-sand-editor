@@ -14,12 +14,10 @@ pub struct ConsolePlugin;
 
 impl Plugin for ConsolePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(CommandsPlugin)
-            .insert_resource(ConsoleCache::default())
-            .add_systems(
-                Update,
-                rebuild_console_cache.run_if(resource_changed::<ConsoleConfiguration>),
-            );
+        app.add_plugins(CommandsPlugin).add_systems(
+            Update,
+            rebuild_console_cache.run_if(resource_changed::<ConsoleConfiguration>),
+        );
     }
 }
 

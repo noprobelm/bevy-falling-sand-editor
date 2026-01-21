@@ -3,17 +3,20 @@ use bevy::prelude::*;
 use crate::{
     directive::DirectiveRegistry,
     setup::SetupSystems,
-    ui::{ConsoleConfiguration, HelpDirective},
+    ui::{ConsoleCache, ConsoleConfiguration, ConsoleState, HelpDirective},
 };
 
 pub(super) struct DirectiveSetupPlugin;
 
 impl Plugin for DirectiveSetupPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Startup,
-            (setup_directive_registry, setup_console_configuration).in_set(SetupSystems::Console),
-        );
+        app.init_resource::<ConsoleCache>()
+            .init_resource::<ConsoleState>()
+            .add_systems(
+                Startup,
+                (setup_directive_registry, setup_console_configuration)
+                    .in_set(SetupSystems::Console),
+            );
     }
 }
 
