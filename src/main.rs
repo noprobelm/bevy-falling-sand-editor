@@ -46,6 +46,7 @@ fn main() {
             SetupPlugin::default(),
             ConfigPlugin,
             LogCapturePlugin,
+            CommandsPlugin,
             UiPlugin,
             CameraPlugin,
             FallingSandPlugin::default().with_chunk_size(64),
