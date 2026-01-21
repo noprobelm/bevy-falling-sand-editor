@@ -1,7 +1,16 @@
 use bevy::{platform::collections::HashMap, prelude::*};
 
+pub struct CommandsPlugin;
+
+impl Plugin for CommandsPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_message::<ConsoleCommandQueued>()
+            .add_systems(Update, msgr_console_command_queued);
+    }
+}
+
 #[derive(Message, Default, Eq, PartialEq, Hash, Debug, Reflect)]
-pub struct ConsoleCommandMessage {
+pub struct ConsoleCommandQueued {
     pub command_path: Vec<String>,
     pub args: Vec<String>,
 }
@@ -167,6 +176,29 @@ impl<T: ConsoleCommand + Default> ConsoleCommand for CommandWrapper<T> {
     }
 }
 
-fn init_command_registry(mut registry: ResMut<CommandRegistry>) {
-    // registry.register::<HelpCommand>();
+fn init_command_registry(mut commands: Commands) {
+    let mut registry = CommandRegistry::default();
+    //registry.register::<HelpCommand>();
+    commands.insert_resource(registry);
+}
+
+pub fn msgr_console_command_queued(
+    mut cmd: MessageReader<ConsoleCommandQueued>,
+    registry: Res<CommandRegistry>,
+    mut commands: Commands,
+) {
+    for command_message in cmd.read() {
+        if command_message.command_path.is_empty() {
+            continue;
+        }
+
+        let root_command_name = &command_message.command_path[0];
+        if let Some(command) = registry.find_command(root_command_name) {
+            command.execute(
+                &command_message.command_path,
+                &command_message.args,
+                &mut commands,
+            );
+        }
+    }
 }
