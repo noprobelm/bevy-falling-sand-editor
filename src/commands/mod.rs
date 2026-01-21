@@ -166,3 +166,7 @@ impl<T: ConsoleCommand + Default> ConsoleCommand for CommandWrapper<T> {
         T::default().build_command_node()
     }
 }
+
+fn init_command_registry(mut registry: ResMut<CommandRegistry>) {
+    // registry.register::<HelpCommand>();
+}
