@@ -1,5 +1,10 @@
+#![cfg_attr(docsrs, feature(doc_cfg))]
+#![warn(nonstandard_style, rustdoc::broken_intra_doc_links)]
+
 mod camera;
+mod commands;
 mod config;
+mod log_capture;
 mod setup;
 mod ui;
 
@@ -12,32 +17,40 @@ use bevy_falling_sand::prelude::{
 };
 
 use camera::*;
+use commands::*;
 use config::*;
+use log_capture::*;
 use setup::*;
 
-use bevy::{prelude::*, window::WindowMode};
+use bevy::{log::LogPlugin, prelude::*, window::WindowMode};
 
 use crate::ui::UiPlugin;
 
 fn main() {
     App::new()
         .add_plugins((
-            DefaultPlugins.set(WindowPlugin {
-                primary_window: Some(Window {
-                    title: "Falling Sand Editor".into(),
-                    mode: WindowMode::BorderlessFullscreen(MonitorSelection::Primary),
-                    fit_canvas_to_parent: true,
+            DefaultPlugins
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        title: "Falling Sand Editor".into(),
+                        mode: WindowMode::BorderlessFullscreen(MonitorSelection::Primary),
+                        fit_canvas_to_parent: true,
+                        ..default()
+                    }),
+                    ..default()
+                })
+                .set(LogPlugin {
+                    custom_layer: console_capture_layer,
                     ..default()
                 }),
-                ..default()
-            }),
             SetupPlugin::default(),
             ConfigPlugin,
+            LogCapturePlugin,
             UiPlugin,
             CameraPlugin,
             FallingSandPlugin::default().with_chunk_size(64),
             FallingSandDebugPlugin,
-            // Fall back to /tmp until `WorldPathReady` state indicates `Complete`
+            // We'll overwrite this path with the active world path as soon as the active world configuration is loaded.
             FallingSandPersistencePlugin::new("/tmp/bfs"),
             PhysicsDebugPlugin,
         ))
