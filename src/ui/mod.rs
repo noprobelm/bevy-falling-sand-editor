@@ -1,15 +1,15 @@
-mod directives;
+mod console;
 mod states;
 
 use bevy::prelude::*;
 
-pub use directives::*;
+pub use console::*;
 pub use states::*;
 
 pub(super) struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((StatesPlugin, DirectivesPlugin));
+        app.add_plugins((StatesPlugin, ConsolePlugin));
     }
 }

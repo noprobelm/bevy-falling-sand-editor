@@ -4,11 +4,11 @@ use bevy::prelude::*;
 
 pub use help::HelpDirective;
 
-use crate::ui::directives::help::HelpDirectivePlugin;
+use crate::ui::console::help::HelpDirectivePlugin;
 
-pub struct DirectivesPlugin;
+pub struct ConsolePlugin;
 
-impl Plugin for DirectivesPlugin {
+impl Plugin for ConsolePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(HelpDirectivePlugin);
     }
