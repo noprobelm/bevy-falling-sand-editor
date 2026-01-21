@@ -176,12 +176,6 @@ impl<T: ConsoleCommand + Default> ConsoleCommand for CommandWrapper<T> {
     }
 }
 
-fn init_command_registry(mut commands: Commands) {
-    let mut registry = CommandRegistry::default();
-    //registry.register::<HelpCommand>();
-    commands.insert_resource(registry);
-}
-
 pub fn msgr_console_command_queued(
     mut cmd: MessageReader<ConsoleCommandQueued>,
     registry: Res<CommandRegistry>,
