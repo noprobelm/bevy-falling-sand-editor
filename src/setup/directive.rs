@@ -1,10 +1,10 @@
 use bevy::prelude::*;
 
-use crate::{commands::CommandRegistry, setup::SetupSystems};
+use crate::{directive::DirectiveRegistry, setup::SetupSystems};
 
-pub(super) struct CommandsSetupPlugin;
+pub(super) struct DirectiveSetupPlugin;
 
-impl Plugin for CommandsSetupPlugin {
+impl Plugin for DirectiveSetupPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Startup,
@@ -14,7 +14,7 @@ impl Plugin for CommandsSetupPlugin {
 }
 
 fn init_command_registry(mut commands: Commands) {
-    let mut registry = CommandRegistry::default();
+    let mut registry = DirectiveRegistry::default();
     //registry.register::<HelpCommand>();
     commands.insert_resource(registry);
 }

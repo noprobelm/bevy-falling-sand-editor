@@ -32,8 +32,8 @@
 //! The `Persistent<SettingsConfig>` resource manages the application-wide settings state between
 //! each session. These settings apply to all worlds.
 mod camera;
-mod commands;
 mod config;
+mod directive;
 mod particles;
 
 use std::path::PathBuf;
@@ -43,7 +43,7 @@ use bevy::prelude::*;
 use crate::setup::{
     camera::CameraSetupPlugin, config::ConfigSetupPlugin, particles::ParticlesSetupPlugin,
 };
-use commands::*;
+use directive::*;
 
 pub struct SetupPlugin {
     pub config_path: PathBuf,
@@ -63,7 +63,7 @@ impl Plugin for SetupPlugin {
         let config_path = self.config_path.clone();
         app.add_plugins((
             ConfigSetupPlugin { config_path },
-            CommandsSetupPlugin,
+            DirectiveSetupPlugin,
             CameraSetupPlugin,
             ParticlesSetupPlugin,
         ))

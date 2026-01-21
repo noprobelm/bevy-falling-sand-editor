@@ -2,8 +2,8 @@
 #![warn(nonstandard_style, rustdoc::broken_intra_doc_links)]
 
 mod camera;
-mod commands;
 mod config;
+mod directive;
 mod log_capture;
 mod setup;
 mod ui;
@@ -17,8 +17,8 @@ use bevy_falling_sand::prelude::{
 };
 
 use camera::*;
-use commands::*;
 use config::*;
+use directive::*;
 use log_capture::*;
 use setup::*;
 
@@ -46,7 +46,7 @@ fn main() {
             SetupPlugin::default(),
             ConfigPlugin,
             LogCapturePlugin,
-            CommandsPlugin,
+            DirectivePlugin,
             UiPlugin,
             CameraPlugin,
             FallingSandPlugin::default().with_chunk_size(64),

@@ -1,29 +1,29 @@
 use bevy::{platform::collections::HashMap, prelude::*};
 
-pub struct CommandsPlugin;
+pub struct DirectivePlugin;
 
-impl Plugin for CommandsPlugin {
+impl Plugin for DirectivePlugin {
     fn build(&self, app: &mut App) {
-        app.add_message::<ConsoleCommandQueued>()
+        app.add_message::<DirectiveQueued>()
             .add_systems(Update, msgr_console_command_queued);
     }
 }
 
 #[derive(Message, Default, Eq, PartialEq, Hash, Debug, Reflect)]
-pub struct ConsoleCommandQueued {
+pub struct DirectiveQueued {
     pub command_path: Vec<String>,
     pub args: Vec<String>,
 }
 
 #[derive(Clone, Default, Eq, PartialEq, Debug, Reflect)]
-pub struct CommandNode {
+pub struct DirectiveNode {
     pub name: String,
     pub description: String,
-    pub children: HashMap<String, CommandNode>,
+    pub children: HashMap<String, DirectiveNode>,
     pub is_executable: bool,
 }
 
-impl CommandNode {
+impl DirectiveNode {
     pub fn new(name: impl Into<String>, description: impl Into<String>) -> Self {
         Self {
             name: name.into(),
@@ -38,12 +38,12 @@ impl CommandNode {
         self
     }
 
-    pub fn with_child(mut self, child: CommandNode) -> Self {
+    pub fn with_child(mut self, child: DirectiveNode) -> Self {
         self.children.insert(child.name.clone(), child);
         self
     }
 
-    pub fn get_node(&self, path: &[String]) -> Option<&CommandNode> {
+    pub fn get_node(&self, path: &[String]) -> Option<&DirectiveNode> {
         if path.is_empty() {
             return Some(self);
         }
@@ -60,11 +60,11 @@ impl CommandNode {
     }
 }
 
-pub trait ConsoleCommand: Send + Sync + 'static {
+pub trait Directive: Send + Sync + 'static {
     fn name(&self) -> &'static str;
     fn description(&self) -> &'static str;
 
-    fn subcommand_types(&self) -> Vec<Box<dyn ConsoleCommand>> {
+    fn subcommand_types(&self) -> Vec<Box<dyn Directive>> {
         vec![]
     }
 
@@ -104,12 +104,12 @@ pub trait ConsoleCommand: Send + Sync + 'static {
     }
 
     #[allow(dead_code)]
-    fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
+    fn subcommands(&self) -> Vec<Box<dyn Directive>> {
         self.subcommand_types()
     }
 
-    fn build_command_node(&self) -> CommandNode {
-        let mut node = CommandNode::new(self.name(), self.description());
+    fn build_command_node(&self) -> DirectiveNode {
+        let mut node = DirectiveNode::new(self.name(), self.description());
 
         let subcommands = self.subcommand_types();
         if subcommands.is_empty() {
@@ -125,16 +125,16 @@ pub trait ConsoleCommand: Send + Sync + 'static {
 }
 
 #[derive(Resource, Default)]
-pub struct CommandRegistry {
-    pub commands: Vec<Box<dyn ConsoleCommand>>,
+pub struct DirectiveRegistry {
+    pub commands: Vec<Box<dyn Directive>>,
 }
 
-impl CommandRegistry {
-    pub fn register<T: ConsoleCommand + Default>(&mut self) {
+impl DirectiveRegistry {
+    pub fn register<T: Directive + Default>(&mut self) {
         self.commands.push(Box::new(CommandWrapper::<T>::new()));
     }
 
-    pub fn find_command(&self, name: &str) -> Option<&dyn ConsoleCommand> {
+    pub fn find_command(&self, name: &str) -> Option<&dyn Directive> {
         self.commands
             .iter()
             .find(|cmd| cmd.name() == name)
@@ -142,11 +142,11 @@ impl CommandRegistry {
     }
 }
 
-struct CommandWrapper<T: ConsoleCommand> {
+struct CommandWrapper<T: Directive> {
     _phantom: std::marker::PhantomData<T>,
 }
 
-impl<T: ConsoleCommand> CommandWrapper<T> {
+impl<T: Directive> CommandWrapper<T> {
     fn new() -> Self {
         Self {
             _phantom: std::marker::PhantomData,
@@ -154,7 +154,7 @@ impl<T: ConsoleCommand> CommandWrapper<T> {
     }
 }
 
-impl<T: ConsoleCommand + Default> ConsoleCommand for CommandWrapper<T> {
+impl<T: Directive + Default> Directive for CommandWrapper<T> {
     fn name(&self) -> &'static str {
         T::default().name()
     }
@@ -167,18 +167,18 @@ impl<T: ConsoleCommand + Default> ConsoleCommand for CommandWrapper<T> {
         T::default().execute(path, args, commands);
     }
 
-    fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
+    fn subcommands(&self) -> Vec<Box<dyn Directive>> {
         T::default().subcommands()
     }
 
-    fn build_command_node(&self) -> CommandNode {
+    fn build_command_node(&self) -> DirectiveNode {
         T::default().build_command_node()
     }
 }
 
 pub fn msgr_console_command_queued(
-    mut cmd: MessageReader<ConsoleCommandQueued>,
-    registry: Res<CommandRegistry>,
+    mut cmd: MessageReader<DirectiveQueued>,
+    registry: Res<DirectiveRegistry>,
     mut commands: Commands,
 ) {
     for command_message in cmd.read() {
