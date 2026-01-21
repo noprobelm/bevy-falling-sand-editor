@@ -1,5 +1,3 @@
-#![cfg_attr(docsrs, feature(doc_cfg))]
-#![warn(nonstandard_style, rustdoc::broken_intra_doc_links)]
 //! ## Overview
 //!
 //! All application setup processes stem from this module via `SetupPlugin`.
@@ -39,7 +37,7 @@ mod particles;
 
 use std::path::PathBuf;
 
-use bevy::{asset::io::AssetSource, prelude::*};
+use bevy::prelude::*;
 
 use crate::setup::{
     camera::CameraSetupPlugin, config::ConfigSetupPlugin, particles::ParticlesSetupPlugin,
@@ -61,13 +59,7 @@ impl Default for SetupPlugin {
 impl Plugin for SetupPlugin {
     fn build(&self, app: &mut App) {
         let config_path = self.config_path.clone();
-        let config_path_str = config_path.to_string_lossy().to_string();
-        app.register_asset_source(
-            "config",
-            AssetSource::build()
-                .with_reader(move || AssetSource::get_default_reader(config_path_str.clone())()),
-        )
-        .add_plugins((
+        app.add_plugins((
             ConfigSetupPlugin { config_path },
             CameraSetupPlugin,
             ParticlesSetupPlugin,
