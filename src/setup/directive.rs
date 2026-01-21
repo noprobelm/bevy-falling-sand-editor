@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{directive::DirectiveRegistry, setup::SetupSystems};
+use crate::{directive::DirectiveRegistry, setup::SetupSystems, ui::HelpDirective};
 
 pub(super) struct DirectiveSetupPlugin;
 
@@ -15,6 +15,6 @@ impl Plugin for DirectiveSetupPlugin {
 
 fn init_command_registry(mut commands: Commands) {
     let mut registry = DirectiveRegistry::default();
-    //registry.register::<HelpCommand>();
+    registry.register::<HelpDirective>();
     commands.insert_resource(registry);
 }
