@@ -8,7 +8,7 @@
 //! - `SetupSystems::Configuration` deals with accessing the configuration path and subpaths, reading
 //!   the `initl.toml` file for startup information, loading the active world path, and loading the
 //!   `settings.toml` file.
-//! - `SetupSystems::Directive` deals with adding directives to the `DirectiveRegistry` reource
+//! - `SetupSystems::Console` deals with adding directives to the `DirectiveRegistry` reource
 //!   from the `directives` module
 //! - `SetupSystems::Camera` spawns the `MainCamera` entity and loads its settings and world state
 //!   data from the previous session.
@@ -35,7 +35,7 @@
 //! each session. These settings apply to all worlds.
 mod camera;
 mod config;
-mod directive;
+mod console;
 mod particles;
 
 use std::path::PathBuf;
@@ -45,7 +45,7 @@ use bevy::prelude::*;
 use crate::setup::{
     camera::CameraSetupPlugin, config::ConfigSetupPlugin, particles::ParticlesSetupPlugin,
 };
-use directive::*;
+use console::*;
 
 pub struct SetupPlugin {
     pub config_path: PathBuf,
@@ -73,7 +73,7 @@ impl Plugin for SetupPlugin {
             Startup,
             (
                 SetupSystems::Configuration,
-                SetupSystems::Directives,
+                SetupSystems::Console,
                 SetupSystems::Camera,
                 SetupSystems::Particles,
             )
@@ -86,7 +86,7 @@ impl Plugin for SetupPlugin {
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SetupSystems {
     Configuration,
-    Directives,
+    Console,
     Camera,
     Particles,
 }
