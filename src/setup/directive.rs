@@ -8,7 +8,7 @@ impl Plugin for DirectiveSetupPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Startup,
-            init_command_registry.in_set(SetupSystems::Commands),
+            init_command_registry.in_set(SetupSystems::Directives),
         );
     }
 }

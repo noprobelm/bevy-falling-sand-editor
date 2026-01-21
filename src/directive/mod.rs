@@ -5,13 +5,13 @@ pub struct DirectivePlugin;
 impl Plugin for DirectivePlugin {
     fn build(&self, app: &mut App) {
         app.add_message::<DirectiveQueued>()
-            .add_systems(Update, msgr_console_command_queued);
+            .add_systems(Update, msgr_directive_queued);
     }
 }
 
 #[derive(Message, Default, Eq, PartialEq, Hash, Debug, Reflect)]
 pub struct DirectiveQueued {
-    pub command_path: Vec<String>,
+    pub directive_path: Vec<String>,
     pub args: Vec<String>,
 }
 
@@ -64,14 +64,14 @@ pub trait Directive: Send + Sync + 'static {
     fn name(&self) -> &'static str;
     fn description(&self) -> &'static str;
 
-    fn subcommand_types(&self) -> Vec<Box<dyn Directive>> {
+    fn subdirective_types(&self) -> Vec<Box<dyn Directive>> {
         vec![]
     }
 
-    fn execute_action(&self, _args: &[String], _commands: &mut Commands) {}
+    fn execute_directive(&self, _args: &[String], _commands: &mut Commands) {}
 
     fn execute(&self, path: &[String], args: &[String], commands: &mut Commands) {
-        let subcommands = self.subcommand_types();
+        let subdirectives = self.subdirective_types();
 
         let current_depth = path
             .iter()
@@ -79,11 +79,11 @@ pub trait Directive: Send + Sync + 'static {
             .unwrap_or(0);
 
         if current_depth + 1 >= path.len() {
-            if subcommands.is_empty() {
-                self.execute_action(args, commands);
+            if subdirectives.is_empty() {
+                self.execute_directive(args, commands);
             } else {
                 error!("'{}' requires a subcommand", self.name());
-                let subcmd_names: Vec<String> = subcommands
+                let subcmd_names: Vec<String> = subdirectives
                     .iter()
                     .map(|cmd| cmd.name().to_string())
                     .collect();
@@ -92,31 +92,31 @@ pub trait Directive: Send + Sync + 'static {
             return;
         }
 
-        let next_command = &path[current_depth + 1];
-        for subcmd in subcommands {
-            if subcmd.name() == next_command {
-                subcmd.execute(path, args, commands);
+        let next_directive = &path[current_depth + 1];
+        for subdirective in subdirectives {
+            if subdirective.name() == next_directive {
+                subdirective.execute(path, args, commands);
                 return;
             }
         }
 
-        error!("Unknown subcommand '{} {}'", self.name(), next_command);
+        error!("Unknown subcommand '{} {}'", self.name(), next_directive);
     }
 
     #[allow(dead_code)]
-    fn subcommands(&self) -> Vec<Box<dyn Directive>> {
-        self.subcommand_types()
+    fn subdirectives(&self) -> Vec<Box<dyn Directive>> {
+        self.subdirective_types()
     }
 
-    fn build_command_node(&self) -> DirectiveNode {
+    fn build_directive_node(&self) -> DirectiveNode {
         let mut node = DirectiveNode::new(self.name(), self.description());
 
-        let subcommands = self.subcommand_types();
+        let subcommands = self.subdirective_types();
         if subcommands.is_empty() {
             node = node.executable();
         } else {
-            for subcmd in subcommands {
-                node = node.with_child(subcmd.build_command_node());
+            for subdirective in subcommands {
+                node = node.with_child(subdirective.build_directive_node());
             }
         }
 
@@ -126,27 +126,27 @@ pub trait Directive: Send + Sync + 'static {
 
 #[derive(Resource, Default)]
 pub struct DirectiveRegistry {
-    pub commands: Vec<Box<dyn Directive>>,
+    pub directives: Vec<Box<dyn Directive>>,
 }
 
 impl DirectiveRegistry {
     pub fn register<T: Directive + Default>(&mut self) {
-        self.commands.push(Box::new(CommandWrapper::<T>::new()));
+        self.directives.push(Box::new(DirectiveWrapper::<T>::new()));
     }
 
     pub fn find_command(&self, name: &str) -> Option<&dyn Directive> {
-        self.commands
+        self.directives
             .iter()
             .find(|cmd| cmd.name() == name)
             .map(|cmd| cmd.as_ref())
     }
 }
 
-struct CommandWrapper<T: Directive> {
+struct DirectiveWrapper<T: Directive> {
     _phantom: std::marker::PhantomData<T>,
 }
 
-impl<T: Directive> CommandWrapper<T> {
+impl<T: Directive> DirectiveWrapper<T> {
     fn new() -> Self {
         Self {
             _phantom: std::marker::PhantomData,
@@ -154,7 +154,7 @@ impl<T: Directive> CommandWrapper<T> {
     }
 }
 
-impl<T: Directive + Default> Directive for CommandWrapper<T> {
+impl<T: Directive + Default> Directive for DirectiveWrapper<T> {
     fn name(&self) -> &'static str {
         T::default().name()
     }
@@ -167,32 +167,28 @@ impl<T: Directive + Default> Directive for CommandWrapper<T> {
         T::default().execute(path, args, commands);
     }
 
-    fn subcommands(&self) -> Vec<Box<dyn Directive>> {
-        T::default().subcommands()
+    fn subdirectives(&self) -> Vec<Box<dyn Directive>> {
+        T::default().subdirectives()
     }
 
-    fn build_command_node(&self) -> DirectiveNode {
-        T::default().build_command_node()
+    fn build_directive_node(&self) -> DirectiveNode {
+        T::default().build_directive_node()
     }
 }
 
-pub fn msgr_console_command_queued(
-    mut cmd: MessageReader<DirectiveQueued>,
+pub fn msgr_directive_queued(
+    mut msgr_directive_queued: MessageReader<DirectiveQueued>,
     registry: Res<DirectiveRegistry>,
     mut commands: Commands,
 ) {
-    for command_message in cmd.read() {
-        if command_message.command_path.is_empty() {
+    for msg in msgr_directive_queued.read() {
+        if msg.directive_path.is_empty() {
             continue;
         }
 
-        let root_command_name = &command_message.command_path[0];
-        if let Some(command) = registry.find_command(root_command_name) {
-            command.execute(
-                &command_message.command_path,
-                &command_message.args,
-                &mut commands,
-            );
+        let root_directive_name = &msg.directive_path[0];
+        if let Some(command) = registry.find_command(root_directive_name) {
+            command.execute(&msg.directive_path, &msg.args, &mut commands);
         }
     }
 }

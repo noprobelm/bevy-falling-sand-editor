@@ -8,6 +8,8 @@
 //! - `SetupSystems::Configuration` deals with accessing the configuration path and subpaths, reading
 //!   the `initl.toml` file for startup information, loading the active world path, and loading the
 //!   `settings.toml` file.
+//! - `SetupSystems::Directive` deals with adding directives to the `DirectiveRegistry` reource
+//!   from the `directives` module
 //! - `SetupSystems::Camera` spawns the `MainCamera` entity and loads its settings and world state
 //!   data from the previous session.
 //! - `SetupSystems::Particles` loads the particle types file defined in `init.toml`
@@ -71,7 +73,7 @@ impl Plugin for SetupPlugin {
             Startup,
             (
                 SetupSystems::Configuration,
-                SetupSystems::Commands,
+                SetupSystems::Directives,
                 SetupSystems::Camera,
                 SetupSystems::Particles,
             )
@@ -84,7 +86,7 @@ impl Plugin for SetupPlugin {
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SetupSystems {
     Configuration,
-    Commands,
+    Directives,
     Camera,
     Particles,
 }
