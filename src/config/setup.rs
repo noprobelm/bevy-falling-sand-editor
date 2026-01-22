@@ -1,14 +1,13 @@
 use std::{fs, path::PathBuf};
 
-use crate::{
-    config::{
-        ActiveSettingsPath, ActiveWorldPath, ConfigPath, InitConfig, SettingsConfig, WorldConfig,
-    },
-    setup::SetupSystems,
-};
+use crate::setup::SetupSystems;
 use bevy::prelude::*;
 use bevy_falling_sand::prelude::ParticlePersistenceConfig;
 use bevy_persistent::{Persistent, StorageFormat};
+
+use super::{
+    ActiveSettingsPath, ActiveWorldPath, ConfigPath, InitConfig, SettingsConfig, WorldConfig,
+};
 
 const WORLD_PATH: &str = "world";
 const DATA_PATH: &str = "data";
@@ -16,7 +15,7 @@ const DATA_PATH: &str = "data";
 const INIT_TOML_FILE: &str = "init.toml";
 const WORLD_TOML_FILE: &str = "world.toml";
 
-pub(super) struct ConfigSetupPlugin {
+pub struct ConfigSetupPlugin {
     pub config_path: PathBuf,
 }
 

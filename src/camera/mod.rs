@@ -1,9 +1,11 @@
 mod components;
+pub mod setup;
 mod systems;
 
 use bevy::prelude::*;
 
 pub use components::*;
+pub use setup::*;
 pub use systems::*;
 
 pub(super) struct CameraPlugin;

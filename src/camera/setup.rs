@@ -4,12 +4,13 @@ use bevy_persistent::Persistent;
 use leafwing_input_manager::{Actionlike, plugin::InputManagerPlugin, prelude::InputMap};
 
 use crate::{
-    camera::{MainCamera, ZoomTarget},
     config::{SettingsConfig, WorldConfig},
     setup::SetupSystems,
 };
 
-pub(super) struct CameraSetupPlugin;
+use super::{MainCamera, ZoomTarget};
+
+pub struct CameraSetupPlugin;
 
 impl Plugin for CameraSetupPlugin {
     fn build(&self, app: &mut App) {

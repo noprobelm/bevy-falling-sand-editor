@@ -13,7 +13,7 @@ use crate::{
 // to have some default particles to fall back to.
 const DEFAULT_PARTICLES_ASSET: &str = "assets/particles/particles.scn.ron";
 
-pub(super) struct ParticlesSetupPlugin;
+pub struct ParticlesSetupPlugin;
 
 impl Plugin for ParticlesSetupPlugin {
     fn build(&self, app: &mut App) {

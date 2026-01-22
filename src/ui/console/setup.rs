@@ -6,12 +6,13 @@ use crate::{
     config::SettingsConfig,
     directive::DirectiveRegistry,
     setup::SetupSystems,
-    ui::{ConsoleCache, ConsoleConfiguration, ConsoleState, HelpDirective},
 };
 
-pub(super) struct DirectiveSetupPlugin;
+use super::{ConsoleCache, ConsoleConfiguration, ConsoleState, HelpDirective};
 
-impl Plugin for DirectiveSetupPlugin {
+pub struct ConsoleSetupPlugin;
+
+impl Plugin for ConsoleSetupPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(InputManagerPlugin::<ConsoleAction>::default())
             .init_resource::<ConsoleCache>()

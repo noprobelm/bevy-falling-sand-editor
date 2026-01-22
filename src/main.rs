@@ -4,7 +4,7 @@
 mod camera;
 mod config;
 mod directive;
-mod log_capture;
+mod particles;
 mod setup;
 mod ui;
 
@@ -19,12 +19,10 @@ use bevy_falling_sand::prelude::{
 use camera::*;
 use config::*;
 use directive::*;
-use log_capture::*;
 use setup::*;
+use ui::*;
 
 use bevy::{log::LogPlugin, prelude::*, window::WindowMode};
-
-use crate::ui::UiPlugin;
 
 fn main() {
     App::new()

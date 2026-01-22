@@ -1,11 +1,9 @@
 use bevy::{input::mouse::MouseWheel, prelude::*};
 use leafwing_input_manager::prelude::ActionState;
 
-use crate::{
-    camera::{MainCamera, ZoomSpeed, ZoomTarget},
-    setup::CameraAction,
-    ui::AppState,
-};
+use crate::ui::AppState;
+
+use super::{CameraAction, MainCamera, ZoomSpeed, ZoomTarget};
 
 pub(super) struct SystemsPlugin;
 

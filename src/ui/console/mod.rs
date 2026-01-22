@@ -1,4 +1,6 @@
 mod commands;
+mod log_capture;
+pub mod setup;
 mod state;
 
 use bevy::prelude::*;
@@ -6,9 +8,11 @@ use bevy::prelude::*;
 use bevy_egui::{EguiContexts, EguiPrimaryContextPass, egui};
 use leafwing_input_manager::prelude::ActionState;
 
-use crate::{directive::DirectiveQueued, setup::ConsoleAction};
+use crate::directive::DirectiveQueued;
 
 pub use commands::*;
+pub use log_capture::*;
+pub use setup::*;
 pub use state::*;
 
 pub struct ConsolePlugin;
