@@ -3,14 +3,6 @@ use bevy::app::Plugin;
 pub use settings::*;
 pub use world::*;
 
-pub(super) struct ResourcesPlugin;
-
-impl Plugin for ResourcesPlugin {
-    fn build(&self, app: &mut bevy::app::App) {
-        app.add_plugins(SettingsPlugin);
-    }
-}
-
 pub(super) mod base {
     use bevy::prelude::*;
     use serde::{Deserialize, Serialize};
@@ -119,28 +111,25 @@ pub(super) mod world {
 
 pub(super) mod settings {
     use bevy::prelude::*;
-    use leafwing_input_manager::{Actionlike, plugin::InputManagerPlugin};
     use serde::{Deserialize, Serialize};
-
-    pub(super) struct SettingsPlugin;
-
-    impl Plugin for SettingsPlugin {
-        fn build(&self, app: &mut App) {
-            app.add_plugins(InputManagerPlugin::<CameraAction>::default());
-        }
-    }
-
-    #[derive(Actionlike, Resource, PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
-    pub enum CameraAction {
-        PanUp,
-        PanRight,
-        PanDown,
-        PanLeft,
-    }
 
     #[derive(Resource, Clone, Default, Debug, Serialize, Deserialize)]
     pub struct SettingsConfig {
         pub camera: CameraKeyBindings,
+        pub console: ConsoleKeyBindings,
+    }
+
+    #[derive(Resource, Clone, Debug, Serialize, Deserialize)]
+    pub struct ConsoleKeyBindings {
+        pub toggle_information_area: KeyCode,
+    }
+
+    impl Default for ConsoleKeyBindings {
+        fn default() -> Self {
+            Self {
+                toggle_information_area: KeyCode::Backquote,
+            }
+        }
     }
 
     #[derive(Resource, Clone, Debug, Serialize, Deserialize)]

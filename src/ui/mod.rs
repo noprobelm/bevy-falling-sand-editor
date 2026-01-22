@@ -11,13 +11,6 @@ pub(super) struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((EguiPlugin::default(), StatesPlugin, ConsolePlugin))
-            .add_systems(EguiPrimaryContextPass, render);
+        app.add_plugins((EguiPlugin::default(), StatesPlugin, ConsolePlugin));
     }
-}
-
-fn render(mut contexts: EguiContexts) -> Result {
-    let ctx = contexts.ctx_mut()?;
-    egui::TopBottomPanel::top("Top panel").show(ctx, |ui| {});
-    Ok(())
 }

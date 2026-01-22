@@ -3,7 +3,7 @@ use leafwing_input_manager::prelude::ActionState;
 
 use crate::{
     camera::{MainCamera, ZoomSpeed, ZoomTarget},
-    config::CameraAction,
+    setup::CameraAction,
     ui::AppState,
 };
 

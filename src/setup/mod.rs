@@ -35,17 +35,17 @@
 //! each session. These settings apply to all worlds.
 mod camera;
 mod config;
-mod console;
+pub mod console;
 mod particles;
 
 use std::path::PathBuf;
 
 use bevy::prelude::*;
 
-use crate::setup::{
-    camera::CameraSetupPlugin, config::ConfigSetupPlugin, particles::ParticlesSetupPlugin,
-};
-use console::*;
+pub use camera::*;
+use config::*;
+pub use console::*;
+use particles::*;
 
 pub struct SetupPlugin {
     pub config_path: PathBuf,

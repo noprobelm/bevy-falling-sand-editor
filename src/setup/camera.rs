@@ -1,11 +1,11 @@
 use bevy::prelude::*;
 use bevy_falling_sand::core::ChunkLoader;
 use bevy_persistent::Persistent;
-use leafwing_input_manager::prelude::InputMap;
+use leafwing_input_manager::{Actionlike, plugin::InputManagerPlugin, prelude::InputMap};
 
 use crate::{
     camera::{MainCamera, ZoomTarget},
-    config::{CameraAction, SettingsConfig, WorldConfig},
+    config::{SettingsConfig, WorldConfig},
     setup::SetupSystems,
 };
 
@@ -13,20 +13,29 @@ pub(super) struct CameraSetupPlugin;
 
 impl Plugin for CameraSetupPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Startup,
-            (
-                // spawn_camera,
-                spawn_camera,
-                // Load camera state information from `world.toml`
-                load_world_state,
-                // Load camera settings from `settings.toml`
-                load_settings,
-            )
-                .in_set(SetupSystems::Camera)
-                .chain(),
-        );
+        app.add_plugins(InputManagerPlugin::<CameraAction>::default())
+            .add_systems(
+                Startup,
+                (
+                    // spawn_camera,
+                    spawn_camera,
+                    // Load camera state information from `world.toml`
+                    load_world_state,
+                    // Load camera settings from `settings.toml`
+                    load_settings,
+                )
+                    .in_set(SetupSystems::Camera)
+                    .chain(),
+            );
     }
+}
+
+#[derive(Actionlike, Resource, PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
+pub enum CameraAction {
+    PanUp,
+    PanRight,
+    PanDown,
+    PanLeft,
 }
 
 fn spawn_camera(mut commands: Commands) {
