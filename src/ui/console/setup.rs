@@ -2,11 +2,7 @@ use bevy::prelude::*;
 use bevy_persistent::Persistent;
 use leafwing_input_manager::{Actionlike, plugin::InputManagerPlugin, prelude::InputMap};
 
-use crate::{
-    config::SettingsConfig,
-    directive::DirectiveRegistry,
-    setup::SetupSystems,
-};
+use crate::{config::SettingsConfig, directive::DirectiveRegistry, setup::SetupSystems};
 
 use super::{ConsoleCache, ConsoleConfiguration, ConsoleState, HelpDirective};
 
@@ -34,9 +30,6 @@ pub enum ConsoleAction {
     ToggleInformationArea,
 }
 
-#[derive(Component)]
-struct ConsoleActionEntity;
-
 fn load_settings(mut commands: Commands, settings_config: Res<Persistent<SettingsConfig>>) {
     let mut input_map = InputMap::default();
 
@@ -44,7 +37,7 @@ fn load_settings(mut commands: Commands, settings_config: Res<Persistent<Setting
         ConsoleAction::ToggleInformationArea,
         settings_config.get().console.toggle_information_area,
     );
-    commands.spawn((ConsoleActionEntity, input_map));
+    commands.spawn(input_map);
 }
 
 fn setup_directive_registry(mut commands: Commands) {
