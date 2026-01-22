@@ -9,57 +9,6 @@ impl Plugin for DirectivePlugin {
     }
 }
 
-#[derive(Message, Default, Eq, PartialEq, Hash, Debug, Reflect)]
-pub struct DirectiveQueued {
-    pub directive_path: Vec<String>,
-    pub args: Vec<String>,
-}
-
-#[derive(Clone, Default, Eq, PartialEq, Debug, Reflect)]
-pub struct DirectiveNode {
-    pub name: String,
-    pub description: String,
-    pub children: HashMap<String, DirectiveNode>,
-    pub is_executable: bool,
-}
-
-impl DirectiveNode {
-    pub fn new(name: impl Into<String>, description: impl Into<String>) -> Self {
-        Self {
-            name: name.into(),
-            description: description.into(),
-            children: HashMap::new(),
-            is_executable: false,
-        }
-    }
-
-    pub fn executable(mut self) -> Self {
-        self.is_executable = true;
-        self
-    }
-
-    pub fn with_child(mut self, child: DirectiveNode) -> Self {
-        self.children.insert(child.name.clone(), child);
-        self
-    }
-
-    pub fn get_node(&self, path: &[String]) -> Option<&DirectiveNode> {
-        if path.is_empty() {
-            return Some(self);
-        }
-
-        if let Some(child) = self.children.get(&path[0]) {
-            child.get_node(&path[1..])
-        } else {
-            None
-        }
-    }
-
-    pub fn get_completions(&self) -> Vec<String> {
-        self.children.keys().cloned().collect()
-    }
-}
-
 pub trait Directive: Send + Sync + 'static {
     fn name(&self) -> &'static str;
     fn description(&self) -> &'static str;
@@ -121,6 +70,57 @@ pub trait Directive: Send + Sync + 'static {
         }
 
         node
+    }
+}
+
+#[derive(Message, Default, Eq, PartialEq, Hash, Debug, Reflect)]
+pub struct DirectiveQueued {
+    pub directive_path: Vec<String>,
+    pub args: Vec<String>,
+}
+
+#[derive(Clone, Default, Eq, PartialEq, Debug, Reflect)]
+pub struct DirectiveNode {
+    pub name: String,
+    pub description: String,
+    pub children: HashMap<String, DirectiveNode>,
+    pub is_executable: bool,
+}
+
+impl DirectiveNode {
+    pub fn new(name: impl Into<String>, description: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            description: description.into(),
+            children: HashMap::new(),
+            is_executable: false,
+        }
+    }
+
+    pub fn executable(mut self) -> Self {
+        self.is_executable = true;
+        self
+    }
+
+    pub fn with_child(mut self, child: DirectiveNode) -> Self {
+        self.children.insert(child.name.clone(), child);
+        self
+    }
+
+    pub fn get_node(&self, path: &[String]) -> Option<&DirectiveNode> {
+        if path.is_empty() {
+            return Some(self);
+        }
+
+        if let Some(child) = self.children.get(&path[0]) {
+            child.get_node(&path[1..])
+        } else {
+            None
+        }
+    }
+
+    pub fn get_completions(&self) -> Vec<String> {
+        self.children.keys().cloned().collect()
     }
 }
 
