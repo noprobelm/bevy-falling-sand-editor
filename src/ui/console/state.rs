@@ -1,13 +1,9 @@
-use std::collections::VecDeque;
-
 use bevy::{platform::collections::HashMap, prelude::*};
 
-use bevy_egui::egui;
-use shlex::Shlex;
 use trie_rs::{Trie, TrieBuilder};
 
 use crate::{
-    directive::{Directive, DirectiveNode, DirectiveQueued},
+    directive::{Directive, DirectiveNode},
     ui::LogCapture,
 };
 
