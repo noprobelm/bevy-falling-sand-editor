@@ -1,3 +1,5 @@
+use std::slice::Iter;
+
 use bevy::{platform::collections::HashMap, prelude::*};
 
 pub struct DirectivePlugin;
@@ -119,6 +121,18 @@ impl DirectiveNode {
         }
     }
 
+    pub fn get_args(&self, path: &[String]) -> Vec<String> {
+        if path.is_empty() {
+            return vec![];
+        }
+
+        if let Some(child) = self.children.get(&path[0]) {
+            child.get_args(&path[1..])
+        } else {
+            path.to_vec()
+        }
+    }
+
     pub fn get_completions(&self) -> Vec<String> {
         self.children.keys().cloned().collect()
     }
@@ -139,6 +153,10 @@ impl DirectiveRegistry {
             .iter()
             .find(|cmd| cmd.name() == name)
             .map(|cmd| cmd.as_ref())
+    }
+
+    pub fn iter(&self) -> Iter<Box<dyn Directive>> {
+        self.directives.iter()
     }
 }
 

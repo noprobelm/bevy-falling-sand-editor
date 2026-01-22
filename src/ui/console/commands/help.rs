@@ -18,7 +18,7 @@ pub struct ShowHelpEvent {
     pub target_command: Option<String>,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct HelpDirective;
 
 impl Directive for HelpDirective {

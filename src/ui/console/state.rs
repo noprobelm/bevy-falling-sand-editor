@@ -1,9 +1,10 @@
 use bevy::{platform::collections::HashMap, prelude::*};
 
+use shlex::Shlex;
 use trie_rs::{Trie, TrieBuilder};
 
 use crate::{
-    directive::{Directive, DirectiveNode},
+    directive::{Directive, DirectiveNode, DirectiveRegistry},
     ui::LogCapture,
 };
 
@@ -80,16 +81,12 @@ impl ConsoleCache {
 #[derive(Resource)]
 pub struct ConsoleConfiguration {
     pub command_tree: HashMap<String, DirectiveNode>,
-    pub history_size: usize,
-    pub symbol: String,
 }
 
 impl Default for ConsoleConfiguration {
     fn default() -> Self {
         Self {
             command_tree: HashMap::new(),
-            history_size: 20,
-            symbol: "> ".to_owned(),
         }
     }
 }
@@ -109,27 +106,53 @@ pub struct ConsoleState {
     pub prompt: PromptState,
 }
 
+impl ConsoleState {
+    pub fn execute_command(
+        &mut self,
+        command: String,
+        config: &mut ConsoleConfiguration,
+        registry: &DirectiveRegistry,
+    ) {
+        if command.is_empty() {
+            return;
+        }
+        let args = Shlex::new(&command).collect::<Vec<_>>();
+        if let Some(directive) = registry.find_command(&args[0]) {
+            println!("{:?}", directive.name());
+        }
+    }
+}
+
 pub struct InformationAreaState {
     pub is_open: bool,
-    pub history: Vec<String>,
+    pub log_history: Vec<String>,
 }
 
 impl Default for InformationAreaState {
     fn default() -> Self {
         Self {
             is_open: true,
-            history: vec![],
+            log_history: vec![],
         }
     }
 }
 
-#[derive(Default)]
 pub struct PromptState {
     pub input_text: String,
+    pub request_focus: bool,
+}
+
+impl Default for PromptState {
+    fn default() -> Self {
+        Self {
+            input_text: String::new(),
+            request_focus: false,
+        }
+    }
 }
 
 fn update_information_area(mut console_state: ResMut<ConsoleState>, log_capture: Res<LogCapture>) {
     for log in log_capture.drain() {
-        console_state.information_area.history.push(log);
+        console_state.information_area.log_history.push(log);
     }
 }

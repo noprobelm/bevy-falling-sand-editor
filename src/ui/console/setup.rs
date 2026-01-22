@@ -28,6 +28,7 @@ impl Plugin for ConsoleSetupPlugin {
 #[derive(Actionlike, Resource, PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
 pub enum ConsoleAction {
     ToggleInformationArea,
+    SubmitInputText,
 }
 
 fn load_settings(mut commands: Commands, settings_config: Res<Persistent<SettingsConfig>>) {
@@ -37,6 +38,7 @@ fn load_settings(mut commands: Commands, settings_config: Res<Persistent<Setting
         ConsoleAction::ToggleInformationArea,
         settings_config.get().console.toggle_information_area,
     );
+    input_map.insert(ConsoleAction::SubmitInputText, KeyCode::Enter);
     commands.spawn(input_map);
 }
 

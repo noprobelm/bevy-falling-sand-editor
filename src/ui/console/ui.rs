@@ -1,10 +1,11 @@
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, EguiPrimaryContextPass, egui};
 use leafwing_input_manager::prelude::ActionState;
+use shlex::Shlex;
 
 use crate::{
-    directive::DirectiveQueued,
-    ui::{ConsoleAction, ConsoleState, InformationAreaState, PromptState},
+    directive::{DirectiveQueued, DirectiveRegistry},
+    ui::{ConsoleAction, ConsoleConfiguration, ConsoleState, InformationAreaState, PromptState},
 };
 
 pub(super) struct UiPlugin;
@@ -20,10 +21,15 @@ fn show_console(
     msgw_directive_queued: MessageWriter<DirectiveQueued>,
     mut console_state: ResMut<ConsoleState>,
     action_state: Single<&ActionState<ConsoleAction>>,
+    registry: Res<DirectiveRegistry>,
 ) -> Result {
     let ctx = contexts.ctx_mut()?;
-    if action_state.just_pressed(&ConsoleAction::ToggleInformationArea) {
+    let information_area_toggled = action_state.just_pressed(&ConsoleAction::ToggleInformationArea);
+    if information_area_toggled {
         console_state.information_area.is_open = !console_state.information_area.is_open;
+        if console_state.information_area.is_open {
+            console_state.prompt.request_focus = true;
+        }
     }
     egui::TopBottomPanel::top("information_area").show_animated(
         ctx,
@@ -33,7 +39,14 @@ fn show_console(
         },
     );
     egui::TopBottomPanel::top("console").show(ctx, |ui| {
-        prompt_ui(ui, &mut console_state.prompt);
+        prompt_ui(
+            ui,
+            msgw_directive_queued,
+            &mut console_state.prompt,
+            information_area_toggled,
+            &action_state,
+            &registry,
+        );
     });
     Ok(())
 }
@@ -47,36 +60,54 @@ fn information_area_ui(ui: &mut egui::Ui, information_area_state: &InformationAr
         .auto_shrink(false)
         .show(ui, |ui| {
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
-                for msg in information_area_state.history.iter().rev() {
+                for msg in information_area_state.log_history.iter().rev() {
                     ui.label(msg);
                 }
             });
         });
 }
 
-fn prompt_ui(ui: &mut egui::Ui, prompt_state: &mut PromptState) {
-    ui.add(
-        egui::TextEdit::singleline(&mut prompt_state.input_text)
-            .desired_width(ui.available_width()),
-    );
-}
+fn prompt_ui(
+    ui: &mut egui::Ui,
+    msgw_directive_queued: MessageWriter<DirectiveQueued>,
+    prompt_state: &mut PromptState,
+    information_area_toggled: bool,
+    action_state: &ActionState<ConsoleAction>,
+    registry: &DirectiveRegistry,
+) {
+    // We don't want the hotkey for toggling the information area to add actual text to the input.
+    let response = if information_area_toggled {
+        ui.add(
+            egui::TextEdit::singleline(&mut prompt_state.input_text.clone())
+                .desired_width(ui.available_width()),
+        )
+    } else {
+        ui.add(
+            egui::TextEdit::singleline(&mut prompt_state.input_text)
+                .desired_width(ui.available_width()),
+        )
+    };
 
-fn calculate_completed_input(current_input: &str, suggestion: &str) -> String {
-    if current_input.is_empty() {
-        return suggestion.to_string();
+    if prompt_state.request_focus {
+        response.request_focus();
+        prompt_state.request_focus = false;
     }
 
-    if current_input.ends_with(' ') {
-        format!("{}{}", current_input, suggestion)
-    } else {
-        let words: Vec<&str> = current_input.trim().split_whitespace().collect();
+    if action_state.just_pressed(&ConsoleAction::SubmitInputText) {
+        let command = prompt_state.input_text.clone();
+        execute_command(command, registry);
+        prompt_state.input_text.clear();
+    }
+}
 
-        if words.len() == 1 {
-            suggestion.to_string()
-        } else {
-            let mut complete_words = words[..words.len() - 1].to_vec();
-            complete_words.push(suggestion);
-            complete_words.join(" ")
-        }
+fn execute_command(command: String, registry: &DirectiveRegistry) {
+    if command.is_empty() {
+        return;
+    }
+    let args = Shlex::new(&command).collect::<Vec<_>>();
+    if let Some(directive) = registry.find_command(&args[0]) {
+        let node = directive.build_directive_node();
+        let args = node.get_args(&args);
+        println!("{:?}", directive.name());
     }
 }
