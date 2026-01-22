@@ -12,6 +12,6 @@ pub struct ConfigPlugin;
 
 impl Plugin for ConfigPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((SignalsPlugin));
+        app.add_plugins(SignalsPlugin);
     }
 }
