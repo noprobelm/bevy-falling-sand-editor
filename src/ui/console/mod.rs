@@ -28,7 +28,7 @@ fn show_console(
     mut contexts: EguiContexts,
     msgw_directive_queued: MessageWriter<DirectiveQueued>,
     mut console_state: ResMut<ConsoleState>,
-    mut action_state: Single<&ActionState<ConsoleAction>>,
+    action_state: Single<&ActionState<ConsoleAction>>,
 ) -> Result {
     let ctx = contexts.ctx_mut()?;
     if action_state.just_pressed(&ConsoleAction::ToggleInformationArea) {
@@ -38,28 +38,36 @@ fn show_console(
         ctx,
         console_state.information_area.is_open,
         |ui| {
-            information_area_ui(ui);
+            information_area_ui(ui, &console_state.information_area);
         },
     );
     egui::TopBottomPanel::top("console").show(ctx, |ui| {
-        prompt_ui(ui);
+        prompt_ui(ui, &mut console_state.prompt);
     });
     Ok(())
 }
 
-fn information_area_ui(ui: &mut egui::Ui) {
-    let foo = vec!["This", "Is", "A", "Few", "Lines"];
+fn information_area_ui(ui: &mut egui::Ui, information_area_state: &InformationAreaState) {
+    let height = 400.0;
     egui::ScrollArea::vertical()
-        .stick_to_bottom(true) // auto-scroll to new messages
+        .stick_to_bottom(true)
+        .max_height(height)
+        .min_scrolled_height(height)
+        .auto_shrink(false)
         .show(ui, |ui| {
-            for msg in foo {
-                ui.label(msg);
-            }
+            ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
+                for msg in information_area_state.history.iter().rev() {
+                    ui.label(msg);
+                }
+            });
         });
 }
 
-fn prompt_ui(ui: &mut egui::Ui) {
-    ui.add(egui::TextEdit::singleline(&mut String::new()).desired_width(ui.available_width()));
+fn prompt_ui(ui: &mut egui::Ui, prompt_state: &mut PromptState) {
+    ui.add(
+        egui::TextEdit::singleline(&mut prompt_state.input_text)
+            .desired_width(ui.available_width()),
+    );
 }
 
 fn calculate_completed_input(current_input: &str, suggestion: &str) -> String {

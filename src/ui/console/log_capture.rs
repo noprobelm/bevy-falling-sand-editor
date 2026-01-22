@@ -4,29 +4,7 @@ use bevy::log::tracing_subscriber::Layer;
 use bevy::prelude::*;
 use std::sync::{Arc, Mutex};
 
-pub struct LogCapturePlugin;
-
-impl Plugin for LogCapturePlugin {
-    fn build(&self, app: &mut App) {
-        app.add_message::<TracingLogMessage>();
-    }
-}
-
-#[derive(Message, Default, Eq, PartialEq, Hash, Debug, Reflect)]
-pub struct TracingLogMessage(pub String);
-
 /// Creates a custom log layer and inserts the `LogCapture` resource into the app.
-///
-/// Use with `LogPlugin::custom_layer`:
-/// ```ignore
-/// App::new()
-///     .add_plugins(
-///         DefaultPlugins.set(LogPlugin {
-///             custom_layer: console_capture_layer,
-///             ..default()
-///         })
-///     )
-/// ```
 pub fn console_capture_layer(app: &mut App) -> Option<BoxedLayer> {
     let log_capture = LogCapture::default();
     let layer = ConsoleCaptureLayer {

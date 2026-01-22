@@ -6,7 +6,10 @@ use bevy_egui::egui;
 use shlex::Shlex;
 use trie_rs::{Trie, TrieBuilder};
 
-use crate::directive::{Directive, DirectiveNode, DirectiveQueued};
+use crate::{
+    directive::{Directive, DirectiveNode, DirectiveQueued},
+    ui::LogCapture,
+};
 
 pub struct ConsoleMetaPlugin;
 
@@ -14,7 +17,7 @@ impl Plugin for ConsoleMetaPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            rebuild_console_cache.run_if(resource_changed::<ConsoleConfiguration>),
+            (rebuild_console_cache.run_if(resource_changed::<ConsoleConfiguration>), update_information_area),
         );
     }
 }
@@ -104,14 +107,27 @@ impl ConsoleConfiguration {
 #[derive(Resource, Default)]
 pub struct ConsoleState {
     pub information_area: InformationAreaState,
+    pub prompt: PromptState,
 }
 
 pub struct InformationAreaState {
     pub is_open: bool,
+    pub history: Vec<String>,
 }
 
 impl Default for InformationAreaState {
     fn default() -> Self {
-        Self { is_open: true }
+        Self { is_open: true, history: vec![] }
+    }
+}
+
+#[derive(Default)]
+pub struct PromptState {
+    pub input_text: String,
+}
+
+fn update_information_area(mut console_state: ResMut<ConsoleState>, log_capture: Res<LogCapture>) {
+    for log in log_capture.drain() {
+        console_state.information_area.history.push(log);
     }
 }
