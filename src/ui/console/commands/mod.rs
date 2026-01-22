@@ -8,6 +8,6 @@ pub struct CommandsPlugin;
 
 impl Plugin for CommandsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(HelpDirectivePlugin);
+        app.add_plugins(HelpCommandPlugin);
     }
 }

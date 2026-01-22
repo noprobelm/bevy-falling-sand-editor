@@ -5,9 +5,9 @@ use crate::{
     ui::ConsoleConfiguration,
 };
 
-pub struct HelpDirectivePlugin;
+pub struct HelpCommandPlugin;
 
-impl Plugin for HelpDirectivePlugin {
+impl Plugin for HelpCommandPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(on_show_help);
     }
