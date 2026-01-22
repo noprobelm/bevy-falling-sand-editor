@@ -17,7 +17,10 @@ impl Plugin for ConsoleMetaPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (rebuild_console_cache.run_if(resource_changed::<ConsoleConfiguration>), update_information_area),
+            (
+                rebuild_console_cache.run_if(resource_changed::<ConsoleConfiguration>),
+                update_information_area,
+            ),
         );
     }
 }
@@ -117,7 +120,10 @@ pub struct InformationAreaState {
 
 impl Default for InformationAreaState {
     fn default() -> Self {
-        Self { is_open: true, history: vec![] }
+        Self {
+            is_open: true,
+            history: vec![],
+        }
     }
 }
 
