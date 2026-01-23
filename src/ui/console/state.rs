@@ -56,7 +56,7 @@ impl ConsoleCache {
             registry.root_names().cloned().collect()
         } else {
             registry
-                .tree()
+                .directives()
                 .get(&context_path[0])
                 .and_then(|root_node| root_node.get_node(&context_path[1..]))
                 .map(|node| node.completions())

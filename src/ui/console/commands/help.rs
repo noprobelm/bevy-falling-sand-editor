@@ -37,14 +37,14 @@ fn on_show_help(trigger: On<ShowHelpEvent>, registry: Res<DirectiveRegistry>) {
     let event = trigger.event();
 
     if let Some(target_cmd) = &event.target_command {
-        if let Some(root_node) = registry.tree().get(target_cmd) {
+        if let Some(root_node) = registry.directives().get(target_cmd) {
             show_command_tree_help(root_node, vec![target_cmd.clone()]);
         } else {
             error!("Directive '{}' does not exist", target_cmd);
         }
     } else {
         info!("Available directives:");
-        for (name, node) in registry.tree() {
+        for (name, node) in registry.directives() {
             let mut line = format!("  {} - {}", name, node.description);
             if !node.children.is_empty() {
                 let subs: Vec<_> = node.children.keys().cloned().collect();
