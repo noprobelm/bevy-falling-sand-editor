@@ -1,9 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{
-    directive::{Directive, DirectiveNode},
-    ui::ConsoleConfiguration,
-};
+use crate::directive::{Directive, DirectiveNode, DirectiveRegistry};
 
 pub struct HelpCommandPlugin;
 
@@ -30,54 +27,41 @@ impl Directive for HelpDirective {
         "Display help information for directives"
     }
 
-    fn execute_directive(&self, args: &[String], commands: &mut Commands) {
+    fn run(&self, args: &[String], commands: &mut Commands) {
         let target_command = args.first().cloned();
         commands.trigger(ShowHelpEvent { target_command });
     }
 }
 
-fn on_show_help(trigger: On<ShowHelpEvent>, config: Res<ConsoleConfiguration>) {
+fn on_show_help(trigger: On<ShowHelpEvent>, registry: Res<DirectiveRegistry>) {
     let event = trigger.event();
 
     if let Some(target_cmd) = &event.target_command {
-        if let Some(root_node) = config.command_tree.get(target_cmd) {
+        if let Some(root_node) = registry.tree().get(target_cmd) {
             show_command_tree_help(root_node, vec![target_cmd.clone()]);
         } else {
-            error!("Command '{target_cmd}' does not exist");
+            error!("Directive '{}' does not exist", target_cmd);
         }
     } else {
-        let mut info_msg = String::from("Available commands:");
-
-        for (name, node) in &config.command_tree {
-            info_msg.push_str(format!("{} - {}", name, node.description).as_str());
+        info!("Available directives:");
+        for (name, node) in registry.tree() {
+            let mut line = format!("  {} - {}", name, node.description);
             if !node.children.is_empty() {
-                info_msg.push_str(
-                    format!(
-                        "\t(has subcommands: {}",
-                        node.children.keys().cloned().collect::<Vec<_>>().join(", ")
-                    )
-                    .as_str(),
-                );
+                let subs: Vec<_> = node.children.keys().cloned().collect();
+                line.push_str(&format!(" (subcommands: {})", subs.join(", ")));
             }
+            info!("{}", line);
         }
-        info!(info_msg);
     }
 }
 
 fn show_command_tree_help(node: &DirectiveNode, path: Vec<String>) {
-    let mut info_msg = format!("{} - {}", path.join(" "), node.description);
-    if node.is_executable {
-        info_msg.push_str("\t(executable command)");
-    }
+    info!("{} - {}", path.join(" "), node.description);
+
     if !node.children.is_empty() {
-        info_msg.push_str("\tSubcommands:");
+        info!("  Subcommands:");
         for (name, child) in &node.children {
-            let child_path = format!("    {} - {}", name, child.description);
-            info_msg.push_str(child_path.as_str());
-            if child.is_executable {
-                info_msg.push_str("\t(executable)");
-            }
+            info!("    {} - {}", name, child.description);
         }
     }
-    info!(info_msg);
 }

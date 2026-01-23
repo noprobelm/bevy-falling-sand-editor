@@ -4,8 +4,6 @@ use bevy::prelude::*;
 
 pub use help::*;
 
-use crate::ui::ConsoleConfiguration;
-
 pub struct CommandsPlugin;
 
 impl Plugin for CommandsPlugin {

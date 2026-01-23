@@ -1,6 +1,5 @@
-use std::slice::Iter;
-
 use bevy::{platform::collections::HashMap, prelude::*};
+use shlex::Shlex;
 
 pub struct DirectivePlugin;
 
@@ -11,202 +10,124 @@ impl Plugin for DirectivePlugin {
     }
 }
 
+/// Core trait for implementing directives.
 pub trait Directive: Send + Sync + 'static {
     fn name(&self) -> &'static str;
     fn description(&self) -> &'static str;
 
-    fn subdirective_types(&self) -> Vec<Box<dyn Directive>> {
+    /// Return subdirectives if this directive has them.
+    fn subdirectives(&self) -> Vec<Box<dyn Directive>> {
         vec![]
     }
 
-    fn execute_directive(&self, _args: &[String], _commands: &mut Commands) {}
-
-    fn execute(&self, path: &[String], args: &[String], commands: &mut Commands) {
-        let subdirectives = self.subdirective_types();
-
-        let current_depth = path
-            .iter()
-            .position(|part| part == self.name())
-            .unwrap_or(0);
-
-        if current_depth + 1 >= path.len() {
-            if subdirectives.is_empty() {
-                self.execute_directive(args, commands);
-            } else {
-                error!("'{}' requires a subcommand", self.name());
-                let subcmd_names: Vec<String> = subdirectives
-                    .iter()
-                    .map(|cmd| cmd.name().to_string())
-                    .collect();
-                info!("Available subcommands: {}", subcmd_names.join(", "));
-            }
-            return;
-        }
-
-        let next_directive = &path[current_depth + 1];
-        for subdirective in subdirectives {
-            if subdirective.name() == next_directive {
-                subdirective.execute(path, args, commands);
-                return;
-            }
-        }
-
-        error!("Unknown subcommand '{} {}'", self.name(), next_directive);
-    }
-
-    #[allow(dead_code)]
-    fn subdirectives(&self) -> Vec<Box<dyn Directive>> {
-        self.subdirective_types()
-    }
-
-    fn build_directive_node(&self) -> DirectiveNode {
-        let mut node = DirectiveNode::new(self.name(), self.description());
-
-        let subcommands = self.subdirective_types();
-        if subcommands.is_empty() {
-            node = node.executable();
-        } else {
-            for subdirective in subcommands {
-                node = node.with_child(subdirective.build_directive_node());
-            }
-        }
-
-        node
-    }
+    /// Execute this directive with the given arguments.
+    fn run(&self, _args: &[String], _commands: &mut Commands) {}
 }
 
-#[derive(Message, Default, Eq, PartialEq, Hash, Debug, Reflect)]
+/// Message to queue a directive for execution.
+#[derive(Message, Default, Debug)]
 pub struct DirectiveQueued {
-    pub directive_path: Vec<String>,
-    pub args: Vec<String>,
+    pub input: String,
 }
 
-#[derive(Clone, Default, Eq, PartialEq, Debug, Reflect)]
+/// Stores registered directives and their tree structure for completions.
+#[derive(Resource, Default)]
+pub struct DirectiveRegistry {
+    directives: HashMap<String, Box<dyn Directive>>,
+    tree: HashMap<String, DirectiveNode>,
+}
+
+impl DirectiveRegistry {
+    pub fn register(&mut self, directive: impl Directive) {
+        let name = directive.name().to_string();
+        self.tree.insert(name.clone(), build_node(&directive));
+        self.directives.insert(name, Box::new(directive));
+    }
+
+    pub fn get(&self, name: &str) -> Option<&dyn Directive> {
+        self.directives.get(name).map(|d| d.as_ref())
+    }
+
+    pub fn root_names(&self) -> impl Iterator<Item = &String> {
+        self.directives.keys()
+    }
+
+    pub fn tree(&self) -> &HashMap<String, DirectiveNode> {
+        &self.tree
+    }
+}
+
+/// Node for command tree (used for help and completions).
+#[derive(Clone, Default, Debug)]
 pub struct DirectiveNode {
     pub name: String,
     pub description: String,
     pub children: HashMap<String, DirectiveNode>,
-    pub is_executable: bool,
 }
 
 impl DirectiveNode {
-    pub fn new(name: impl Into<String>, description: impl Into<String>) -> Self {
-        Self {
-            name: name.into(),
-            description: description.into(),
-            children: HashMap::new(),
-            is_executable: false,
-        }
+    /// Get completions at this level of the tree.
+    pub fn completions(&self) -> Vec<String> {
+        self.children.keys().cloned().collect()
     }
 
-    pub fn executable(mut self) -> Self {
-        self.is_executable = true;
-        self
-    }
-
-    pub fn with_child(mut self, child: DirectiveNode) -> Self {
-        self.children.insert(child.name.clone(), child);
-        self
-    }
-
+    /// Navigate to a child node by path.
     pub fn get_node(&self, path: &[String]) -> Option<&DirectiveNode> {
         if path.is_empty() {
             return Some(self);
         }
-
-        if let Some(child) = self.children.get(&path[0]) {
-            child.get_node(&path[1..])
-        } else {
-            None
-        }
-    }
-
-    pub fn get_args(&self, path: &[String]) -> Vec<String> {
-        if path.is_empty() {
-            return vec![];
-        }
-
-        if let Some(child) = self.children.get(&path[0]) {
-            child.get_args(&path[1..])
-        } else {
-            path.to_vec()
-        }
-    }
-
-    pub fn get_completions(&self) -> Vec<String> {
-        self.children.keys().cloned().collect()
+        self.children.get(&path[0])?.get_node(&path[1..])
     }
 }
 
-#[derive(Resource, Default)]
-pub struct DirectiveRegistry {
-    pub directives: Vec<Box<dyn Directive>>,
+fn build_node(directive: &dyn Directive) -> DirectiveNode {
+    let mut node = DirectiveNode {
+        name: directive.name().to_string(),
+        description: directive.description().to_string(),
+        children: HashMap::new(),
+    };
+    for sub in directive.subdirectives() {
+        let child = build_node(sub.as_ref());
+        node.children.insert(child.name.clone(), child);
+    }
+    node
 }
 
-impl DirectiveRegistry {
-    pub fn register<T: Directive + Default>(&mut self) {
-        self.directives.push(Box::new(DirectiveWrapper::<T>::new()));
-    }
-
-    pub fn find_command(&self, name: &str) -> Option<&dyn Directive> {
-        self.directives
-            .iter()
-            .find(|cmd| cmd.name() == name)
-            .map(|cmd| cmd.as_ref())
-    }
-
-    pub fn iter(&self) -> Iter<Box<dyn Directive>> {
-        self.directives.iter()
-    }
-}
-
-struct DirectiveWrapper<T: Directive> {
-    _phantom: std::marker::PhantomData<T>,
-}
-
-impl<T: Directive> DirectiveWrapper<T> {
-    fn new() -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
-    }
-}
-
-impl<T: Directive + Default> Directive for DirectiveWrapper<T> {
-    fn name(&self) -> &'static str {
-        T::default().name()
-    }
-
-    fn description(&self) -> &'static str {
-        T::default().description()
-    }
-
-    fn execute(&self, path: &[String], args: &[String], commands: &mut Commands) {
-        T::default().execute(path, args, commands);
-    }
-
-    fn subdirectives(&self) -> Vec<Box<dyn Directive>> {
-        T::default().subdirectives()
-    }
-
-    fn build_directive_node(&self) -> DirectiveNode {
-        T::default().build_directive_node()
-    }
-}
-
-pub fn msgr_directive_queued(
-    mut msgr_directive_queued: MessageReader<DirectiveQueued>,
+fn msgr_directive_queued(
+    mut messages: MessageReader<DirectiveQueued>,
     registry: Res<DirectiveRegistry>,
     mut commands: Commands,
 ) {
-    for msg in msgr_directive_queued.read() {
-        if msg.directive_path.is_empty() {
-            continue;
-        }
+    for msg in messages.read() {
+        execute(&msg.input, &registry, &mut commands);
+    }
+}
 
-        let root_directive_name = &msg.directive_path[0];
-        if let Some(command) = registry.find_command(root_directive_name) {
-            command.execute(&msg.directive_path, &msg.args, &mut commands);
+fn execute(input: &str, registry: &DirectiveRegistry, commands: &mut Commands) {
+    let tokens: Vec<String> = Shlex::new(input).collect();
+    if tokens.is_empty() {
+        return;
+    }
+
+    let Some(root) = registry.get(&tokens[0]) else {
+        error!("Unknown command: {}", tokens[0]);
+        return;
+    };
+
+    run_directive(root, &tokens[1..], commands);
+}
+
+fn run_directive(directive: &dyn Directive, args: &[String], commands: &mut Commands) {
+    let subs = directive.subdirectives();
+
+    // If subdirectives exist and first arg matches one, recurse
+    if !subs.is_empty() && !args.is_empty() {
+        if let Some(sub) = subs.iter().find(|s| s.name() == args[0]) {
+            run_directive(sub.as_ref(), &args[1..], commands);
+            return;
         }
     }
+
+    // Run this directive (either leaf or no matching subdirective)
+    directive.run(args, commands);
 }

@@ -1,12 +1,7 @@
 use bevy::{platform::collections::HashMap, prelude::*};
-
-use shlex::Shlex;
 use trie_rs::{Trie, TrieBuilder};
 
-use crate::{
-    directive::{Directive, DirectiveNode, DirectiveRegistry},
-    ui::LogCapture,
-};
+use crate::{directive::DirectiveRegistry, ui::LogCapture};
 
 pub struct ConsoleMetaPlugin;
 
@@ -15,16 +10,16 @@ impl Plugin for ConsoleMetaPlugin {
         app.add_systems(
             Update,
             (
-                rebuild_console_cache.run_if(resource_changed::<ConsoleConfiguration>),
+                rebuild_console_cache.run_if(resource_changed::<DirectiveRegistry>),
                 update_information_area,
             ),
         );
     }
 }
 
-/// Rebuild the trie as new console commands are added or removed.
-fn rebuild_console_cache(mut cache: ResMut<ConsoleCache>, config: Res<ConsoleConfiguration>) {
-    cache.rebuild_tries(&config);
+/// Rebuild the trie when directives change.
+fn rebuild_console_cache(mut cache: ResMut<ConsoleCache>, registry: Res<DirectiveRegistry>) {
+    cache.rebuild_tries(&registry);
 }
 
 #[derive(Resource, Default)]
@@ -33,17 +28,13 @@ pub struct ConsoleCache {
 }
 
 impl ConsoleCache {
-    pub fn rebuild_tries(&mut self, config: &ConsoleConfiguration) {
+    pub fn rebuild_tries(&mut self, registry: &DirectiveRegistry) {
         self.context_tries.clear();
-        self.build_context_tries_recursive(&[], config);
+        self.build_context_tries_recursive(&[], registry);
     }
 
-    fn build_context_tries_recursive(
-        &mut self,
-        current_path: &[String],
-        config: &ConsoleConfiguration,
-    ) {
-        let completions = self.get_context_completions(current_path, config);
+    fn build_context_tries_recursive(&mut self, current_path: &[String], registry: &DirectiveRegistry) {
+        let completions = self.get_context_completions(current_path, registry);
         if !completions.is_empty() {
             let mut builder: TrieBuilder<u8> = TrieBuilder::new();
             for completion in &completions {
@@ -56,47 +47,21 @@ impl ConsoleCache {
         for completion in completions {
             let mut next_path = current_path.to_vec();
             next_path.push(completion);
-            self.build_context_tries_recursive(&next_path, config);
+            self.build_context_tries_recursive(&next_path, registry);
         }
     }
 
-    fn get_context_completions(
-        &self,
-        context_path: &[String],
-        config: &ConsoleConfiguration,
-    ) -> Vec<String> {
+    fn get_context_completions(&self, context_path: &[String], registry: &DirectiveRegistry) -> Vec<String> {
         if context_path.is_empty() {
-            config.command_tree.keys().cloned().collect()
+            registry.root_names().cloned().collect()
         } else {
-            config
-                .command_tree
+            registry
+                .tree()
                 .get(&context_path[0])
                 .and_then(|root_node| root_node.get_node(&context_path[1..]))
-                .map(|node| node.get_completions())
+                .map(|node| node.completions())
                 .unwrap_or_default()
         }
-    }
-}
-
-#[derive(Resource)]
-pub struct ConsoleConfiguration {
-    pub command_tree: HashMap<String, DirectiveNode>,
-}
-
-impl Default for ConsoleConfiguration {
-    fn default() -> Self {
-        Self {
-            command_tree: HashMap::new(),
-        }
-    }
-}
-
-impl ConsoleConfiguration {
-    pub fn register_directive<T: Directive + Default>(&mut self) {
-        let directive = T::default();
-        let name = directive.name().to_string();
-        let command_node = directive.build_directive_node();
-        self.command_tree.insert(name, command_node);
     }
 }
 
@@ -104,23 +69,6 @@ impl ConsoleConfiguration {
 pub struct ConsoleState {
     pub information_area: InformationAreaState,
     pub prompt: PromptState,
-}
-
-impl ConsoleState {
-    pub fn execute_command(
-        &mut self,
-        command: String,
-        config: &mut ConsoleConfiguration,
-        registry: &DirectiveRegistry,
-    ) {
-        if command.is_empty() {
-            return;
-        }
-        let args = Shlex::new(&command).collect::<Vec<_>>();
-        if let Some(directive) = registry.find_command(&args[0]) {
-            println!("{:?}", directive.name());
-        }
-    }
 }
 
 pub struct InformationAreaState {
@@ -137,18 +85,10 @@ impl Default for InformationAreaState {
     }
 }
 
+#[derive(Default)]
 pub struct PromptState {
     pub input_text: String,
     pub request_focus: bool,
-}
-
-impl Default for PromptState {
-    fn default() -> Self {
-        Self {
-            input_text: String::new(),
-            request_focus: false,
-        }
-    }
 }
 
 fn update_information_area(mut console_state: ResMut<ConsoleState>, log_capture: Res<LogCapture>) {

@@ -4,7 +4,7 @@ use leafwing_input_manager::{Actionlike, plugin::InputManagerPlugin, prelude::In
 
 use crate::{config::SettingsConfig, directive::DirectiveRegistry, setup::SetupSystems};
 
-use super::{ConsoleCache, ConsoleConfiguration, ConsoleState, HelpDirective};
+use super::{ConsoleCache, ConsoleState, HelpDirective};
 
 pub struct ConsoleSetupPlugin;
 
@@ -15,12 +15,7 @@ impl Plugin for ConsoleSetupPlugin {
             .init_resource::<ConsoleState>()
             .add_systems(
                 Startup,
-                (
-                    load_settings,
-                    setup_directive_registry,
-                    setup_console_configuration,
-                )
-                    .in_set(SetupSystems::Console),
+                (load_settings, setup_directive_registry).in_set(SetupSystems::Console),
             );
     }
 }
@@ -33,7 +28,6 @@ pub enum ConsoleAction {
 
 fn load_settings(mut commands: Commands, settings_config: Res<Persistent<SettingsConfig>>) {
     let mut input_map = InputMap::default();
-
     input_map.insert(
         ConsoleAction::ToggleInformationArea,
         settings_config.get().console.toggle_information_area,
@@ -44,12 +38,6 @@ fn load_settings(mut commands: Commands, settings_config: Res<Persistent<Setting
 
 fn setup_directive_registry(mut commands: Commands) {
     let mut registry = DirectiveRegistry::default();
-    registry.register::<HelpDirective>();
+    registry.register(HelpDirective);
     commands.insert_resource(registry);
-}
-
-fn setup_console_configuration(mut commands: Commands) {
-    let mut config = ConsoleConfiguration::default();
-    config.register_directive::<HelpDirective>();
-    commands.insert_resource(config);
 }
