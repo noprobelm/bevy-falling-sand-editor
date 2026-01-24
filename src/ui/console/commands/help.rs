@@ -2,9 +2,9 @@ use bevy::prelude::*;
 
 use crate::directive::{Directive, DirectiveNode, DirectiveRegistry};
 
-pub struct HelpCommandPlugin;
+pub struct HelpDirectivePlugin;
 
-impl Plugin for HelpCommandPlugin {
+impl Plugin for HelpDirectivePlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(on_show_help);
     }

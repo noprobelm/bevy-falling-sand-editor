@@ -2,7 +2,9 @@ use bevy::prelude::*;
 use bevy_persistent::Persistent;
 use leafwing_input_manager::{Actionlike, plugin::InputManagerPlugin, prelude::InputMap};
 
-use crate::{config::SettingsConfig, directive::DirectiveRegistry, setup::SetupSystems};
+use crate::{
+    config::SettingsConfig, directive::DirectiveRegistry, setup::SetupSystems, ui::ExitDirective,
+};
 
 use super::{ConsoleCache, ConsoleState, HelpDirective};
 
@@ -39,5 +41,6 @@ fn load_settings(mut commands: Commands, settings_config: Res<Persistent<Setting
 fn setup_directive_registry(mut commands: Commands) {
     let mut registry = DirectiveRegistry::default();
     registry.register(HelpDirective);
+    registry.register(ExitDirective);
     commands.insert_resource(registry);
 }
