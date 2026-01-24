@@ -67,8 +67,8 @@ fn main() {
 }
 
 fn spawn_particles(mut msgw_spawn_particle: MessageWriter<SpawnParticleSignal>) {
-    for y in 0..10 {
-        for x in 0..10 {
+    for y in -3..3 {
+        for x in -3..3 {
             msgw_spawn_particle.write(SpawnParticleSignal::new(
                 Particle::new("Water"),
                 IVec2::new(x, y),
