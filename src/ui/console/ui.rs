@@ -79,11 +79,14 @@ fn prompt_ui(
     let response = if toggled_info_area {
         ui.add(
             egui::TextEdit::singleline(&mut prompt.input_text.clone())
-                .desired_width(ui.available_width()),
+                .desired_width(ui.available_width())
+                .code_editor(),
         )
     } else {
         ui.add(
-            egui::TextEdit::singleline(&mut prompt.input_text).desired_width(ui.available_width()),
+            egui::TextEdit::singleline(&mut prompt.input_text)
+                .desired_width(ui.available_width())
+                .code_editor(),
         )
     };
 
