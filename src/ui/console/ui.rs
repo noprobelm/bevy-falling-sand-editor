@@ -100,5 +100,6 @@ fn prompt_ui(
             input: prompt.input_text.clone(),
         });
         prompt.input_text.clear();
+        response.request_focus();
     }
 }
