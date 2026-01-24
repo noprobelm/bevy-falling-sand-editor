@@ -39,7 +39,7 @@ use bevy::prelude::*;
 
 use crate::{
     camera::CameraSetupPlugin, config::ConfigSetupPlugin, particles::ParticlesSetupPlugin,
-    ui::ConsoleSetupPlugin,
+    ui::UiSetupPlugin,
 };
 
 pub struct SetupPlugin {
@@ -60,7 +60,7 @@ impl Plugin for SetupPlugin {
         let config_path = self.config_path.clone();
         app.add_plugins((
             ConfigSetupPlugin { config_path },
-            ConsoleSetupPlugin,
+            UiSetupPlugin,
             CameraSetupPlugin,
             ParticlesSetupPlugin,
         ))
