@@ -19,7 +19,6 @@ use bevy_falling_sand::prelude::{
 use camera::*;
 use config::*;
 use directive::*;
-use particles::*;
 use setup::*;
 
 use bevy::{log::LogPlugin, prelude::*, window::WindowMode};
@@ -69,9 +68,11 @@ fn main() {
 
 fn spawn_particles(mut msgw_spawn_particle: MessageWriter<SpawnParticleSignal>) {
     for y in 0..10 {
-        msgw_spawn_particle.write(SpawnParticleSignal::new(
-            Particle::new("Water"),
-            IVec2::new(0, y),
-        ));
+        for x in 0..10 {
+            msgw_spawn_particle.write(SpawnParticleSignal::new(
+                Particle::new("Water"),
+                IVec2::new(x, y),
+            ));
+        }
     }
 }

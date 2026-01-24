@@ -3,7 +3,7 @@ mod states;
 
 use bevy::prelude::*;
 
-use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
+use bevy_egui::EguiPlugin;
 pub use console::*;
 pub use states::*;
 
