@@ -1,17 +1,21 @@
-mod resources;
+mod base;
+mod save;
+mod settings;
 pub mod setup;
-mod signals;
+mod world;
 
 use bevy::prelude::*;
 
-pub use resources::*;
+pub use base::*;
+pub use save::*;
+pub use settings::*;
 pub use setup::*;
-pub use signals::*;
+pub use world::*;
 
 pub struct ConfigPlugin;
 
 impl Plugin for ConfigPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(SignalsPlugin);
+        app.add_plugins((save::SavePlugin, WorldConfigPlugin, SettingsConfigPlugin));
     }
 }

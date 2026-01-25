@@ -1,4 +1,5 @@
 mod components;
+mod save;
 pub mod setup;
 mod systems;
 
@@ -12,6 +13,6 @@ pub(super) struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((ComponentsPlugin, SystemsPlugin));
+        app.add_plugins((ComponentsPlugin, SystemsPlugin, save::SavePlugin));
     }
 }

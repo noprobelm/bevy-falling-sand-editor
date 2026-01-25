@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy_falling_sand::core::ChunkLoader;
 use bevy_persistent::Persistent;
 use leafwing_input_manager::{Actionlike, plugin::InputManagerPlugin, prelude::InputMap};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     config::{SettingsConfig, WorldConfig},
@@ -39,6 +40,25 @@ pub enum CameraAction {
     PanLeft,
 }
 
+#[derive(Resource, Clone, Debug, Serialize, Deserialize)]
+pub struct CameraKeyBindings {
+    pub pan_camera_up: KeyCode,
+    pub pan_camera_left: KeyCode,
+    pub pan_camera_down: KeyCode,
+    pub pan_camera_right: KeyCode,
+}
+
+impl Default for CameraKeyBindings {
+    fn default() -> Self {
+        CameraKeyBindings {
+            pan_camera_up: KeyCode::KeyW,
+            pan_camera_left: KeyCode::KeyA,
+            pan_camera_down: KeyCode::KeyS,
+            pan_camera_right: KeyCode::KeyD,
+        }
+    }
+}
+
 fn spawn_camera(mut commands: Commands) {
     commands.spawn(MainCamera);
 }
@@ -49,8 +69,10 @@ fn load_world_state(
     world_config: Res<Persistent<WorldConfig>>,
 ) {
     commands.insert_resource(world_config.camera.clone());
+    let position = world_config.get().camera.position;
     commands.entity(camera.0).insert((
         Camera2d,
+        Transform::from_xyz(position.x, position.y, 0.0),
         Projection::Orthographic(OrthographicProjection {
             near: -1000.0,
             scale: world_config.get().camera.scale,
@@ -89,4 +111,5 @@ fn load_settings(
     );
 
     commands.entity(camera.0).insert(input_map);
+    commands.insert_resource(settings_config.get().camera.clone());
 }
