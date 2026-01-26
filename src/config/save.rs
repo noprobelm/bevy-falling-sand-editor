@@ -14,12 +14,12 @@ pub struct PrepareWorldSaveEvent;
 
 /// Triggered automatically after PrepareWorldSaveEvent handlers complete.
 #[derive(Event, Default, Debug)]
-pub struct PersistWorldEvent;
+pub struct WorldSaveEvent;
 
 /// Event to trigger saving settings data
 #[derive(Event, Default, Debug)]
 pub struct SaveSettingsEvent;
 
 fn on_prepare_world_save_complete(_trigger: On<PrepareWorldSaveEvent>, mut commands: Commands) {
-    commands.trigger(PersistWorldEvent);
+    commands.trigger(WorldSaveEvent);
 }

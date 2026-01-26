@@ -3,8 +3,9 @@ use std::path::PathBuf;
 use bevy::prelude::*;
 use bevy_persistent::Persistent;
 
-use super::CameraConfig;
-use crate::config::{ParticleTypesFile, PersistWorldEvent, PrepareWorldSaveEvent, WorldConfig};
+use crate::config::{
+    CameraConfig, ParticleTypesFile, PrepareWorldSaveEvent, WorldConfig, WorldSaveEvent,
+};
 
 pub(super) struct SavePlugin;
 
@@ -12,7 +13,7 @@ impl Plugin for SavePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<WorldSaveBuilder>()
             .add_observer(on_prepare_particle_types_save)
-            .add_observer(on_persist_world);
+            .add_observer(on_world_save);
     }
 }
 
@@ -35,8 +36,8 @@ fn on_prepare_particle_types_save(
     ));
 }
 
-fn on_persist_world(
-    _trigger: On<PersistWorldEvent>,
+fn on_world_save(
+    _trigger: On<WorldSaveEvent>,
     mut builder: ResMut<WorldSaveBuilder>,
     mut persistent: ResMut<Persistent<WorldConfig>>,
 ) {
