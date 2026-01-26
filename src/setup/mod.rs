@@ -68,7 +68,7 @@ impl Plugin for SetupPlugin {
             Startup,
             (
                 SetupSystems::Configuration,
-                SetupSystems::Console,
+                SetupSystems::Ui,
                 SetupSystems::Camera,
                 SetupSystems::Particles,
             )
@@ -81,7 +81,7 @@ impl Plugin for SetupPlugin {
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SetupSystems {
     Configuration,
-    Console,
+    Ui,
     Camera,
     Particles,
 }

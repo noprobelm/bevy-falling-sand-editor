@@ -3,9 +3,9 @@ use trie_rs::{Trie, TrieBuilder};
 
 use crate::{directive::DirectiveRegistry, ui::LogCapture};
 
-pub struct ConsoleMetaPlugin;
+pub struct StatePlugin;
 
-impl Plugin for ConsoleMetaPlugin {
+impl Plugin for StatePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
@@ -33,7 +33,11 @@ impl ConsoleCache {
         self.build_context_tries_recursive(&[], registry);
     }
 
-    fn build_context_tries_recursive(&mut self, current_path: &[String], registry: &DirectiveRegistry) {
+    fn build_context_tries_recursive(
+        &mut self,
+        current_path: &[String],
+        registry: &DirectiveRegistry,
+    ) {
         let completions = self.get_context_completions(current_path, registry);
         if !completions.is_empty() {
             let mut builder: TrieBuilder<u8> = TrieBuilder::new();
@@ -51,7 +55,11 @@ impl ConsoleCache {
         }
     }
 
-    fn get_context_completions(&self, context_path: &[String], registry: &DirectiveRegistry) -> Vec<String> {
+    fn get_context_completions(
+        &self,
+        context_path: &[String],
+        registry: &DirectiveRegistry,
+    ) -> Vec<String> {
         if context_path.is_empty() {
             registry.root_names().cloned().collect()
         } else {

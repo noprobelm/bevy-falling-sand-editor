@@ -21,7 +21,7 @@ impl Plugin for ConsoleSetupPlugin {
             .init_resource::<ConsoleState>()
             .add_systems(
                 Startup,
-                (load_settings, setup_directive_registry).in_set(SetupSystems::Console),
+                (load_settings, setup_directive_registry).in_set(SetupSystems::Ui),
             );
     }
 }

@@ -10,14 +10,6 @@ impl Plugin for UiStatePlugin {
     }
 }
 
-pub fn toggle_resource<T: Resource + Default>(mut commands: Commands, resource: Option<Res<T>>) {
-    if resource.is_some() {
-        commands.remove_resource::<T>();
-    } else {
-        commands.init_resource::<T>();
-    }
-}
-
 #[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
 pub enum UiState {
     #[default]
