@@ -74,26 +74,21 @@ impl ConsoleCache {
 }
 
 #[derive(Resource, Default)]
-pub struct ConsoleState {
-    pub information_area: InformationAreaState,
-    pub prompt: PromptState,
-}
-
-#[derive(Default)]
-pub struct InformationAreaState {
+pub struct ConsoleInformationAreaState {
     pub is_open: bool,
     pub log_history: Vec<String>,
 }
 
-pub struct PromptState {
+#[derive(Resource)]
+pub struct ConsolePromptState {
     pub input_text: String,
     pub request_focus: bool,
     pub surrender_focus: bool,
 }
 
-impl Default for PromptState {
+impl Default for ConsolePromptState {
     fn default() -> Self {
-        PromptState {
+        ConsolePromptState {
             input_text: String::new(),
             request_focus: false,
             surrender_focus: true,
@@ -101,8 +96,11 @@ impl Default for PromptState {
     }
 }
 
-fn update_information_area(mut console_state: ResMut<ConsoleState>, log_capture: Res<LogCapture>) {
+fn update_information_area(
+    mut information_area: ResMut<ConsoleInformationAreaState>,
+    log_capture: Res<LogCapture>,
+) {
     for log in log_capture.drain() {
-        console_state.information_area.log_history.push(log);
+        information_area.log_history.push(log);
     }
 }

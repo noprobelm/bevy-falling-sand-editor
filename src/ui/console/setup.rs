@@ -7,10 +7,10 @@ use crate::{
     config::SettingsConfig,
     directive::DirectiveRegistry,
     setup::SetupSystems,
-    ui::{ExitDirective, ParticlesDirective},
+    ui::{ConsoleInformationAreaState, ConsolePromptState, ExitDirective, ParticlesDirective},
 };
 
-use super::{ConsoleCache, ConsoleState, HelpDirective};
+use super::{ConsoleCache, HelpDirective};
 
 pub struct ConsoleSetupPlugin;
 
@@ -18,7 +18,8 @@ impl Plugin for ConsoleSetupPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(InputManagerPlugin::<ConsoleAction>::default())
             .init_resource::<ConsoleCache>()
-            .init_resource::<ConsoleState>()
+            .init_resource::<ConsoleInformationAreaState>()
+            .init_resource::<ConsolePromptState>()
             .add_systems(
                 Startup,
                 (load_settings, setup_directive_registry).in_set(SetupSystems::Ui),

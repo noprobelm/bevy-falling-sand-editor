@@ -4,7 +4,7 @@ use leafwing_input_manager::prelude::ActionState;
 
 use crate::{
     directive::DirectiveQueued,
-    ui::{ConsoleAction, ConsoleState, InformationAreaState, PromptState, ShowUi},
+    ui::{ConsoleAction, ConsoleInformationAreaState, ConsolePromptState, ShowUi},
 };
 
 pub(super) struct UiPlugin;
@@ -21,26 +21,27 @@ impl Plugin for UiPlugin {
 fn show_console(
     mut contexts: EguiContexts,
     mut msgw_directive_queued: MessageWriter<DirectiveQueued>,
-    mut console_state: ResMut<ConsoleState>,
+    mut information_area: ResMut<ConsoleInformationAreaState>,
+    mut prompt: ResMut<ConsolePromptState>,
     action_state: Single<&ActionState<ConsoleAction>>,
 ) -> Result {
     let ctx = contexts.ctx_mut()?;
 
     let toggle_info_area = action_state.just_pressed(&ConsoleAction::ToggleInformationArea);
     if toggle_info_area {
-        if !console_state.information_area.is_open {
-            console_state.prompt.request_focus = true;
+        if !information_area.is_open {
+            prompt.request_focus = true;
         } else {
-            console_state.prompt.surrender_focus = true;
+            prompt.surrender_focus = true;
         }
-        console_state.information_area.is_open = !console_state.information_area.is_open;
+        information_area.is_open = !information_area.is_open;
     }
 
     egui::TopBottomPanel::top("information_area").show_animated(
         ctx,
-        console_state.information_area.is_open,
+        information_area.is_open,
         |ui| {
-            information_area_ui(ui, &console_state.information_area);
+            information_area_ui(ui, &information_area);
         },
     );
 
@@ -48,7 +49,7 @@ fn show_console(
         prompt_ui(
             ui,
             &mut msgw_directive_queued,
-            &mut console_state.prompt,
+            &mut prompt,
             toggle_info_area,
             &action_state,
         );
@@ -57,7 +58,7 @@ fn show_console(
     Ok(())
 }
 
-fn information_area_ui(ui: &mut egui::Ui, state: &InformationAreaState) {
+fn information_area_ui(ui: &mut egui::Ui, state: &ConsoleInformationAreaState) {
     let height = 400.0;
     egui::ScrollArea::vertical()
         .stick_to_bottom(true)
@@ -76,7 +77,7 @@ fn information_area_ui(ui: &mut egui::Ui, state: &InformationAreaState) {
 fn prompt_ui(
     ui: &mut egui::Ui,
     msgw: &mut MessageWriter<DirectiveQueued>,
-    prompt: &mut PromptState,
+    prompt: &mut ConsolePromptState,
     toggled_info_area: bool,
     action_state: &ActionState<ConsoleAction>,
 ) {
