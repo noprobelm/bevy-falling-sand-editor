@@ -1,8 +1,10 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![warn(nonstandard_style, rustdoc::broken_intra_doc_links)]
 
+mod brush;
 mod camera;
 mod config;
+mod cursor;
 mod directive;
 mod particles;
 mod setup;
@@ -14,8 +16,10 @@ use bevy_falling_sand::prelude::{
     FallingSandDebugPlugin, FallingSandPersistencePlugin, FallingSandPlugin,
 };
 
+use brush::*;
 use camera::CameraPlugin;
 use config::*;
+pub use cursor::*;
 use directive::*;
 
 use bevy::{log::LogPlugin, prelude::*, window::WindowMode};
@@ -44,9 +48,10 @@ fn main() {
                 }),
             SetupPlugin,
             ConfigPlugin::default(),
-            DirectivePlugin,
-            UiPlugin,
+            CursorPlugin,
             CameraPlugin,
+            UiPlugin,
+            DirectivePlugin,
             ParticlesPlugin,
             FallingSandPlugin::default().with_chunk_size(64),
             FallingSandDebugPlugin,
