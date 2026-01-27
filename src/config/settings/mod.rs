@@ -3,7 +3,7 @@ mod save;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{camera::CameraKeyBindings, ui::UiKeyBindings};
+use crate::{brush::BrushKeyBindings, camera::CameraKeyBindings, ui::UiKeyBindings};
 
 pub struct SettingsConfigPlugin;
 
@@ -17,4 +17,5 @@ impl Plugin for SettingsConfigPlugin {
 pub struct SettingsConfig {
     pub camera: CameraKeyBindings,
     pub ui: UiKeyBindings,
+    pub brush: BrushKeyBindings,
 }
