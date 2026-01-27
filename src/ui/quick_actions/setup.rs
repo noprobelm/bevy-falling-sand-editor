@@ -18,32 +18,43 @@ impl Plugin for QuickActionsSetupPlugin {
 pub enum QuickAction {
     ToggleUi,
     ToggleMapOverlay,
+    ToggleDirtyChunksOverlay,
 }
 
 #[derive(Resource, Clone, Debug, Serialize, Deserialize)]
 pub struct QuickActionsKeyBindings {
-    pub toggle_map_overlay: KeyCode,
     pub toggle_ui: KeyCode,
+    pub toggle_map_overlay: KeyCode,
+    pub toggle_dirty_chunks_overlay: KeyCode,
 }
 
 impl Default for QuickActionsKeyBindings {
     fn default() -> Self {
         Self {
-            toggle_map_overlay: KeyCode::F1,
             toggle_ui: KeyCode::KeyH,
+            toggle_map_overlay: KeyCode::F1,
+            toggle_dirty_chunks_overlay: KeyCode::F2,
         }
     }
 }
 
 fn load_settings(mut commands: Commands, settings_config: Res<Persistent<SettingsConfig>>) {
-    let mut input_map = InputMap::default();
-    input_map.insert(
-        QuickAction::ToggleMapOverlay,
-        settings_config.get().ui.quick_actions.toggle_map_overlay,
-    );
-    input_map.insert(
-        QuickAction::ToggleUi,
-        settings_config.get().ui.quick_actions.toggle_ui,
-    );
+    let input_map = InputMap::default()
+        .with(
+            QuickAction::ToggleUi,
+            settings_config.get().ui.quick_actions.toggle_ui,
+        )
+        .with(
+            QuickAction::ToggleMapOverlay,
+            settings_config.get().ui.quick_actions.toggle_map_overlay,
+        )
+        .with(
+            QuickAction::ToggleDirtyChunksOverlay,
+            settings_config
+                .get()
+                .ui
+                .quick_actions
+                .toggle_dirty_chunks_overlay,
+        );
     commands.spawn(input_map);
 }

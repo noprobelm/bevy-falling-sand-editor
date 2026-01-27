@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_falling_sand::debug::DebugParticleMap;
+use bevy_falling_sand::debug::{DebugDirtyRects, DebugParticleMap};
 use leafwing_input_manager::prelude::ActionState;
 
 use crate::ui::{QuickAction, ShowUi};
@@ -8,7 +8,14 @@ pub(super) struct SystemsPlugin;
 
 impl Plugin for SystemsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (handle_toggle_map, handle_toggle_ui));
+        app.add_systems(
+            Update,
+            (
+                handle_toggle_ui,
+                handle_toggle_map,
+                handle_toggle_dirty_chunks,
+            ),
+        );
     }
 }
 
@@ -37,5 +44,15 @@ fn handle_toggle_map(
 ) {
     if action_state.just_pressed(&QuickAction::ToggleMapOverlay) {
         toggle_resource(&mut commands, &debug_map);
+    }
+}
+
+fn handle_toggle_dirty_chunks(
+    mut commands: Commands,
+    debug_chunks: Option<Res<DebugDirtyRects>>,
+    action_state: Single<&ActionState<QuickAction>>,
+) {
+    if action_state.just_pressed(&QuickAction::ToggleDirtyChunksOverlay) {
+        toggle_resource(&mut commands, &debug_chunks);
     }
 }

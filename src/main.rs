@@ -10,8 +10,6 @@ mod ui;
 
 use avian2d::prelude::PhysicsDebugPlugin;
 use avian2d::prelude::PhysicsGizmos;
-use bevy_falling_sand::core::Particle;
-use bevy_falling_sand::core::SpawnParticleSignal;
 use bevy_falling_sand::prelude::{
     FallingSandDebugPlugin, FallingSandPersistencePlugin, FallingSandPlugin,
 };
@@ -64,17 +62,5 @@ fn main() {
             GizmoConfig::default(),
         )
         .insert_resource(ClearColor(Color::srgba(0.17, 0.16, 0.15, 1.0)))
-        .add_systems(Update, spawn_particles)
         .run();
-}
-
-fn spawn_particles(mut msgw_spawn_particle: MessageWriter<SpawnParticleSignal>) {
-    for y in -3..3 {
-        for x in -3..3 {
-            msgw_spawn_particle.write(SpawnParticleSignal::new(
-                Particle::new("Water"),
-                IVec2::new(x, y),
-            ));
-        }
-    }
 }
