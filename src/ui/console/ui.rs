@@ -26,12 +26,14 @@ fn show_console(
 ) -> Result {
     let ctx = contexts.ctx_mut()?;
 
-    let toggled_info_area = action_state.just_pressed(&ConsoleAction::ToggleInformationArea);
-    if toggled_info_area {
-        console_state.information_area.is_open = !console_state.information_area.is_open;
-        if console_state.information_area.is_open {
+    let toggle_info_area = action_state.just_pressed(&ConsoleAction::ToggleInformationArea);
+    if toggle_info_area {
+        if !console_state.information_area.is_open {
             console_state.prompt.request_focus = true;
+        } else {
+            console_state.prompt.surrender_focus = true;
         }
+        console_state.information_area.is_open = !console_state.information_area.is_open;
     }
 
     egui::TopBottomPanel::top("information_area").show_animated(
@@ -47,7 +49,7 @@ fn show_console(
             ui,
             &mut msgw_directive_queued,
             &mut console_state.prompt,
-            toggled_info_area,
+            toggle_info_area,
             &action_state,
         );
     });
@@ -96,6 +98,10 @@ fn prompt_ui(
     if prompt.request_focus {
         response.request_focus();
         prompt.request_focus = false;
+    }
+    if prompt.surrender_focus {
+        response.surrender_focus();
+        prompt.surrender_focus = false;
     }
 
     if action_state.just_pressed(&ConsoleAction::SubmitInputText) && !prompt.input_text.is_empty() {

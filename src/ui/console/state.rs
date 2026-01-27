@@ -79,24 +79,26 @@ pub struct ConsoleState {
     pub prompt: PromptState,
 }
 
+#[derive(Default)]
 pub struct InformationAreaState {
     pub is_open: bool,
     pub log_history: Vec<String>,
 }
 
-impl Default for InformationAreaState {
-    fn default() -> Self {
-        Self {
-            is_open: true,
-            log_history: vec![],
-        }
-    }
-}
-
-#[derive(Default)]
 pub struct PromptState {
     pub input_text: String,
     pub request_focus: bool,
+    pub surrender_focus: bool,
+}
+
+impl Default for PromptState {
+    fn default() -> Self {
+        PromptState {
+            input_text: String::new(),
+            request_focus: false,
+            surrender_focus: true,
+        }
+    }
 }
 
 fn update_information_area(mut console_state: ResMut<ConsoleState>, log_capture: Res<LogCapture>) {
