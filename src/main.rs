@@ -53,6 +53,7 @@ fn main() {
             UiPlugin,
             DirectivePlugin,
             ParticlesPlugin,
+            BrushPlugin,
             FallingSandPlugin::default().with_chunk_size(64),
             FallingSandDebugPlugin,
             // We'll overwrite this path with the active world path as soon as the active world configuration is loaded.
