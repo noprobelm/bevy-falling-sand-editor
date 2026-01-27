@@ -78,7 +78,7 @@ fn prompt_ui(
     toggled_info_area: bool,
     action_state: &ActionState<ConsoleAction>,
 ) {
-    // Prevent hotkey character from being typed into input
+    // Prevent hotkey character from being added to input
     let response = if toggled_info_area {
         ui.add(
             egui::TextEdit::singleline(&mut prompt.input_text.clone())
