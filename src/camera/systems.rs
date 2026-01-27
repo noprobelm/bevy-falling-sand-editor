@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::ActionState;
 
-use crate::ui::UiState;
+use crate::ui::{CanvasState, UiState};
 
 use super::{CameraAction, MainCamera, ZoomSpeed, ZoomTarget};
 
@@ -11,7 +11,10 @@ impl Plugin for SystemsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (pan_camera, handle_zoom_target)
+            (
+                pan_camera,
+                handle_zoom_target.run_if(in_state(CanvasState::Interact)),
+            )
                 .chain()
                 .run_if(in_state(UiState::Canvas))
                 .in_set(CameraSystems),

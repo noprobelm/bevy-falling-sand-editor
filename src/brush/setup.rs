@@ -1,6 +1,10 @@
 use bevy::prelude::*;
 use bevy_persistent::Persistent;
-use leafwing_input_manager::{Actionlike, prelude::InputMap};
+use leafwing_input_manager::{
+    Actionlike,
+    plugin::InputManagerPlugin,
+    prelude::{InputMap, MouseScrollAxis},
+};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -16,19 +20,20 @@ pub(super) struct SetupPlugin;
 
 impl Plugin for SetupPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_gizmo_config(
-            BrushGizmos,
-            GizmoConfig {
-                enabled: true,
-                ..default()
-            },
-        )
-        .add_systems(
-            Startup,
-            (spawn_brush, load_settings)
-                .chain()
-                .in_set(SetupSystems::Brush),
-        );
+        app.add_plugins(InputManagerPlugin::<BrushAction>::default())
+            .insert_gizmo_config(
+                BrushGizmos,
+                GizmoConfig {
+                    enabled: true,
+                    ..default()
+                },
+            )
+            .add_systems(
+                Startup,
+                (spawn_brush, load_settings)
+                    .chain()
+                    .in_set(SetupSystems::Brush),
+            );
     }
 }
 
@@ -45,10 +50,12 @@ impl Default for BrushKeyBindings {
     }
 }
 
-#[derive(Actionlike, Resource, PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
+#[derive(Actionlike, PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
 pub enum BrushAction {
     ToggleMode,
     ToggleType,
+    #[actionlike(Axis)]
+    ChangeSize,
 }
 
 fn spawn_brush(mut commands: Commands) {
@@ -64,10 +71,12 @@ fn load_settings(
     brush: Single<Entity, With<Brush>>,
     settings_config: Res<Persistent<SettingsConfig>>,
 ) {
-    let input_map = InputMap::default().with(
-        BrushAction::ToggleMode,
-        settings_config.brush.toggle_brush_mode,
-    );
+    let input_map = InputMap::default()
+        .with_axis(BrushAction::ChangeSize, MouseScrollAxis::Y)
+        .with(
+            BrushAction::ToggleMode,
+            settings_config.brush.toggle_brush_mode,
+        );
 
     commands.entity(brush.entity()).insert(input_map);
 }

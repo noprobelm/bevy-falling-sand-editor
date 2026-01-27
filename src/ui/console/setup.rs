@@ -33,7 +33,7 @@ pub enum ConsoleAction {
     SubmitInputText,
 }
 
-#[derive(Resource, Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ConsoleKeyBindings {
     pub toggle_information_area: KeyCode,
     #[serde(skip, default = "ConsoleKeyBindings::default_submit_input_text")]

@@ -4,7 +4,7 @@ use bevy_persistent::Persistent;
 use leafwing_input_manager::{
     Actionlike,
     plugin::InputManagerPlugin,
-    prelude::{InputMap, MouseScrollAxis},
+    prelude::{ActionState, InputMap, MouseScrollAxis},
 };
 use serde::{Deserialize, Serialize};
 
@@ -117,6 +117,8 @@ fn load_settings(
             settings_config.get().camera.pan_camera_right,
         );
 
-    commands.entity(camera.0).insert(input_map);
+    commands
+        .entity(camera.0)
+        .insert((input_map, ActionState::<CameraAction>::default()));
     commands.insert_resource(settings_config.get().camera.clone());
 }

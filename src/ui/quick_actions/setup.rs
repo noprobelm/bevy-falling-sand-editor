@@ -21,7 +21,7 @@ pub enum QuickAction {
     ToggleDirtyChunksOverlay,
 }
 
-#[derive(Resource, Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QuickActionsKeyBindings {
     pub toggle_ui: KeyCode,
     pub toggle_map_overlay: KeyCode,
