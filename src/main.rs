@@ -16,13 +16,14 @@ use bevy_falling_sand::prelude::{
     FallingSandDebugPlugin, FallingSandPersistencePlugin, FallingSandPlugin,
 };
 
-use camera::*;
+use camera::CameraPlugin;
 use config::*;
 use directive::*;
-use setup::*;
 
 use bevy::{log::LogPlugin, prelude::*, window::WindowMode};
 
+use crate::particles::ParticlesPlugin;
+use crate::setup::SetupPlugin;
 use crate::ui::UiPlugin;
 use crate::ui::console_capture_layer;
 
@@ -43,11 +44,12 @@ fn main() {
                     custom_layer: console_capture_layer,
                     ..default()
                 }),
-            SetupPlugin::default(),
-            ConfigPlugin,
+            SetupPlugin,
+            ConfigPlugin::default(),
             DirectivePlugin,
             UiPlugin,
             CameraPlugin,
+            ParticlesPlugin,
             FallingSandPlugin::default().with_chunk_size(64),
             FallingSandDebugPlugin,
             // We'll overwrite this path with the active world path as soon as the active world configuration is loaded.

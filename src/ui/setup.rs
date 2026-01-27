@@ -5,9 +5,9 @@ use crate::ui::{
     ConsoleKeyBindings, ConsoleSetupPlugin, QuickActionsKeyBindings, QuickActionsSetupPlugin,
 };
 
-pub struct UiSetupPlugin;
+pub(super) struct SetupPlugin;
 
-impl Plugin for UiSetupPlugin {
+impl Plugin for SetupPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((ConsoleSetupPlugin, QuickActionsSetupPlugin));
     }

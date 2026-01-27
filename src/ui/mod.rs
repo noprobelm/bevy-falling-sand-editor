@@ -17,6 +17,7 @@ impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             EguiPlugin::default(),
+            SetupPlugin,
             QuickActionsPlugin,
             ConsolePlugin,
             UiStatePlugin,

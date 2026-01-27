@@ -15,9 +15,9 @@ use crate::{
 
 use super::{MainCamera, ZoomTarget};
 
-pub struct CameraSetupPlugin;
+pub struct SetupPlugin;
 
-impl Plugin for CameraSetupPlugin {
+impl Plugin for SetupPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(InputManagerPlugin::<CameraAction>::default())
             .add_systems(

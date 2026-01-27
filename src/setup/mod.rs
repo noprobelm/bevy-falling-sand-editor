@@ -33,38 +33,13 @@
 //! ## Persistent settings config
 //! The `Persistent<SettingsConfig>` resource manages the application-wide settings state between
 //! each session. These settings apply to all worlds.
-use std::path::PathBuf;
-
 use bevy::prelude::*;
 
-use crate::{
-    camera::CameraSetupPlugin, config::ConfigSetupPlugin, particles::ParticlesSetupPlugin,
-    ui::UiSetupPlugin,
-};
-
-pub struct SetupPlugin {
-    pub config_path: PathBuf,
-}
-
-impl Default for SetupPlugin {
-    fn default() -> Self {
-        let config_path = PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| ".".to_string()))
-            .join(".config")
-            .join("bevy_falling_sand");
-        Self { config_path }
-    }
-}
+pub struct SetupPlugin;
 
 impl Plugin for SetupPlugin {
     fn build(&self, app: &mut App) {
-        let config_path = self.config_path.clone();
-        app.add_plugins((
-            ConfigSetupPlugin { config_path },
-            UiSetupPlugin,
-            CameraSetupPlugin,
-            ParticlesSetupPlugin,
-        ))
-        .configure_sets(
+        app.configure_sets(
             Startup,
             (
                 SetupSystems::Configuration,

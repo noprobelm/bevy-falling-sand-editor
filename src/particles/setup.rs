@@ -13,9 +13,9 @@ use crate::{
 // to have some default particles to fall back to.
 const DEFAULT_PARTICLES_ASSET: &str = "assets/particles/particles.scn.ron";
 
-pub struct ParticlesSetupPlugin;
+pub struct SetupPlugin;
 
-impl Plugin for ParticlesSetupPlugin {
+impl Plugin for SetupPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Startup,
