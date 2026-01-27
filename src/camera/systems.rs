@@ -11,7 +11,7 @@ impl Plugin for SystemsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (pan_camera, update_zoom_target)
+            (pan_camera, handle_zoom_target)
                 .chain()
                 .run_if(in_state(UiState::Canvas))
                 .in_set(CameraSystems),
@@ -48,7 +48,7 @@ fn pan_camera(
     Ok(())
 }
 
-fn update_zoom_target(
+fn handle_zoom_target(
     mut msgr_scroll: MessageReader<MouseWheel>,
     mut camera_query: Query<&mut ZoomTarget, With<MainCamera>>,
 ) {
