@@ -46,6 +46,7 @@ impl Plugin for SetupPlugin {
                 SetupSystems::Ui,
                 SetupSystems::Camera,
                 SetupSystems::Particles,
+                SetupSystems::Brush,
             )
                 .chain(),
         );
@@ -59,4 +60,5 @@ pub enum SetupSystems {
     Ui,
     Camera,
     Particles,
+    Brush,
 }
