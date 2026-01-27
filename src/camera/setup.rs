@@ -1,7 +1,11 @@
 use bevy::prelude::*;
 use bevy_falling_sand::core::ChunkLoader;
 use bevy_persistent::Persistent;
-use leafwing_input_manager::{Actionlike, plugin::InputManagerPlugin, prelude::InputMap};
+use leafwing_input_manager::{
+    Actionlike,
+    plugin::InputManagerPlugin,
+    prelude::{InputMap, MouseScrollAxis},
+};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -38,6 +42,8 @@ pub enum CameraAction {
     PanRight,
     PanDown,
     PanLeft,
+    #[actionlike(Axis)]
+    Zoom,
 }
 
 #[derive(Resource, Clone, Debug, Serialize, Deserialize)]
@@ -92,23 +98,24 @@ fn load_settings(
     camera: Single<(Entity, &MainCamera)>,
     settings_config: Res<Persistent<SettingsConfig>>,
 ) {
-    let mut input_map = InputMap::default();
-    input_map.insert(
-        CameraAction::PanUp,
-        settings_config.get().camera.pan_camera_up,
-    );
-    input_map.insert(
-        CameraAction::PanLeft,
-        settings_config.get().camera.pan_camera_left,
-    );
-    input_map.insert(
-        CameraAction::PanDown,
-        settings_config.get().camera.pan_camera_down,
-    );
-    input_map.insert(
-        CameraAction::PanRight,
-        settings_config.get().camera.pan_camera_right,
-    );
+    let input_map = InputMap::default()
+        .with_axis(CameraAction::Zoom, MouseScrollAxis::Y)
+        .with(
+            CameraAction::PanUp,
+            settings_config.get().camera.pan_camera_up,
+        )
+        .with(
+            CameraAction::PanLeft,
+            settings_config.get().camera.pan_camera_left,
+        )
+        .with(
+            CameraAction::PanDown,
+            settings_config.get().camera.pan_camera_down,
+        )
+        .with(
+            CameraAction::PanRight,
+            settings_config.get().camera.pan_camera_right,
+        );
 
     commands.entity(camera.0).insert(input_map);
     commands.insert_resource(settings_config.get().camera.clone());

@@ -1,4 +1,4 @@
-use bevy::{input::mouse::MouseWheel, prelude::*};
+use bevy::prelude::*;
 use leafwing_input_manager::prelude::ActionState;
 
 use crate::ui::UiState;
@@ -49,29 +49,19 @@ fn pan_camera(
 }
 
 fn handle_zoom_target(
-    mut msgr_scroll: MessageReader<MouseWheel>,
-    mut camera_query: Query<&mut ZoomTarget, With<MainCamera>>,
+    camera_query: Single<(&mut ZoomTarget, &ActionState<CameraAction>), With<MainCamera>>,
 ) {
     const ZOOM_IN_FACTOR: f32 = 0.9;
     const ZOOM_OUT_FACTOR: f32 = 1.1;
     const MIN_SCALE: f32 = 0.01;
     const MAX_SCALE: f32 = 10.0;
 
-    if !msgr_scroll.is_empty() {
-        let mut zoom_target = match camera_query.single_mut() {
-            Ok(z) => z,
-            Err(_) => return,
-        };
-
-        msgr_scroll.read().for_each(|ev| {
-            if ev.y < 0. {
-                zoom_target.target_scale =
-                    (zoom_target.target_scale * ZOOM_OUT_FACTOR).min(MAX_SCALE);
-            } else if ev.y > 0. {
-                zoom_target.target_scale =
-                    (zoom_target.target_scale * ZOOM_IN_FACTOR).max(MIN_SCALE);
-            }
-        });
+    let (mut zoom_target, action_state) = camera_query.into_inner();
+    let zoom_delta = action_state.value(&CameraAction::Zoom);
+    if zoom_delta > 0. {
+        zoom_target.target_scale = (zoom_target.target_scale * ZOOM_OUT_FACTOR).min(MAX_SCALE);
+    } else if zoom_delta < 0. {
+        zoom_target.target_scale = (zoom_target.target_scale * ZOOM_IN_FACTOR).max(MIN_SCALE);
     }
 }
 
