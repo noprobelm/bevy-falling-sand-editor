@@ -18,9 +18,14 @@ impl Plugin for SystemsPlugin {
         )
         .add_systems(
             Update,
-            brush_draw_spawn_line
-                .run_if(in_state(BrushTypeState::Line))
-                .run_if(action_pressed(BrushAction::Draw)),
+            (
+                brush_draw_spawn_line
+                    .run_if(in_state(BrushTypeState::Line))
+                    .run_if(action_pressed(BrushAction::Draw)),
+                brush_draw_spawn_cursor
+                    .run_if(in_state(BrushTypeState::Cursor))
+                    .run_if(action_pressed(BrushAction::Draw)),
+            ),
         );
     }
 }
@@ -49,7 +54,29 @@ fn brush_draw_spawn_line(
     ]
     .iter()
     .for_each(|(start, end)| {
-        positions.extend(get_interpolated_line_points(*start, *end, min_x, max_x));
+        positions.extend(super::algs::get_interpolated_line_points(
+            *start, *end, min_x, max_x,
+        ));
+    });
+
+    positions.iter().for_each(|pos| {
+        msgw_spawn_particle_signal
+            .write(SpawnParticleSignal::new(Particle::new("Dirt Wall"), *pos));
+    });
+}
+
+fn brush_draw_spawn_cursor(
+    mut msgw_spawn_particle_signal: MessageWriter<SpawnParticleSignal>,
+    cursor_position: Res<CursorPosition>,
+) {
+    let mut positions = vec![];
+    [
+        (cursor_position.current, cursor_position.previous),
+        (cursor_position.previous, cursor_position.previous_previous),
+    ]
+    .iter()
+    .for_each(|(start, end)| {
+        positions.extend(super::algs::get_interpolated_cursor_points(*start, *end));
     });
 
     positions.iter().for_each(|pos| {
