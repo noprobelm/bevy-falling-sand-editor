@@ -3,12 +3,14 @@ mod gizmos;
 mod setup;
 mod states;
 mod systems;
+mod algs;
 
 use bevy::prelude::*;
 
 use crate::brush::{gizmos::GizmosPlugin, setup::SetupPlugin, systems::SystemsPlugin};
 pub use setup::*;
 pub use states::*;
+pub use algs::*;
 
 pub struct BrushPlugin;
 
