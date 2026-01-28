@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_falling_sand::debug::{DebugDirtyRects, DebugParticleMap};
-use leafwing_input_manager::{common_conditions::action_just_pressed, prelude::ActionState};
+use leafwing_input_manager::common_conditions::action_just_pressed;
 
 use crate::ui::{QuickAction, ShowUi};
 

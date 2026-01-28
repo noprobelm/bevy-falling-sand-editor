@@ -14,8 +14,8 @@ impl Plugin for StatesPlugin {
 #[derive(States, Reflect, Default, Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum BrushTypeState {
     Line,
-    Circle,
     #[default]
+    Circle,
     Cursor,
 }
 
