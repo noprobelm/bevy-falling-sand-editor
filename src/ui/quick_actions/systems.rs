@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_falling_sand::debug::{DebugDirtyRects, DebugParticleMap};
-use leafwing_input_manager::prelude::ActionState;
+use leafwing_input_manager::{common_conditions::action_just_pressed, prelude::ActionState};
 
 use crate::ui::{QuickAction, ShowUi};
 
@@ -11,9 +11,10 @@ impl Plugin for SystemsPlugin {
         app.add_systems(
             Update,
             (
-                handle_toggle_ui,
-                handle_toggle_map,
-                handle_toggle_dirty_chunks,
+                handle_toggle_ui.run_if(action_just_pressed(QuickAction::ToggleUi)),
+                handle_toggle_map.run_if(action_just_pressed(QuickAction::ToggleMapOverlay)),
+                handle_toggle_dirty_chunks
+                    .run_if(action_just_pressed(QuickAction::ToggleDirtyChunksOverlay)),
             ),
         );
     }
@@ -27,32 +28,14 @@ fn toggle_resource<T: Resource + Default>(commands: &mut Commands, resource: &Op
     }
 }
 
-fn handle_toggle_ui(
-    mut commands: Commands,
-    show_ui: Option<Res<ShowUi>>,
-    action_state: Single<&ActionState<QuickAction>>,
-) {
-    if action_state.just_pressed(&QuickAction::ToggleUi) {
-        toggle_resource(&mut commands, &show_ui);
-    }
+fn handle_toggle_ui(mut commands: Commands, show_ui: Option<Res<ShowUi>>) {
+    toggle_resource(&mut commands, &show_ui);
 }
 
-fn handle_toggle_map(
-    mut commands: Commands,
-    debug_map: Option<Res<DebugParticleMap>>,
-    action_state: Single<&ActionState<QuickAction>>,
-) {
-    if action_state.just_pressed(&QuickAction::ToggleMapOverlay) {
-        toggle_resource(&mut commands, &debug_map);
-    }
+fn handle_toggle_map(mut commands: Commands, debug_map: Option<Res<DebugParticleMap>>) {
+    toggle_resource(&mut commands, &debug_map);
 }
 
-fn handle_toggle_dirty_chunks(
-    mut commands: Commands,
-    debug_chunks: Option<Res<DebugDirtyRects>>,
-    action_state: Single<&ActionState<QuickAction>>,
-) {
-    if action_state.just_pressed(&QuickAction::ToggleDirtyChunksOverlay) {
-        toggle_resource(&mut commands, &debug_chunks);
-    }
+fn handle_toggle_dirty_chunks(mut commands: Commands, debug_chunks: Option<Res<DebugDirtyRects>>) {
+    toggle_resource(&mut commands, &debug_chunks);
 }
