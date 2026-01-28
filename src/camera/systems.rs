@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use leafwing_input_manager::prelude::ActionState;
+use leafwing_input_manager::{common_conditions::action_pressed, prelude::ActionState};
 
 use crate::ui::{CanvasState, UiState};
 
@@ -7,12 +7,17 @@ use super::{CameraAction, MainCamera, ZoomSpeed, ZoomTarget};
 
 pub(super) struct SystemsPlugin;
 
+const PAN_SPEED_FACTOR: f32 = 10.;
+
 impl Plugin for SystemsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
             (
-                pan_camera,
+                pan_up.run_if(action_pressed(CameraAction::PanUp)),
+                pan_left.run_if(action_pressed(CameraAction::PanLeft)),
+                pan_down.run_if(action_pressed(CameraAction::PanDown)),
+                pan_right.run_if(action_pressed(CameraAction::PanRight)),
                 handle_zoom_target.run_if(in_state(CanvasState::Interact)),
             )
                 .chain()
@@ -26,29 +31,28 @@ impl Plugin for SystemsPlugin {
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CameraSystems;
 
-fn pan_camera(
-    mut camera_query: Query<(&mut Transform, &ZoomTarget), With<MainCamera>>,
-    action_state: Single<&ActionState<CameraAction>>,
-) -> Result {
-    let (mut transform, zoom_target) = camera_query.single_mut()?;
-    let pan_speed = 10. * zoom_target.current_scale;
+fn pan_speed(current_scale: f32) -> f32 {
+    PAN_SPEED_FACTOR * current_scale
+}
 
-    if action_state.pressed(&CameraAction::PanUp) {
-        transform.translation.y += pan_speed;
-    }
+fn pan_up(camera: Single<(&mut Transform, &ZoomTarget)>) {
+    let (mut transform, zoom_target) = camera.into_inner();
+    transform.translation.y += pan_speed(zoom_target.current_scale);
+}
 
-    if action_state.pressed(&CameraAction::PanLeft) {
-        transform.translation.x -= pan_speed;
-    }
+fn pan_left(camera: Single<(&mut Transform, &ZoomTarget)>) {
+    let (mut transform, zoom_target) = camera.into_inner();
+    transform.translation.x -= pan_speed(zoom_target.current_scale);
+}
 
-    if action_state.pressed(&CameraAction::PanDown) {
-        transform.translation.y -= pan_speed;
-    }
+fn pan_down(camera: Single<(&mut Transform, &ZoomTarget)>) {
+    let (mut transform, zoom_target) = camera.into_inner();
+    transform.translation.y -= pan_speed(zoom_target.current_scale);
+}
 
-    if action_state.pressed(&CameraAction::PanRight) {
-        transform.translation.x += pan_speed;
-    }
-    Ok(())
+fn pan_right(camera: Single<(&mut Transform, &ZoomTarget)>) {
+    let (mut transform, zoom_target) = camera.into_inner();
+    transform.translation.x += pan_speed(zoom_target.current_scale);
 }
 
 fn handle_zoom_target(
