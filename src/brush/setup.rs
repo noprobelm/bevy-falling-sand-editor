@@ -39,12 +39,14 @@ impl Plugin for SetupPlugin {
 
 #[derive(Resource, Clone, Debug, Serialize, Deserialize)]
 pub struct BrushKeyBindings {
+    pub draw: MouseButton,
     pub toggle_brush_mode: MouseButton,
 }
 
 impl Default for BrushKeyBindings {
     fn default() -> Self {
         Self {
+            draw: MouseButton::Left,
             toggle_brush_mode: MouseButton::Right,
         }
     }
@@ -56,6 +58,7 @@ pub enum BrushAction {
     ToggleType,
     #[actionlike(Axis)]
     ChangeSize,
+    Draw,
 }
 
 fn spawn_brush(mut commands: Commands) {
