@@ -1,4 +1,7 @@
 use bevy::prelude::*;
+use leafwing_input_manager::common_conditions::action_just_pressed;
+
+use crate::brush::BrushAction;
 
 pub struct StatesPlugin;
 
@@ -7,7 +10,10 @@ impl Plugin for StatesPlugin {
         app.init_state::<BrushTypeState>()
             .init_state::<BrushModeState>()
             .add_sub_state::<BrushModeSpawnState>()
-            .add_systems(Update, handle_brush_mode_state);
+            .add_systems(
+                Update,
+                handle_brush_mode_state.run_if(action_just_pressed(BrushAction::ToggleMode)),
+            );
     }
 }
 

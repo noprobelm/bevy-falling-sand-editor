@@ -1,10 +1,10 @@
 use bevy::prelude::*;
-use bevy_falling_sand::core::{Particle, SpawnParticleSignal};
+use bevy_falling_sand::core::{DespawnParticleSignal, Particle, SpawnParticleSignal};
 use leafwing_input_manager::{common_conditions::action_pressed, prelude::ActionState};
 
 use crate::{
     CursorPosition,
-    brush::{BrushAction, BrushTypeState, components::BrushSize},
+    brush::{BrushAction, BrushModeState, BrushTypeState, components::BrushSize},
     ui::CanvasState,
 };
 
@@ -18,12 +18,7 @@ impl Plugin for SystemsPlugin {
         )
         .add_systems(
             Update,
-            (
-                brush_action_circle.run_if(in_state(BrushTypeState::Circle)),
-                brush_action_line.run_if(in_state(BrushTypeState::Line)),
-                brush_action_cursor.run_if(in_state(BrushTypeState::Cursor)),
-            )
-                .run_if(action_pressed(BrushAction::Draw)),
+            brush_action.run_if(action_pressed(BrushAction::Draw)),
         );
     }
 }
@@ -38,74 +33,44 @@ fn change_brush_size(mut single: Single<(&ActionState<BrushAction>, &mut BrushSi
     }
 }
 
-fn brush_action_circle(
-    mut msgw_spawn_particle_signal: MessageWriter<SpawnParticleSignal>,
+fn brush_action(
+    mut msgw_spawn: MessageWriter<SpawnParticleSignal>,
+    mut msgw_despawn: MessageWriter<DespawnParticleSignal>,
     brush_size: Single<&BrushSize>,
     cursor_position: Res<CursorPosition>,
+    brush_type: Res<State<BrushTypeState>>,
+    brush_mode: Res<State<BrushModeState>>,
 ) {
-    let mut positions = vec![];
-    [
+    let cursor_pairs = [
         (cursor_position.current, cursor_position.previous),
         (cursor_position.previous, cursor_position.previous_previous),
-    ]
-    .iter()
-    .for_each(|(start, end)| {
-        positions.extend(alg::get_interpolated_circle_points(
-            *start,
-            *end,
-            brush_size.0 as f32,
-        ));
-    });
+    ];
 
-    positions.iter().for_each(|pos| {
-        msgw_spawn_particle_signal
-            .write(SpawnParticleSignal::new(Particle::new("Dirt Wall"), *pos));
-    });
-}
+    let positions: Vec<IVec2> = cursor_pairs
+        .iter()
+        .flat_map(|(start, end)| match brush_type.get() {
+            BrushTypeState::Circle => {
+                alg::get_interpolated_circle_points(*start, *end, brush_size.0 as f32)
+            }
+            BrushTypeState::Line => {
+                alg::get_interpolated_line_points(*start, *end, brush_size.0 as f32)
+            }
+            BrushTypeState::Cursor => alg::get_interpolated_cursor_points(*start, *end),
+        })
+        .collect();
 
-fn brush_action_line(
-    mut msgw_spawn_particle_signal: MessageWriter<SpawnParticleSignal>,
-    brush_size: Single<&BrushSize>,
-    cursor_position: Res<CursorPosition>,
-) {
-    let mut positions = vec![];
-    [
-        (cursor_position.current, cursor_position.previous),
-        (cursor_position.previous, cursor_position.previous_previous),
-    ]
-    .iter()
-    .for_each(|(start, end)| {
-        positions.extend(alg::get_interpolated_line_points(
-            *start,
-            *end,
-            brush_size.0 as f32,
-        ));
-    });
-
-    positions.iter().for_each(|pos| {
-        msgw_spawn_particle_signal
-            .write(SpawnParticleSignal::new(Particle::new("Dirt Wall"), *pos));
-    });
-}
-
-fn brush_action_cursor(
-    mut msgw_spawn_particle_signal: MessageWriter<SpawnParticleSignal>,
-    cursor_position: Res<CursorPosition>,
-) {
-    let mut positions = vec![];
-    [
-        (cursor_position.current, cursor_position.previous),
-        (cursor_position.previous, cursor_position.previous_previous),
-    ]
-    .iter()
-    .for_each(|(start, end)| {
-        positions.extend(alg::get_interpolated_cursor_points(*start, *end));
-    });
-
-    positions.iter().for_each(|pos| {
-        msgw_spawn_particle_signal
-            .write(SpawnParticleSignal::new(Particle::new("Dirt Wall"), *pos));
-    });
+    match brush_mode.get() {
+        BrushModeState::Spawn => {
+            for pos in positions {
+                msgw_spawn.write(SpawnParticleSignal::new(Particle::new("Dirt Wall"), pos));
+            }
+        }
+        BrushModeState::Despawn => {
+            for pos in positions {
+                msgw_despawn.write(DespawnParticleSignal::from_position(pos));
+            }
+        }
+    }
 }
 
 pub(super) mod alg {
