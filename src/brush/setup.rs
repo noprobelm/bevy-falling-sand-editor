@@ -79,7 +79,8 @@ fn load_settings(
         .with(
             BrushAction::ToggleMode,
             settings_config.brush.toggle_brush_mode,
-        );
+        )
+        .with(BrushAction::Draw, settings_config.brush.draw);
 
     commands.entity(brush.entity()).insert(input_map);
 }
