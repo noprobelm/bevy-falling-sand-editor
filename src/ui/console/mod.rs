@@ -19,5 +19,3 @@ impl Plugin for ConsolePlugin {
         app.add_plugins((UiPlugin, CommandsPlugin, StatePlugin));
     }
 }
-
-

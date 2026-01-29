@@ -15,7 +15,9 @@ impl Plugin for SystemsPlugin {
         app.add_systems(Update, resize_brush.run_if(in_state(CanvasState::Edit)))
             .add_systems(
                 Update,
-                brush_action.run_if(action_pressed(BrushAction::Draw)),
+                brush_action
+                    .run_if(action_pressed(BrushAction::Draw))
+                    .run_if(in_state(CanvasState::Interact)),
             );
     }
 }

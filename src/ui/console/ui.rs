@@ -4,7 +4,7 @@ use leafwing_input_manager::prelude::ActionState;
 
 use crate::{
     directive::DirectiveQueued,
-    ui::{ConsoleAction, ConsoleInformationAreaState, ConsolePromptState, ShowUi},
+    ui::{ConsoleAction, ConsoleInformationAreaState, ConsolePromptState, ShowUi, UiSystems},
 };
 
 pub(super) struct UiPlugin;
@@ -13,12 +13,13 @@ impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             EguiPrimaryContextPass,
-            show_console.run_if(resource_exists::<ShowUi>),
+            show.run_if(resource_exists::<ShowUi>)
+                .in_set(UiSystems::Console),
         );
     }
 }
 
-fn show_console(
+fn show(
     mut contexts: EguiContexts,
     mut msgw_directive_queued: MessageWriter<DirectiveQueued>,
     mut information_area: ResMut<ConsoleInformationAreaState>,

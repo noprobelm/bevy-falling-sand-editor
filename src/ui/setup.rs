@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_egui::EguiContextSettings;
 use bevy_persistent::Persistent;
 use leafwing_input_manager::{Actionlike, plugin::InputManagerPlugin, prelude::InputMap};
 use serde::{Deserialize, Serialize};
@@ -20,7 +21,8 @@ impl Plugin for SetupPlugin {
             QuickActionsSetupPlugin,
             InputManagerPlugin::<CanvasStateActions>::default(),
         ))
-        .add_systems(Startup, load_settings.in_set(SetupSystems::Ui));
+        .add_systems(Startup, load_settings.in_set(SetupSystems::Ui))
+        .add_systems(Update, set_default_ui_scale.run_if(run_once));
     }
 }
 
@@ -47,6 +49,10 @@ impl Default for GeneralKeyBindings {
 #[derive(Actionlike, PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
 pub enum CanvasStateActions {
     Modify,
+}
+
+fn set_default_ui_scale(mut egui_settings: Single<&mut EguiContextSettings>) {
+    egui_settings.scale_factor = 1.25;
 }
 
 fn load_settings(mut commands: Commands, settings_config: Res<Persistent<SettingsConfig>>) {
