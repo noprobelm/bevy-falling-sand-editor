@@ -40,26 +40,22 @@ fn show(mut contexts: EguiContexts, icons: Res<SidePanelIconTextureIds>) -> Resu
             ui.separator();
             ui.add_space(5.);
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                let particle_editor_image =
-                    egui::Image::new((icons.particle_editor, egui::vec2(IMAGE_SIZE, IMAGE_SIZE)))
-                        .tint(egui::Color32::WHITE);
                 if ui
-                    .add(
-                        egui::Button::image(particle_editor_image).fill(egui::Color32::TRANSPARENT),
-                    )
+                    .add(button_builder(icons.particle_editor, IMAGE_SIZE))
                     .clicked()
                 {}
 
                 ui.add_space(IMAGE_MARGIN);
 
-                let document_image = egui::Image::new((icons.settings, egui::vec2(32.0, 32.0)));
-                if ui
-                    .add(egui::Button::image(document_image).fill(egui::Color32::TRANSPARENT))
-                    .clicked()
-                {}
+                if ui.add(button_builder(icons.settings, IMAGE_SIZE)).clicked() {}
 
                 ui.add_space(LOWER_MARGIN);
             });
         });
     Ok(())
+}
+
+fn button_builder(texture_id: egui::TextureId, image_size: f32) -> egui::Button<'static> {
+    let image = egui::Image::new((texture_id, egui::vec2(image_size, image_size)));
+    egui::Button::image(image).fill(egui::Color32::TRANSPARENT)
 }
