@@ -40,15 +40,20 @@ fn show(mut contexts: EguiContexts, icons: Res<SidePanelIconTextureIds>) -> Resu
             ui.separator();
             ui.add_space(5.);
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                if ui
-                    .add(button_builder(icons.particle_editor, IMAGE_SIZE))
-                    .clicked()
-                {}
+                ui.scope(|ui| {
+                    let widgets = &mut ui.style_mut().visuals.widgets;
+                    widgets.inactive.weak_bg_fill = egui::Color32::TRANSPARENT;
+                    widgets.inactive.bg_stroke.width = 0.0;
+                    widgets.hovered.bg_fill = egui::Color32::from_rgb(200, 200, 200);
+                    widgets.hovered.bg_stroke.width = 0.0;
 
-                ui.add_space(IMAGE_MARGIN);
-
-                if ui.add(button_builder(icons.settings, IMAGE_SIZE)).clicked() {}
-
+                    if ui
+                        .add(button_builder(icons.particle_editor, IMAGE_SIZE))
+                        .clicked()
+                    {}
+                    ui.add_space(IMAGE_MARGIN);
+                    if ui.add(button_builder(icons.settings, IMAGE_SIZE)).clicked() {}
+                });
                 ui.add_space(LOWER_MARGIN);
             });
         });
@@ -57,5 +62,5 @@ fn show(mut contexts: EguiContexts, icons: Res<SidePanelIconTextureIds>) -> Resu
 
 fn button_builder(texture_id: egui::TextureId, image_size: f32) -> egui::Button<'static> {
     let image = egui::Image::new((texture_id, egui::vec2(image_size, image_size)));
-    egui::Button::image(image).fill(egui::Color32::TRANSPARENT)
+    egui::Button::image(image)
 }
