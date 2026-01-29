@@ -54,6 +54,9 @@ fn show(
 
                     if ui
                         .add(button_builder(icons.particle_editor, IMAGE_SIZE))
+                        .on_hover_ui(|ui| {
+                            ui.label("Particle Editor");
+                        })
                         .clicked()
                     {
                         next_particle_editor_state.set(match current_particle_editor_state.get() {
@@ -62,7 +65,13 @@ fn show(
                         });
                     }
                     ui.add_space(IMAGE_MARGIN);
-                    if ui.add(button_builder(icons.settings, IMAGE_SIZE)).clicked() {}
+                    if ui
+                        .add(button_builder(icons.settings, IMAGE_SIZE))
+                        .on_hover_ui(|ui| {
+                            ui.label("Settings");
+                        })
+                        .clicked()
+                    {}
                 });
                 ui.add_space(LOWER_MARGIN);
             });
