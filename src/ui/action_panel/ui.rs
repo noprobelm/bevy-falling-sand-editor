@@ -48,8 +48,6 @@ fn show(
                 ui.scope(|ui| {
                     let widgets = &mut ui.style_mut().visuals.widgets;
                     widgets.inactive.weak_bg_fill = egui::Color32::TRANSPARENT;
-                    widgets.inactive.bg_stroke.width = 0.0;
-                    widgets.hovered.bg_fill = egui::Color32::from_rgb(200, 200, 200);
                     widgets.hovered.bg_stroke.width = 0.0;
 
                     if ui
