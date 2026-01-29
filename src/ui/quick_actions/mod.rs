@@ -10,6 +10,6 @@ pub struct QuickActionsPlugin;
 
 impl Plugin for QuickActionsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(SystemsPlugin);
+        app.add_plugins((SetupPlugin, SystemsPlugin));
     }
 }

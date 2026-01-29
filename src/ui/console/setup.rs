@@ -12,9 +12,9 @@ use crate::{
 
 use super::{ConsoleCache, HelpDirective};
 
-pub struct ConsoleSetupPlugin;
+pub(super) struct SetupPlugin;
 
-impl Plugin for ConsoleSetupPlugin {
+impl Plugin for SetupPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(InputManagerPlugin::<ConsoleAction>::default())
             .init_resource::<ConsoleCache>()

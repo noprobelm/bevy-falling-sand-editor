@@ -16,6 +16,6 @@ pub struct ConsolePlugin;
 
 impl Plugin for ConsolePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((UiPlugin, CommandsPlugin, StatePlugin));
+        app.add_plugins((SetupPlugin, UiPlugin, CommandsPlugin, StatePlugin));
     }
 }

@@ -3,9 +3,9 @@ use bevy_egui::{EguiContexts, egui::TextureId};
 
 use crate::setup::SetupSystems;
 
-pub struct ActionPanelSetupPlugin;
+pub(super) struct SetupPlugin;
 
-impl Plugin for ActionPanelSetupPlugin {
+impl Plugin for SetupPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, load_icon_image_assets.in_set(SetupSystems::Ui))
             .add_systems(

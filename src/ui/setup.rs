@@ -7,24 +7,16 @@ use serde::{Deserialize, Serialize};
 use crate::{
     config::SettingsConfig,
     setup::SetupSystems,
-    ui::{
-        ActionPanelSetupPlugin, ConsoleKeyBindings, ConsoleSetupPlugin, QuickActionsKeyBindings,
-        QuickActionsSetupPlugin,
-    },
+    ui::{ConsoleKeyBindings, QuickActionsKeyBindings},
 };
 
 pub(super) struct SetupPlugin;
 
 impl Plugin for SetupPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((
-            ConsoleSetupPlugin,
-            QuickActionsSetupPlugin,
-            ActionPanelSetupPlugin,
-            InputManagerPlugin::<CanvasStateActions>::default(),
-        ))
-        .add_systems(Startup, load_settings.in_set(SetupSystems::Ui))
-        .add_systems(Update, set_default_ui_scale.run_if(run_once));
+        app.add_plugins((InputManagerPlugin::<CanvasStateActions>::default(),))
+            .add_systems(Startup, load_settings.in_set(SetupSystems::Ui))
+            .add_systems(Update, set_default_ui_scale.run_if(run_once));
     }
 }
 

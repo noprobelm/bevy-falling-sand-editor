@@ -5,9 +5,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{config::SettingsConfig, setup::SetupSystems};
 
-pub struct QuickActionsSetupPlugin;
+pub(super) struct SetupPlugin;
 
-impl Plugin for QuickActionsSetupPlugin {
+impl Plugin for SetupPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(InputManagerPlugin::<QuickAction>::default())
             .add_systems(Startup, load_settings.in_set(SetupSystems::Ui));
