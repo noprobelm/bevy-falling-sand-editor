@@ -4,6 +4,7 @@ mod particle_editor;
 mod quick_actions;
 mod setup;
 mod states;
+mod widgets;
 
 use bevy::prelude::*;
 
@@ -14,6 +15,7 @@ use particle_editor::*;
 pub use quick_actions::*;
 pub use setup::*;
 pub use states::*;
+pub use widgets::*;
 
 pub(super) struct UiPlugin;
 
