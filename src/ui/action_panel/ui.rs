@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_egui::{EguiContexts, EguiPrimaryContextPass, egui};
 
 use super::setup::SidePanelIconTextureIds;
-use crate::ui::{ShowUi, UiSystems};
+use crate::ui::{ShowUi, UiSystems, particle_editor::ParticleEditorState};
 
 pub(super) struct UiPlugin;
 
@@ -12,12 +12,17 @@ impl Plugin for UiPlugin {
             EguiPrimaryContextPass,
             show.run_if(resource_exists::<ShowUi>)
                 .run_if(resource_exists::<SidePanelIconTextureIds>)
-                .in_set(UiSystems::SidePanel),
+                .in_set(UiSystems::ActionPanel),
         );
     }
 }
 
-fn show(mut contexts: EguiContexts, icons: Res<SidePanelIconTextureIds>) -> Result {
+fn show(
+    mut contexts: EguiContexts,
+    icons: Res<SidePanelIconTextureIds>,
+    current_particle_editor_state: Res<State<ParticleEditorState>>,
+    mut next_particle_editor_state: ResMut<NextState<ParticleEditorState>>,
+) -> Result {
     const IMAGE_SIZE: f32 = 32.;
     const WIDGET_WIDTH: f32 = 40.;
     const IMAGE_MARGIN: f32 = 5.;
@@ -25,7 +30,7 @@ fn show(mut contexts: EguiContexts, icons: Res<SidePanelIconTextureIds>) -> Resu
 
     let ctx = contexts.ctx_mut()?;
 
-    egui::Window::new("action window")
+    egui::Window::new("action panel")
         .title_bar(false)
         .resizable(false)
         .min_width(WIDGET_WIDTH)
@@ -50,7 +55,12 @@ fn show(mut contexts: EguiContexts, icons: Res<SidePanelIconTextureIds>) -> Resu
                     if ui
                         .add(button_builder(icons.particle_editor, IMAGE_SIZE))
                         .clicked()
-                    {}
+                    {
+                        next_particle_editor_state.set(match current_particle_editor_state.get() {
+                            ParticleEditorState::Closed => ParticleEditorState::Open,
+                            ParticleEditorState::Open => ParticleEditorState::Closed,
+                        });
+                    }
                     ui.add_space(IMAGE_MARGIN);
                     if ui.add(button_builder(icons.settings, IMAGE_SIZE)).clicked() {}
                 });

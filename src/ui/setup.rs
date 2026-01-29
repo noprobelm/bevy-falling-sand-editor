@@ -8,7 +8,8 @@ use crate::{
     config::SettingsConfig,
     setup::SetupSystems,
     ui::{
-        ConsoleKeyBindings, ConsoleSetupPlugin, QuickActionsKeyBindings, QuickActionsSetupPlugin,
+        ActionPanelSetupPlugin, ConsoleKeyBindings, ConsoleSetupPlugin, QuickActionsKeyBindings,
+        QuickActionsSetupPlugin,
     },
 };
 
@@ -19,6 +20,7 @@ impl Plugin for SetupPlugin {
         app.add_plugins((
             ConsoleSetupPlugin,
             QuickActionsSetupPlugin,
+            ActionPanelSetupPlugin,
             InputManagerPlugin::<CanvasStateActions>::default(),
         ))
         .add_systems(Startup, load_settings.in_set(SetupSystems::Ui))

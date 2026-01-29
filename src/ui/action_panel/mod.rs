@@ -10,6 +10,6 @@ pub struct ActionPanelPlugin;
 
 impl Plugin for ActionPanelPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((SetupPlugin, UiPlugin));
+        app.add_plugins(UiPlugin);
     }
 }

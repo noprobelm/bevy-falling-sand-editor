@@ -1,5 +1,6 @@
 mod action_panel;
 mod console;
+mod particle_editor;
 mod quick_actions;
 mod setup;
 mod states;
@@ -9,6 +10,7 @@ use bevy::prelude::*;
 pub use action_panel::*;
 use bevy_egui::{EguiPlugin, EguiPrimaryContextPass};
 pub use console::*;
+use particle_editor::*;
 pub use quick_actions::*;
 pub use setup::*;
 pub use states::*;
@@ -22,12 +24,13 @@ impl Plugin for UiPlugin {
             SetupPlugin,
             QuickActionsPlugin,
             ActionPanelPlugin,
+            ParticleEditorPlugin,
             ConsolePlugin,
             UiStatePlugin,
         ))
         .configure_sets(
             EguiPrimaryContextPass,
-            (UiSystems::SidePanel, UiSystems::Console).chain(),
+            (UiSystems::ActionPanel, UiSystems::Console).chain(),
         )
         .init_resource::<ShowUi>();
     }
@@ -38,6 +41,7 @@ pub struct ShowUi;
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum UiSystems {
-    SidePanel,
+    ActionPanel,
     Console,
+    ParticleEditor,
 }
