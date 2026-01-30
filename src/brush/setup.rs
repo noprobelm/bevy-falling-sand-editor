@@ -84,7 +84,7 @@ fn insert_brush_particle(
     particle_types: Query<&ParticleType>,
     brush: Single<Entity, With<Brush>>,
 ) {
-    const DEFAULT_PARTICLE_NAME: &str = "Sand";
+    const DEFAULT_PARTICLE_NAME: &str = "Dirt Wall";
     let particle = if let Some(entity) = registry.get(DEFAULT_PARTICLE_NAME) {
         Particle::from(
             particle_types
