@@ -35,7 +35,13 @@ impl Plugin for UiPlugin {
         ))
         .configure_sets(
             EguiPrimaryContextPass,
-            (UiSystems::ActionPanel, UiSystems::Console).chain(),
+            (
+                UiSystems::ActionPanel,
+                UiSystems::Console,
+                UiSystems::ParticleEditor,
+                UiSystems::Settings,
+            )
+                .chain(),
         )
         .init_resource::<ShowUi>();
     }
@@ -49,4 +55,5 @@ pub enum UiSystems {
     ActionPanel,
     Console,
     ParticleEditor,
+    Settings,
 }

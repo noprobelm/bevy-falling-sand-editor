@@ -1,4 +1,4 @@
-use bevy::{asset::meta::Settings, prelude::*};
+use bevy::prelude::*;
 use bevy_egui::{EguiContexts, EguiPrimaryContextPass, egui};
 
 use super::setup::SidePanelIconTextureIds;
@@ -119,15 +119,9 @@ fn show(
                         })
                         .clicked()
                     {
-                        next_particle_editor_app_state.set(match current_particle_editor_app_state
-                            .get()
-                        {
-                            ParticleEditorApplicationState::Closed => {
-                                ParticleEditorApplicationState::Open
-                            }
-                            ParticleEditorApplicationState::Open => {
-                                ParticleEditorApplicationState::Closed
-                            }
+                        next_settings_app_state.set(match current_settings_app_state.get() {
+                            SettingsApplicationState::Closed => SettingsApplicationState::Open,
+                            SettingsApplicationState::Open => SettingsApplicationState::Closed,
                         });
                     }
                 });
