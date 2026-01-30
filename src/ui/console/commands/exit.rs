@@ -17,7 +17,6 @@ impl Plugin for ExitDirectivePlugin {
     }
 }
 
-/// Resource that tracks whether the application is waiting to exit after saves complete.
 #[derive(Resource)]
 struct PendingExit;
 
@@ -42,18 +41,14 @@ impl Directive for ExitDirective {
 }
 
 fn on_exit_application(_trigger: On<ExitApplicationEvent>, mut commands: Commands) {
-    // Save world and settings via observers
     commands.trigger(PrepareWorldSaveEvent);
     commands.trigger(SaveSettingsEvent);
 
-    // Save chunks (may be async)
     commands.write_message(SaveAllChunks);
 
-    // Mark that we're waiting to exit
     commands.insert_resource(PendingExit);
 }
 
-/// System that exits the application once all save tasks have completed.
 fn wait_for_saves_then_exit(
     pending_bfs_saves: Res<bevy_falling_sand::persistence::PendingSaveTasks>,
     mut app_exit: MessageWriter<AppExit>,
