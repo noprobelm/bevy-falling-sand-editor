@@ -65,9 +65,9 @@ fn handle_zoom_target(
 
     let (mut zoom_target, action_state) = camera_query.into_inner();
     let zoom_delta = action_state.value(&CameraAction::Zoom);
-    if zoom_delta > 0. {
+    if zoom_delta < 0. {
         zoom_target.target_scale = (zoom_target.target_scale * ZOOM_OUT_FACTOR).min(MAX_SCALE);
-    } else if zoom_delta < 0. {
+    } else if zoom_delta > 0. {
         zoom_target.target_scale = (zoom_target.target_scale * ZOOM_IN_FACTOR).max(MIN_SCALE);
     }
 }
