@@ -4,6 +4,7 @@ mod save;
 use bevy::prelude::*;
 
 pub use resources::*;
+pub use save::SaveSettingsEvent;
 
 pub struct SettingsConfigPlugin;
 

@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_persistent::Persistent;
 
-use crate::config::{SaveSettingsEvent, SettingsConfig};
+use crate::config::SettingsConfig;
 
 pub(super) struct SavePlugin;
 
@@ -10,6 +10,10 @@ impl Plugin for SavePlugin {
         app.add_observer(on_save_settings);
     }
 }
+
+/// Event to trigger saving settings data
+#[derive(Event, Default, Debug)]
+pub struct SaveSettingsEvent;
 
 fn on_save_settings(
     _trigger: On<SaveSettingsEvent>,

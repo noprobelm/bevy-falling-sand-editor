@@ -1,5 +1,4 @@
 mod base;
-mod save;
 mod settings;
 pub mod setup;
 mod world;
@@ -9,7 +8,6 @@ use std::path::PathBuf;
 use bevy::prelude::*;
 
 pub use base::*;
-pub use save::*;
 pub use settings::*;
 pub use setup::*;
 pub use world::*;
@@ -33,7 +31,6 @@ impl Plugin for ConfigPlugin {
             ConfigSetupPlugin {
                 config_path: self.config_path.clone(),
             },
-            SavePlugin,
             WorldConfigPlugin,
             SettingsConfigPlugin,
         ));
