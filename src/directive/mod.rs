@@ -136,11 +136,12 @@ fn execute(input: &str, registry: &DirectiveRegistry, commands: &mut Commands) {
 
 fn run_node(node: &DirectiveNode, args: &[String], commands: &mut Commands) {
     // If children exist and first arg matches one, recurse
-    if !node.children.is_empty() && !args.is_empty() {
-        if let Some(child) = node.children.get(&args[0]) {
-            run_node(child, &args[1..], commands);
-            return;
-        }
+    if !node.children.is_empty()
+        && !args.is_empty()
+        && let Some(child) = node.children.get(&args[0])
+    {
+        run_node(child, &args[1..], commands);
+        return;
     }
 
     // Run this node (either leaf or no matching child)
