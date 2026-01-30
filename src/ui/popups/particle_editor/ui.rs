@@ -21,8 +21,8 @@ fn show(mut contexts: EguiContexts, mut is_on: Local<bool>) -> Result {
 
     egui::Window::new("Particle Editor").show(ctx, |ui| {
         ui.with_layout(egui::Layout::left_to_right(egui::Align::LEFT), |ui| {
-            ui.add(crate::ui::toggle(&mut is_on));
             ui.label("Link to brush");
+            ui.add(crate::ui::toggle(&mut is_on));
         });
     });
 
