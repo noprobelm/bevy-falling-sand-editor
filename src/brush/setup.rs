@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_falling_sand::prelude::*;
 use bevy_persistent::Persistent;
 use leafwing_input_manager::{
     Actionlike,
@@ -10,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     brush::{
         BrushModeSpawnState, BrushModeState, BrushTypeState,
-        components::{Brush, BrushColor, BrushSize},
+        components::{Brush, BrushColor, BrushParticle, BrushSize},
         gizmos::BrushGizmos,
     },
     config::SettingsConfig,
@@ -37,6 +38,10 @@ impl Plugin for SetupPlugin {
                 (spawn_brush, load_settings)
                     .chain()
                     .in_set(SetupSystems::Brush),
+            )
+            .add_systems(
+                Update,
+                insert_brush_particle.run_if(should_insert_brush_particle),
             );
     }
 }
@@ -73,6 +78,39 @@ fn spawn_brush(mut commands: Commands) {
     ));
 }
 
+fn insert_brush_particle(
+    mut commands: Commands,
+    registry: Res<ParticleTypeRegistry>,
+    particle_types: Query<&ParticleType>,
+    brush: Single<Entity, With<Brush>>,
+) {
+    const DEFAULT_PARTICLE_NAME: &str = "Sand";
+    let particle = if let Some(entity) = registry.get(DEFAULT_PARTICLE_NAME) {
+        Particle::from(
+            particle_types
+                .get(*entity)
+                .expect("Failed to find particle type {DEFAULT_PARTICLE} in query")
+                .clone(),
+        )
+    } else {
+        Particle::from(
+            particle_types
+                .get(
+                    *registry
+                        .entities()
+                        .next()
+                        .expect("No particle types found in the world"),
+                )
+                .expect("Failed to find particle type in query")
+                .clone(),
+        )
+    };
+
+    commands
+        .entity(brush.entity())
+        .insert(BrushParticle(particle));
+}
+
 fn load_settings(
     mut commands: Commands,
     brush: Single<Entity, With<Brush>>,
@@ -86,5 +124,13 @@ fn load_settings(
         )
         .with(BrushAction::Draw, settings_config.brush.draw);
 
+    info!("We ran");
     commands.entity(brush.entity()).insert(input_map);
+}
+
+fn should_insert_brush_particle(
+    particle_types: Query<Entity, Added<ParticleType>>,
+    brush_without_particle: Query<(), (With<Brush>, Without<BrushParticle>)>,
+) -> bool {
+    !particle_types.is_empty() && !brush_without_particle.is_empty()
 }

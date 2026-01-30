@@ -1,10 +1,13 @@
 use bevy::prelude::*;
-use bevy_falling_sand::core::{DespawnParticleSignal, Particle, SpawnParticleSignal};
+use bevy_falling_sand::core::{DespawnParticleSignal, SpawnParticleSignal};
 use leafwing_input_manager::{common_conditions::action_pressed, prelude::ActionState};
 
 use crate::{
     Cursor,
-    brush::{BrushAction, BrushModeState, BrushTypeState, components::BrushSize},
+    brush::{
+        BrushAction, BrushModeState, BrushTypeState,
+        components::{BrushParticle, BrushSize},
+    },
     ui::CanvasState,
 };
 
@@ -41,14 +44,14 @@ fn resize_brush(mut single: Single<(&ActionState<BrushAction>, &mut BrushSize)>)
 
 fn brush_action_spawn_particles(
     mut msgw_spawn: MessageWriter<SpawnParticleSignal>,
-    brush_size: Single<&BrushSize>,
+    brush: Single<(&BrushSize, &BrushParticle)>,
     cursor: Res<Cursor>,
     brush_type: Res<State<BrushTypeState>>,
 ) {
-    alg::get_positions(&cursor, brush_size.0 as f32, &brush_type)
+    alg::get_positions(&cursor, brush.0.0 as f32, &brush_type)
         .iter()
         .for_each(|pos| {
-            msgw_spawn.write(SpawnParticleSignal::new(Particle::new("Dirt Wall"), *pos));
+            msgw_spawn.write(SpawnParticleSignal::new(brush.1.0.clone(), *pos));
         });
 }
 
