@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    CursorPosition,
+    Cursor,
     brush::{
         components::{Brush, BrushColor, BrushSize},
         states::BrushTypeState,
@@ -20,7 +20,7 @@ impl Plugin for GizmosPlugin {
 pub struct BrushGizmos;
 
 fn update_brush_gizmos(
-    cursor_position: Res<CursorPosition>,
+    cursor_position: Res<Cursor>,
     mut brush_gizmos: Gizmos<BrushGizmos>,
     brush_type: Res<State<BrushTypeState>>,
     brush_query: Query<(&BrushSize, &BrushColor), With<Brush>>,

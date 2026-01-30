@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use bevy_falling_sand::core::{Particle, ParticleMap, SpawnParticleSignal};
 pub use setup::*;
 
-use crate::CursorPosition;
+use crate::Cursor;
 
 pub struct ParticlesPlugin;
 
@@ -33,7 +33,7 @@ pub struct HoveredParticle {
 }
 
 fn update_hovered_particle(
-    cursor_position: Res<CursorPosition>,
+    cursor_position: Res<Cursor>,
     map: Res<ParticleMap>,
     particle_query: Query<&Particle>,
     mut hovered_particle: ResMut<HoveredParticle>,

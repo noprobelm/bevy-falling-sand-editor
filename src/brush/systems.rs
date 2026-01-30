@@ -3,7 +3,7 @@ use bevy_falling_sand::core::{DespawnParticleSignal, Particle, SpawnParticleSign
 use leafwing_input_manager::{common_conditions::action_pressed, prelude::ActionState};
 
 use crate::{
-    CursorPosition,
+    Cursor,
     brush::{BrushAction, BrushModeState, BrushTypeState, components::BrushSize},
     ui::CanvasState,
 };
@@ -15,9 +15,16 @@ impl Plugin for SystemsPlugin {
         app.add_systems(Update, resize_brush.run_if(in_state(CanvasState::Edit)))
             .add_systems(
                 Update,
-                brush_action
-                    .run_if(action_pressed(BrushAction::Draw))
-                    .run_if(in_state(CanvasState::Interact)),
+                (
+                    brush_action_spawn_particles
+                        .run_if(action_pressed(BrushAction::Draw))
+                        .run_if(in_state(CanvasState::Interact))
+                        .run_if(in_state(BrushModeState::Spawn)),
+                    brush_action_despawn_particles
+                        .run_if(action_pressed(BrushAction::Draw))
+                        .run_if(in_state(CanvasState::Interact))
+                        .run_if(in_state(BrushModeState::Despawn)),
+                ),
             );
     }
 }
@@ -32,54 +39,59 @@ fn resize_brush(mut single: Single<(&ActionState<BrushAction>, &mut BrushSize)>)
     }
 }
 
-fn brush_action(
+fn brush_action_spawn_particles(
     mut msgw_spawn: MessageWriter<SpawnParticleSignal>,
+    brush_size: Single<&BrushSize>,
+    cursor: Res<Cursor>,
+    brush_type: Res<State<BrushTypeState>>,
+) {
+    alg::get_positions(&cursor, brush_size.0 as f32, &brush_type)
+        .iter()
+        .for_each(|pos| {
+            msgw_spawn.write(SpawnParticleSignal::new(Particle::new("Dirt Wall"), *pos));
+        });
+}
+
+fn brush_action_despawn_particles(
     mut msgw_despawn: MessageWriter<DespawnParticleSignal>,
     brush_size: Single<&BrushSize>,
-    cursor_position: Res<CursorPosition>,
+    cursor: Res<Cursor>,
     brush_type: Res<State<BrushTypeState>>,
-    brush_mode: Res<State<BrushModeState>>,
 ) {
-    let cursor_pairs = [
-        (cursor_position.current, cursor_position.previous),
-        (cursor_position.previous, cursor_position.previous_previous),
-    ];
-
-    let positions: Vec<IVec2> = cursor_pairs
+    alg::get_positions(&cursor, brush_size.0 as f32, &brush_type)
         .iter()
-        .flat_map(|(start, end)| match brush_type.get() {
-            BrushTypeState::Circle => {
-                alg::get_interpolated_circle_points(*start, *end, brush_size.0 as f32)
-            }
-            BrushTypeState::Line => {
-                alg::get_interpolated_line_points(*start, *end, brush_size.0 as f32)
-            }
-            BrushTypeState::Cursor => alg::get_interpolated_cursor_points(*start, *end),
-        })
-        .collect();
-
-    match brush_mode.get() {
-        BrushModeState::Spawn => {
-            for pos in positions {
-                msgw_spawn.write(SpawnParticleSignal::new(Particle::new("Dirt Wall"), pos));
-            }
-        }
-        BrushModeState::Despawn => {
-            for pos in positions {
-                msgw_despawn.write(DespawnParticleSignal::from_position(pos));
-            }
-        }
-    }
+        .for_each(|pos| {
+            msgw_despawn.write(DespawnParticleSignal::from_position(*pos));
+        });
 }
 
 pub(super) mod alg {
     use bevy::prelude::*;
-    /// Find all horizontal lines interpolated between a start and end position.
-    pub(super) fn get_interpolated_line_points(
-        start: Vec2,
-        end: Vec2,
-        line_length: f32,
+
+    use crate::{Cursor, brush::BrushTypeState};
+
+    pub(super) fn get_positions(
+        cursor: &Cursor,
+        brush_size: f32,
+        brush_type: &BrushTypeState,
     ) -> Vec<IVec2> {
+        let cursor_pairs = [
+            (cursor.current, cursor.previous),
+            (cursor.previous, cursor.previous_previous),
+        ];
+
+        cursor_pairs
+            .iter()
+            .flat_map(|(start, end)| match brush_type {
+                BrushTypeState::Circle => get_interpolated_circle_points(*start, *end, brush_size),
+                BrushTypeState::Line => get_interpolated_line_points(*start, *end, brush_size),
+                BrushTypeState::Cursor => get_interpolated_cursor_points(*start, *end),
+            })
+            .collect()
+    }
+
+    /// Find all horizontal lines interpolated between a start and end position.
+    fn get_interpolated_line_points(start: Vec2, end: Vec2, line_length: f32) -> Vec<IVec2> {
         let mut positions = vec![];
 
         let min_x = -((line_length as i32) / 2) * 3;
@@ -106,7 +118,7 @@ pub(super) mod alg {
     }
 
     /// Find all cursor points interpolated between a start and end position.
-    pub(super) fn get_interpolated_cursor_points(start: Vec2, end: Vec2) -> Vec<IVec2> {
+    fn get_interpolated_cursor_points(start: Vec2, end: Vec2) -> Vec<IVec2> {
         if start == end {
             return vec![start.as_ivec2()];
         }
@@ -124,11 +136,7 @@ pub(super) mod alg {
     }
 
     /// Find all circles interpolated between a start and end position.
-    pub(super) fn get_interpolated_circle_points(
-        start: Vec2,
-        end: Vec2,
-        radius: f32,
-    ) -> Vec<IVec2> {
+    fn get_interpolated_circle_points(start: Vec2, end: Vec2, radius: f32) -> Vec<IVec2> {
         let mut positions = vec![];
         if start == end {
             let min_x = (start.x - radius).floor() as i32;
@@ -160,7 +168,7 @@ pub(super) mod alg {
                     let to_point = point - start;
                     let projected_length = to_point.dot(direction);
                     // Sometimes projected length will exceed the actual length of the capsule, so
-                    // clamp it.
+                    // we need to clamp it.
                     let clamped_length = projected_length.clamp(0.0, length);
 
                     let closest_point = start + direction * clamped_length;
