@@ -1,8 +1,6 @@
 mod action_panel;
 mod console;
-mod particle_editor;
 mod quick_actions;
-mod settings;
 mod setup;
 mod states;
 mod widgets;
@@ -12,9 +10,7 @@ use bevy::prelude::*;
 pub use action_panel::*;
 use bevy_egui::{EguiPlugin, EguiPrimaryContextPass};
 pub use console::*;
-use particle_editor::*;
 pub use quick_actions::*;
-pub use settings::*;
 pub use setup::*;
 pub use states::*;
 pub use widgets::*;
@@ -28,8 +24,6 @@ impl Plugin for UiPlugin {
             SetupPlugin,
             QuickActionsPlugin,
             ActionPanelPlugin,
-            ParticleEditorPlugin,
-            SettingsPlugin,
             ConsolePlugin,
             UiStatePlugin,
         ))

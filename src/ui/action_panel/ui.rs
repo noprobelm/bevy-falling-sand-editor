@@ -2,9 +2,7 @@ use bevy::prelude::*;
 use bevy_egui::{EguiContexts, EguiPrimaryContextPass, egui};
 
 use super::setup::SidePanelIconTextureIds;
-use crate::ui::{
-    SettingsApplicationState, ShowUi, UiSystems, particle_editor::ParticleEditorApplicationState,
-};
+use crate::ui::{ParticleEditorApplicationState, SettingsApplicationState, ShowUi, UiSystems};
 
 pub(super) struct UiPlugin;
 

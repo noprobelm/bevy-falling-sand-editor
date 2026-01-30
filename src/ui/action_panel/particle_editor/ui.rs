@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, EguiPrimaryContextPass, egui};
 
-use crate::ui::{ShowUi, UiSystems, particle_editor::ParticleEditorApplicationState};
+use crate::ui::{ParticleEditorApplicationState, ShowUi, UiSystems};
 
 pub(super) struct UiPlugin;
 
