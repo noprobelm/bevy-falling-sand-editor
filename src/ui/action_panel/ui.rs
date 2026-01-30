@@ -2,7 +2,10 @@ use bevy::prelude::*;
 use bevy_egui::{EguiContexts, EguiPrimaryContextPass, egui};
 
 use super::setup::SidePanelIconTextureIds;
-use crate::ui::{ParticleEditorApplicationState, SettingsApplicationState, ShowUi, UiSystems};
+use crate::ui::{
+    ActionPanelApplicationState, ParticleEditorApplicationState, SettingsApplicationState, ShowUi,
+    UiSystems,
+};
 
 pub(super) struct UiPlugin;
 
@@ -20,10 +23,16 @@ impl Plugin for UiPlugin {
 fn show(
     mut contexts: EguiContexts,
     icons: Res<SidePanelIconTextureIds>,
-    current_particle_editor_app_state: Res<State<ParticleEditorApplicationState>>,
-    mut next_particle_editor_app_state: ResMut<NextState<ParticleEditorApplicationState>>,
-    current_settings_app_state: Res<State<SettingsApplicationState>>,
-    mut next_settings_app_state: ResMut<NextState<SettingsApplicationState>>,
+    current_particle_editor_app_state: Res<
+        State<ActionPanelApplicationState<ParticleEditorApplicationState>>,
+    >,
+    mut next_particle_editor_app_state: ResMut<
+        NextState<ActionPanelApplicationState<ParticleEditorApplicationState>>,
+    >,
+    current_settings_app_state: Res<State<ActionPanelApplicationState<SettingsApplicationState>>>,
+    mut next_settings_app_state: ResMut<
+        NextState<ActionPanelApplicationState<SettingsApplicationState>>,
+    >,
 ) -> Result {
     const IMAGE_SIZE: f32 = 32.;
     const WIDGET_WIDTH: f32 = 40.;
@@ -50,24 +59,11 @@ fn show(
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                 // Particle editor
                 ui.scope(|ui| {
-                    let widgets = &mut ui.style_mut().visuals.widgets;
-                    widgets.inactive.weak_bg_fill = egui::Color32::TRANSPARENT;
-                    widgets.hovered.bg_stroke.width = 0.0;
-                    widgets.hovered.weak_bg_fill = egui::Color32::from_rgb(
-                        WIDGET_ACTIVE_BUTTON_COLORS[0],
-                        WIDGET_ACTIVE_BUTTON_COLORS[1],
-                        WIDGET_ACTIVE_BUTTON_COLORS[2],
+                    set_button_styling(
+                        ui,
+                        WIDGET_ACTIVE_BUTTON_COLORS,
+                        current_particle_editor_app_state.get(),
                     );
-
-                    if current_particle_editor_app_state.get()
-                        == &ParticleEditorApplicationState::Open
-                    {
-                        widgets.inactive.weak_bg_fill = egui::Color32::from_rgb(
-                            WIDGET_ACTIVE_BUTTON_COLORS[0],
-                            WIDGET_ACTIVE_BUTTON_COLORS[1],
-                            WIDGET_ACTIVE_BUTTON_COLORS[2],
-                        );
-                    }
 
                     if ui
                         .add(button_builder(icons.particle_editor, IMAGE_SIZE))
@@ -76,16 +72,8 @@ fn show(
                         })
                         .clicked()
                     {
-                        next_particle_editor_app_state.set(match current_particle_editor_app_state
-                            .get()
-                        {
-                            ParticleEditorApplicationState::Closed => {
-                                ParticleEditorApplicationState::Open
-                            }
-                            ParticleEditorApplicationState::Open => {
-                                ParticleEditorApplicationState::Closed
-                            }
-                        });
+                        next_particle_editor_app_state
+                            .set(current_particle_editor_app_state.get_next());
                     }
                 });
 
@@ -93,22 +81,11 @@ fn show(
 
                 // Settings
                 ui.scope(|ui| {
-                    let widgets = &mut ui.style_mut().visuals.widgets;
-                    widgets.inactive.weak_bg_fill = egui::Color32::TRANSPARENT;
-                    widgets.hovered.bg_stroke.width = 0.0;
-                    widgets.hovered.weak_bg_fill = egui::Color32::from_rgb(
-                        WIDGET_ACTIVE_BUTTON_COLORS[0],
-                        WIDGET_ACTIVE_BUTTON_COLORS[1],
-                        WIDGET_ACTIVE_BUTTON_COLORS[2],
+                    set_button_styling(
+                        ui,
+                        WIDGET_ACTIVE_BUTTON_COLORS,
+                        current_settings_app_state.get(),
                     );
-
-                    if current_settings_app_state.get() == &SettingsApplicationState::Open {
-                        widgets.inactive.weak_bg_fill = egui::Color32::from_rgb(
-                            WIDGET_ACTIVE_BUTTON_COLORS[0],
-                            WIDGET_ACTIVE_BUTTON_COLORS[1],
-                            WIDGET_ACTIVE_BUTTON_COLORS[2],
-                        );
-                    }
 
                     if ui
                         .add(button_builder(icons.settings, IMAGE_SIZE))
@@ -117,10 +94,7 @@ fn show(
                         })
                         .clicked()
                     {
-                        next_settings_app_state.set(match current_settings_app_state.get() {
-                            SettingsApplicationState::Closed => SettingsApplicationState::Open,
-                            SettingsApplicationState::Open => SettingsApplicationState::Closed,
-                        });
+                        next_settings_app_state.set(current_settings_app_state.get_next());
                     }
                 });
 
@@ -133,4 +107,21 @@ fn show(
 fn button_builder(texture_id: egui::TextureId, image_size: f32) -> egui::Button<'static> {
     let image = egui::Image::new((texture_id, egui::vec2(image_size, image_size)));
     egui::Button::image(image)
+}
+
+fn set_button_styling<
+    T: Send + Sync + Default + std::fmt::Debug + Clone + Eq + std::hash::Hash + 'static,
+>(
+    ui: &mut egui::Ui,
+    colors: [u8; 3],
+    current: &ActionPanelApplicationState<T>,
+) {
+    let widgets = &mut ui.style_mut().visuals.widgets;
+    widgets.inactive.weak_bg_fill = egui::Color32::TRANSPARENT;
+    widgets.hovered.bg_stroke.width = 0.0;
+    widgets.hovered.weak_bg_fill = egui::Color32::from_rgb(colors[0], colors[1], colors[2]);
+
+    if current.is_open() {
+        widgets.inactive.weak_bg_fill = egui::Color32::from_rgb(colors[0], colors[1], colors[2]);
+    }
 }

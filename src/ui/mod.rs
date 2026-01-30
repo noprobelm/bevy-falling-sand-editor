@@ -1,5 +1,6 @@
 mod action_panel;
 mod console;
+mod popups;
 mod quick_actions;
 mod setup;
 mod states;
@@ -10,6 +11,7 @@ use bevy::prelude::*;
 pub use action_panel::*;
 use bevy_egui::{EguiPlugin, EguiPrimaryContextPass};
 pub use console::*;
+pub use popups::*;
 pub use quick_actions::*;
 pub use setup::*;
 pub use states::*;
@@ -24,6 +26,7 @@ impl Plugin for UiPlugin {
             SetupPlugin,
             QuickActionsPlugin,
             ActionPanelPlugin,
+            PopupsPlugin,
             ConsolePlugin,
             UiStatePlugin,
         ))

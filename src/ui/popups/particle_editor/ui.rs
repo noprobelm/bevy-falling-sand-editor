@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, EguiPrimaryContextPass, egui};
 
-use crate::ui::{ParticleEditorApplicationState, ShowUi, UiSystems};
+use crate::ui::{ActionPanelApplicationState, ParticleEditorApplicationState, ShowUi, UiSystems};
 
 pub(super) struct UiPlugin;
 
@@ -10,7 +10,9 @@ impl Plugin for UiPlugin {
         app.add_systems(
             EguiPrimaryContextPass,
             show.run_if(resource_exists::<ShowUi>)
-                .run_if(in_state(ParticleEditorApplicationState::Open))
+                .run_if(in_state(
+                    ActionPanelApplicationState::<ParticleEditorApplicationState>::Open,
+                ))
                 .in_set(UiSystems::ParticleEditor),
         );
     }
