@@ -90,10 +90,7 @@ fn load_settings_config_file(
     config_path: Res<ConfigPath>,
     init_config: Res<Persistent<InitConfig>>,
 ) {
-    let settings_file_path = config_path
-        .0
-        .join(WORLD_PATH)
-        .join(init_config.get().settings_init_file());
+    let settings_file_path = config_path.0.join(init_config.get().settings_init_file());
 
     commands.insert_resource(
         Persistent::<SettingsConfig>::builder()
