@@ -1,8 +1,10 @@
-use bevy::prelude::*;
+use bevy::{asset::meta::Settings, prelude::*};
 use bevy_egui::{EguiContexts, EguiPrimaryContextPass, egui};
 
 use super::setup::SidePanelIconTextureIds;
-use crate::ui::{ShowUi, UiSystems, particle_editor::ParticleEditorState};
+use crate::ui::{
+    SettingsApplicationState, ShowUi, UiSystems, particle_editor::ParticleEditorApplicationState,
+};
 
 pub(super) struct UiPlugin;
 
@@ -20,13 +22,16 @@ impl Plugin for UiPlugin {
 fn show(
     mut contexts: EguiContexts,
     icons: Res<SidePanelIconTextureIds>,
-    current_particle_editor_state: Res<State<ParticleEditorState>>,
-    mut next_particle_editor_state: ResMut<NextState<ParticleEditorState>>,
+    current_particle_editor_app_state: Res<State<ParticleEditorApplicationState>>,
+    mut next_particle_editor_app_state: ResMut<NextState<ParticleEditorApplicationState>>,
+    current_settings_app_state: Res<State<SettingsApplicationState>>,
+    mut next_settings_app_state: ResMut<NextState<SettingsApplicationState>>,
 ) -> Result {
     const IMAGE_SIZE: f32 = 32.;
     const WIDGET_WIDTH: f32 = 40.;
     const IMAGE_MARGIN: f32 = 5.;
     const LOWER_MARGIN: f32 = 2.;
+    const WIDGET_ACTIVE_BUTTON_COLORS: [u8; 3] = [100, 100, 100];
 
     let ctx = contexts.ctx_mut()?;
 
@@ -50,10 +55,20 @@ fn show(
                     let widgets = &mut ui.style_mut().visuals.widgets;
                     widgets.inactive.weak_bg_fill = egui::Color32::TRANSPARENT;
                     widgets.hovered.bg_stroke.width = 0.0;
-                    widgets.hovered.weak_bg_fill = egui::Color32::from_rgb(100, 100, 100);
+                    widgets.hovered.weak_bg_fill = egui::Color32::from_rgb(
+                        WIDGET_ACTIVE_BUTTON_COLORS[0],
+                        WIDGET_ACTIVE_BUTTON_COLORS[1],
+                        WIDGET_ACTIVE_BUTTON_COLORS[2],
+                    );
 
-                    if current_particle_editor_state.get() == &ParticleEditorState::Open {
-                        widgets.inactive.weak_bg_fill = egui::Color32::from_rgb(100, 100, 100);
+                    if current_particle_editor_app_state.get()
+                        == &ParticleEditorApplicationState::Open
+                    {
+                        widgets.inactive.weak_bg_fill = egui::Color32::from_rgb(
+                            WIDGET_ACTIVE_BUTTON_COLORS[0],
+                            WIDGET_ACTIVE_BUTTON_COLORS[1],
+                            WIDGET_ACTIVE_BUTTON_COLORS[2],
+                        );
                     }
 
                     if ui
@@ -63,9 +78,15 @@ fn show(
                         })
                         .clicked()
                     {
-                        next_particle_editor_state.set(match current_particle_editor_state.get() {
-                            ParticleEditorState::Closed => ParticleEditorState::Open,
-                            ParticleEditorState::Open => ParticleEditorState::Closed,
+                        next_particle_editor_app_state.set(match current_particle_editor_app_state
+                            .get()
+                        {
+                            ParticleEditorApplicationState::Closed => {
+                                ParticleEditorApplicationState::Open
+                            }
+                            ParticleEditorApplicationState::Open => {
+                                ParticleEditorApplicationState::Closed
+                            }
                         });
                     }
                 });
@@ -77,7 +98,19 @@ fn show(
                     let widgets = &mut ui.style_mut().visuals.widgets;
                     widgets.inactive.weak_bg_fill = egui::Color32::TRANSPARENT;
                     widgets.hovered.bg_stroke.width = 0.0;
-                    widgets.hovered.weak_bg_fill = egui::Color32::from_rgb(100, 100, 100);
+                    widgets.hovered.weak_bg_fill = egui::Color32::from_rgb(
+                        WIDGET_ACTIVE_BUTTON_COLORS[0],
+                        WIDGET_ACTIVE_BUTTON_COLORS[1],
+                        WIDGET_ACTIVE_BUTTON_COLORS[2],
+                    );
+
+                    if current_settings_app_state.get() == &SettingsApplicationState::Open {
+                        widgets.inactive.weak_bg_fill = egui::Color32::from_rgb(
+                            WIDGET_ACTIVE_BUTTON_COLORS[0],
+                            WIDGET_ACTIVE_BUTTON_COLORS[1],
+                            WIDGET_ACTIVE_BUTTON_COLORS[2],
+                        );
+                    }
 
                     if ui
                         .add(button_builder(icons.settings, IMAGE_SIZE))
@@ -85,7 +118,18 @@ fn show(
                             ui.label("Settings");
                         })
                         .clicked()
-                    {}
+                    {
+                        next_particle_editor_app_state.set(match current_particle_editor_app_state
+                            .get()
+                        {
+                            ParticleEditorApplicationState::Closed => {
+                                ParticleEditorApplicationState::Open
+                            }
+                            ParticleEditorApplicationState::Open => {
+                                ParticleEditorApplicationState::Closed
+                            }
+                        });
+                    }
                 });
 
                 ui.add_space(LOWER_MARGIN);
