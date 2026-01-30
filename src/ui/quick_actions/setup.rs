@@ -15,6 +15,7 @@ impl Plugin for SetupPlugin {
 }
 
 #[derive(Actionlike, Resource, PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
+#[allow(clippy::enum_variant_names)]
 pub enum QuickAction {
     ToggleUi,
     ToggleMapOverlay,
