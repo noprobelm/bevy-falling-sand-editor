@@ -43,12 +43,18 @@ fn show(
                 .bg_stroke
                 .width = 4.0;
             ui.separator();
-            ui.add_space(5.);
+            ui.add_space(IMAGE_MARGIN);
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                // Particle editor
                 ui.scope(|ui| {
                     let widgets = &mut ui.style_mut().visuals.widgets;
                     widgets.inactive.weak_bg_fill = egui::Color32::TRANSPARENT;
                     widgets.hovered.bg_stroke.width = 0.0;
+                    widgets.hovered.weak_bg_fill = egui::Color32::from_rgb(100, 100, 100);
+
+                    if current_particle_editor_state.get() == &ParticleEditorState::Open {
+                        widgets.inactive.weak_bg_fill = egui::Color32::from_rgb(100, 100, 100);
+                    }
 
                     if ui
                         .add(button_builder(icons.particle_editor, IMAGE_SIZE))
@@ -62,7 +68,17 @@ fn show(
                             ParticleEditorState::Open => ParticleEditorState::Closed,
                         });
                     }
-                    ui.add_space(IMAGE_MARGIN);
+                });
+
+                ui.add_space(IMAGE_MARGIN);
+
+                // Settings
+                ui.scope(|ui| {
+                    let widgets = &mut ui.style_mut().visuals.widgets;
+                    widgets.inactive.weak_bg_fill = egui::Color32::TRANSPARENT;
+                    widgets.hovered.bg_stroke.width = 0.0;
+                    widgets.hovered.weak_bg_fill = egui::Color32::from_rgb(100, 100, 100);
+
                     if ui
                         .add(button_builder(icons.settings, IMAGE_SIZE))
                         .on_hover_ui(|ui| {
@@ -71,6 +87,7 @@ fn show(
                         .clicked()
                     {}
                 });
+
                 ui.add_space(LOWER_MARGIN);
             });
         });
