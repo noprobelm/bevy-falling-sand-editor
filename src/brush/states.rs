@@ -7,13 +7,10 @@ pub struct StatesPlugin;
 
 impl Plugin for StatesPlugin {
     fn build(&self, app: &mut App) {
-        app.init_state::<BrushTypeState>()
-            .init_state::<BrushModeState>()
-            .add_sub_state::<BrushModeSpawnState>()
-            .add_systems(
-                Update,
-                handle_brush_mode_state.run_if(action_just_pressed(BrushAction::ToggleMode)),
-            );
+        app.add_systems(
+            Update,
+            handle_brush_mode_state.run_if(action_just_pressed(BrushAction::ToggleMode)),
+        );
     }
 }
 

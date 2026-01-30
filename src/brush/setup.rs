@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     brush::{
+        BrushModeSpawnState, BrushModeState, BrushTypeState,
         components::{Brush, BrushColor, BrushSize},
         gizmos::BrushGizmos,
     },
@@ -21,6 +22,9 @@ pub(super) struct SetupPlugin;
 impl Plugin for SetupPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(InputManagerPlugin::<BrushAction>::default())
+            .init_state::<BrushTypeState>()
+            .init_state::<BrushModeState>()
+            .add_sub_state::<BrushModeSpawnState>()
             .insert_gizmo_config(
                 BrushGizmos,
                 GizmoConfig {
