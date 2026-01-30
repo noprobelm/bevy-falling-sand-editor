@@ -1,5 +1,6 @@
-use bevy::prelude::*;
+use bevy::{ecs::system::SystemParam, prelude::*};
 use bevy_egui::{EguiContexts, EguiPrimaryContextPass, egui};
+use bevy_falling_sand::prelude::*;
 
 use crate::ui::{ParticleEditorApplicationState, PopupState, ShowUi, UiSystems};
 
@@ -22,7 +23,7 @@ fn show(mut contexts: EguiContexts, mut is_on: Local<bool>) -> Result {
     egui::Window::new("Particle Editor").show(ctx, |ui| {
         ui.with_layout(egui::Layout::left_to_right(egui::Align::LEFT), |ui| {
             ui.label("Link to brush");
-            ui.add(crate::ui::toggle(&mut is_on));
+            ui.add(crate::ui::widgets::toggle_switch::toggle(&mut is_on));
         });
     });
 

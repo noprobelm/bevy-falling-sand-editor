@@ -1,3 +1,1 @@
-mod toggle_switch;
-
-pub use toggle_switch::*;
+pub mod toggle_switch;

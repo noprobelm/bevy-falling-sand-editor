@@ -4,7 +4,7 @@ mod popups;
 mod quick_actions;
 mod setup;
 mod states;
-mod widgets;
+pub mod widgets;
 
 use bevy::prelude::*;
 
@@ -15,7 +15,6 @@ pub use popups::*;
 pub use quick_actions::*;
 pub use setup::*;
 pub use states::*;
-pub use widgets::*;
 
 pub(super) struct UiPlugin;
 
