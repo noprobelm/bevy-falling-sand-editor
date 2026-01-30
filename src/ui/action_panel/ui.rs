@@ -3,8 +3,7 @@ use bevy_egui::{EguiContexts, EguiPrimaryContextPass, egui};
 
 use super::setup::SidePanelIconTextureIds;
 use crate::ui::{
-    ActionPanelApplicationState, ParticleEditorApplicationState, SettingsApplicationState, ShowUi,
-    UiSystems,
+    ParticleEditorApplicationState, PopupState, SettingsApplicationState, ShowUi, UiSystems,
 };
 
 pub(super) struct UiPlugin;
@@ -23,16 +22,12 @@ impl Plugin for UiPlugin {
 fn show(
     mut contexts: EguiContexts,
     icons: Res<SidePanelIconTextureIds>,
-    current_particle_editor_app_state: Res<
-        State<ActionPanelApplicationState<ParticleEditorApplicationState>>,
-    >,
+    current_particle_editor_app_state: Res<State<PopupState<ParticleEditorApplicationState>>>,
     mut next_particle_editor_app_state: ResMut<
-        NextState<ActionPanelApplicationState<ParticleEditorApplicationState>>,
+        NextState<PopupState<ParticleEditorApplicationState>>,
     >,
-    current_settings_app_state: Res<State<ActionPanelApplicationState<SettingsApplicationState>>>,
-    mut next_settings_app_state: ResMut<
-        NextState<ActionPanelApplicationState<SettingsApplicationState>>,
-    >,
+    current_settings_app_state: Res<State<PopupState<SettingsApplicationState>>>,
+    mut next_settings_app_state: ResMut<NextState<PopupState<SettingsApplicationState>>>,
 ) -> Result {
     const IMAGE_SIZE: f32 = 32.;
     const WIDGET_WIDTH: f32 = 40.;
@@ -114,7 +109,7 @@ fn set_button_styling<
 >(
     ui: &mut egui::Ui,
     colors: [u8; 3],
-    current: &ActionPanelApplicationState<T>,
+    current: &PopupState<T>,
 ) {
     let widgets = &mut ui.style_mut().visuals.widgets;
     widgets.inactive.weak_bg_fill = egui::Color32::TRANSPARENT;

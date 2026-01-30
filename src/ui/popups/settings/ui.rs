@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, EguiPrimaryContextPass, egui};
 
-use crate::ui::{ActionPanelApplicationState, SettingsApplicationState, ShowUi, UiSystems};
+use crate::ui::{PopupState, SettingsApplicationState, ShowUi, UiSystems};
 
 pub(super) struct UiPlugin;
 
@@ -10,9 +10,7 @@ impl Plugin for UiPlugin {
         app.add_systems(
             EguiPrimaryContextPass,
             show.run_if(resource_exists::<ShowUi>)
-                .run_if(in_state(
-                    ActionPanelApplicationState::<SettingsApplicationState>::Open,
-                ))
+                .run_if(in_state(PopupState::<SettingsApplicationState>::Open))
                 .in_set(UiSystems::Settings),
         );
     }
