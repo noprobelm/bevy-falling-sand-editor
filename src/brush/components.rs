@@ -38,4 +38,4 @@ pub struct BrushSize(pub usize);
 pub struct BrushColor(pub Color);
 
 #[derive(Component, Clone, Default, PartialEq, Debug, Reflect, Serialize, Deserialize)]
-pub struct BrushParticle(pub Particle);
+pub struct SelectedBrushParticle(pub Particle);

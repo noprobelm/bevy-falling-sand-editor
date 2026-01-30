@@ -6,7 +6,7 @@ use crate::{
     Cursor,
     brush::{
         BrushAction, BrushModeState, BrushTypeState,
-        components::{BrushParticle, BrushSize},
+        components::{BrushSize, SelectedBrushParticle},
     },
     ui::CanvasState,
 };
@@ -44,7 +44,7 @@ fn resize_brush(mut single: Single<(&ActionState<BrushAction>, &mut BrushSize)>)
 
 fn brush_action_spawn_particles(
     mut msgw_spawn: MessageWriter<SpawnParticleSignal>,
-    brush: Single<(&BrushSize, &BrushParticle)>,
+    brush: Single<(&BrushSize, &SelectedBrushParticle)>,
     cursor: Res<Cursor>,
     brush_type: Res<State<BrushTypeState>>,
 ) {

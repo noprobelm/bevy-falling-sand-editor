@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     brush::{
         BrushModeSpawnState, BrushModeState, BrushTypeState,
-        components::{Brush, BrushColor, BrushParticle, BrushSize},
+        components::{Brush, BrushColor, BrushSize, SelectedBrushParticle},
         gizmos::BrushGizmos,
     },
     config::SettingsConfig,
@@ -108,7 +108,7 @@ fn insert_brush_particle(
 
     commands
         .entity(brush.entity())
-        .insert(BrushParticle(particle));
+        .insert(SelectedBrushParticle(particle));
 }
 
 fn load_settings(
@@ -130,7 +130,7 @@ fn load_settings(
 
 fn should_insert_brush_particle(
     particle_types: Query<Entity, Added<ParticleType>>,
-    brush_without_particle: Query<(), (With<Brush>, Without<BrushParticle>)>,
+    brush_without_particle: Query<(), (With<Brush>, Without<SelectedBrushParticle>)>,
 ) -> bool {
     !particle_types.is_empty() && !brush_without_particle.is_empty()
 }
