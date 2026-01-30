@@ -1,16 +1,6 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-pub(super) struct ComponentsPlugin;
-
-impl Plugin for ComponentsPlugin {
-    fn build(&self, app: &mut App) {
-        app.register_type::<MainCamera>()
-            .register_type::<ZoomTarget>()
-            .register_type::<ZoomSpeed>();
-    }
-}
-
 #[derive(
     Component,
     Clone,
