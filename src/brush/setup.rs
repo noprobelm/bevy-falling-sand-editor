@@ -41,7 +41,7 @@ impl Plugin for SetupPlugin {
             )
             .add_systems(
                 Update,
-                insert_brush_particle.run_if(should_insert_brush_particle),
+                insert_brush_particle.run_if(condition_setup_brush_particle_ready),
             );
     }
 }
@@ -128,7 +128,7 @@ fn load_settings(
     commands.entity(brush.entity()).insert(input_map);
 }
 
-fn should_insert_brush_particle(
+fn condition_setup_brush_particle_ready(
     particle_types: Query<Entity, Added<ParticleType>>,
     brush_without_particle: Query<(), (With<Brush>, Without<SelectedBrushParticle>)>,
 ) -> bool {

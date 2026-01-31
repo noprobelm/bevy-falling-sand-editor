@@ -1,4 +1,7 @@
-use bevy::prelude::*;
+use bevy::{
+    ecs::{query::QueryData, system::SystemParam},
+    prelude::*,
+};
 use bevy_egui::{EguiContexts, EguiPrimaryContextPass, egui};
 use bevy_falling_sand::prelude::*;
 
@@ -19,10 +22,18 @@ impl Plugin for UiPlugin {
     }
 }
 
+/// System param to fetch particle types by material type.
+#[derive(SystemParam)]
+pub struct ParticleTypeParams<'w, 's> {
+    pub material_labels: Res<'w, ParticleMaterialLabels>,
+    pub registry: Res<'w, ParticleTypeRegistry>,
+    pub particle_types: Query<'w, 's, &'static mut ParticleType>,
+}
+
 fn show(
     mut contexts: EguiContexts,
     mut is_on: Local<bool>,
-    material_labels: Res<ParticleMaterialLabels>,
+    particle_params: ParticleTypeParams,
 ) -> Result {
     let ctx = contexts.ctx_mut()?;
 
@@ -31,7 +42,7 @@ fn show(
 
         ui.separator();
 
-        show_editor(ui, &material_labels);
+        show_editor(ui, particle_params);
     });
 
     Ok(())
@@ -44,9 +55,9 @@ fn show_top_options(ui: &mut egui::Ui, is_on: &mut bool) {
     });
 }
 
-fn show_editor(ui: &mut egui::Ui, material_labels: &ParticleMaterialLabels) {
+fn show_editor(ui: &mut egui::Ui, particle_params: ParticleTypeParams) {
     ui.columns(3, |columns| {
-        show_material_labels(&mut columns[0], material_labels);
+        show_material_labels(&mut columns[0], &particle_params.material_labels);
 
         columns[1].add(egui::Separator::default().vertical());
 
