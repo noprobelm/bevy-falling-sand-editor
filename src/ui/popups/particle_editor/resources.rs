@@ -1,4 +1,6 @@
 use bevy::prelude::*;
+use bevy_falling_sand::prelude::*;
+use serde::{Deserialize, Serialize};
 
 #[derive(Resource, Default)]
 pub struct ParticleMaterialLabels {
@@ -12,6 +14,18 @@ pub struct ParticleMaterialLabels {
 }
 
 impl ParticleMaterialLabels {
+    pub fn push(&mut self, material: &MaterialState, name: String) {
+        match material {
+            MaterialState::Wall => self.walls.push(name),
+            MaterialState::Solid => self.solids.push(name),
+            MaterialState::MovableSolid => self.movable_solids.push(name),
+            MaterialState::Liquid => self.liquids.push(name),
+            MaterialState::Gas => self.gases.push(name),
+            MaterialState::Insect => self.insects.push(name),
+            MaterialState::Other => self.other.push(name),
+        }
+    }
+
     pub fn categories(&self) -> impl Iterator<Item = (&str, &Vec<String>)> {
         [
             ("Walls", &self.walls),
@@ -25,3 +39,16 @@ impl ParticleMaterialLabels {
         .into_iter()
     }
 }
+
+pub const ALL_MATERIAL_STATES: [MaterialState; 7] = [
+    MaterialState::Wall,
+    MaterialState::Solid,
+    MaterialState::MovableSolid,
+    MaterialState::Liquid,
+    MaterialState::Gas,
+    MaterialState::Insect,
+    MaterialState::Other,
+];
+
+#[derive(Resource, Clone, Default, PartialEq, Debug, Reflect, Serialize, Deserialize)]
+pub struct SelectedEditorParticle(pub Particle);
