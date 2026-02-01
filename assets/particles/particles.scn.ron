@@ -42,12 +42,6 @@
           name: "Rock Wall",
         ),
         "bfs_movement::material::Wall": (),
-        "bfs_movement::particle::Density": (100),
-        "bfs_movement::particle::Speed": (
-          current: 1,
-          threshold: 0,
-          max: 3,
-        ),
         "bfs_physics::StaticRigidBodyParticle": (),
       },
     ),
@@ -167,12 +161,6 @@
           name: "Ice Wall",
         ),
         "bfs_movement::material::Wall": (),
-        "bfs_movement::particle::Density": (100),
-        "bfs_movement::particle::Speed": (
-          current: 1,
-          threshold: 0,
-          max: 3,
-        ),
         "bfs_physics::StaticRigidBodyParticle": (),
         "bfs_reactions::particle::Burns": (
           duration: (
@@ -219,12 +207,6 @@
           name: "Wood Wall",
         ),
         "bfs_movement::material::Wall": (),
-        "bfs_movement::particle::Density": (100),
-        "bfs_movement::particle::Speed": (
-          current: 1,
-          threshold: 0,
-          max: 3,
-        ),
         "bfs_physics::StaticRigidBodyParticle": (),
         "bfs_reactions::particle::Burns": (
           duration: (
@@ -502,12 +484,6 @@
           name: "Grass Wall",
         ),
         "bfs_movement::material::Wall": (),
-        "bfs_movement::particle::Density": (100),
-        "bfs_movement::particle::Speed": (
-          current: 1,
-          threshold: 0,
-          max: 3,
-        ),
         "bfs_physics::StaticRigidBodyParticle": (),
         "bfs_reactions::particle::Burns": (
           duration: (
@@ -868,12 +844,6 @@
           name: "Dirt Wall",
         ),
         "bfs_movement::material::Wall": (),
-        "bfs_movement::particle::Density": (100),
-        "bfs_movement::particle::Speed": (
-          current: 1,
-          threshold: 0,
-          max: 3,
-        ),
         "bfs_physics::StaticRigidBodyParticle": (),
       },
     ),
@@ -981,12 +951,6 @@
           name: "My Custom Wall Particle",
         ),
         "bfs_movement::material::Wall": (),
-        "bfs_movement::particle::Density": (100),
-        "bfs_movement::particle::Speed": (
-          current: 1,
-          threshold: 0,
-          max: 3,
-        ),
         "bfs_physics::StaticRigidBodyParticle": (),
       },
     ),
@@ -1649,12 +1613,6 @@
           name: "Dense Rock Wall",
         ),
         "bfs_movement::material::Wall": (),
-        "bfs_movement::particle::Density": (100),
-        "bfs_movement::particle::Speed": (
-          current: 1,
-          threshold: 0,
-          max: 3,
-        ),
         "bfs_physics::StaticRigidBodyParticle": (),
       },
     ),
