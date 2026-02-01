@@ -50,5 +50,5 @@ pub const ALL_MATERIAL_STATES: [MaterialState; 7] = [
     MaterialState::Other,
 ];
 
-#[derive(Resource, Clone, Default, PartialEq, Debug, Reflect, Serialize, Deserialize)]
-pub struct SelectedEditorParticle(pub Particle);
+#[derive(Resource, Copy, Clone, PartialEq, Debug, Reflect)]
+pub struct SelectedEditorParticle(pub Entity);

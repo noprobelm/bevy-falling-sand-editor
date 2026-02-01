@@ -16,34 +16,15 @@ impl Plugin for SetupPlugin {
     }
 }
 
-fn spawn_selected_particle(
-    mut commands: Commands,
-    registry: Res<ParticleTypeRegistry>,
-    particle_types: Query<&ParticleType>,
-) {
+fn spawn_selected_particle(mut commands: Commands, registry: Res<ParticleTypeRegistry>) {
     const DEFAULT_PARTICLE_NAME: &str = "Dirt Wall";
-    let particle = if let Some(entity) = registry.get(DEFAULT_PARTICLE_NAME) {
-        Particle::from(
-            particle_types
-                .get(*entity)
-                .expect("Failed to find particle type {DEFAULT_PARTICLE} in query")
-                .clone(),
-        )
-    } else {
-        Particle::from(
-            particle_types
-                .get(
-                    *registry
-                        .entities()
-                        .next()
-                        .expect("No particle types found in the world"),
-                )
-                .expect("Failed to find particle type in query")
-                .clone(),
-        )
-    };
+    let entity = registry
+        .get(DEFAULT_PARTICLE_NAME)
+        .or_else(|| registry.entities().next())
+        .copied()
+        .expect("No particle types found in the world");
 
-    commands.insert_resource(SelectedEditorParticle(particle));
+    commands.insert_resource(SelectedEditorParticle(entity));
 }
 
 fn condition_particle_types_loaded(particle_types: Query<(), Added<ParticleType>>) -> bool {

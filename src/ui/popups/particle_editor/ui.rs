@@ -26,13 +26,22 @@ pub struct ParticleEditorParams<'w, 's> {
     pub commands: Commands<'w, 's>,
     pub material_labels: Res<'w, ParticleMaterialLabels>,
     pub registry: Res<'w, ParticleTypeRegistry>,
-    pub particle_types: Query<'w, 's, (&'static mut ParticleType, &'static MaterialState)>,
+    pub particle_types: Query<
+        'w,
+        's,
+        (
+            &'static mut ParticleType,
+            &'static MaterialState,
+            Option<&'static mut Density>,
+            Option<&'static mut Speed>,
+        ),
+    >,
 }
 
 fn show(
     mut contexts: EguiContexts,
     mut is_on: Local<bool>,
-    selected_particle: Option<Res<SelectedEditorParticle>>,
+    mut selected_particle: Option<ResMut<SelectedEditorParticle>>,
     editor_params: ParticleEditorParams,
 ) -> Result {
     let ctx = contexts.ctx_mut()?;
@@ -42,7 +51,7 @@ fn show(
 
         ui.separator();
 
-        show_editor(ui, selected_particle, editor_params);
+        show_editor(ui, &mut selected_particle, editor_params);
     });
 
     Ok(())
@@ -57,16 +66,12 @@ fn show_top_options(ui: &mut egui::Ui, is_on: &mut bool) {
 
 fn show_editor(
     ui: &mut egui::Ui,
-    selected_particle: Option<Res<SelectedEditorParticle>>,
+    selected_particle: &mut Option<ResMut<SelectedEditorParticle>>,
     editor_params: ParticleEditorParams,
 ) {
     ui.columns(2, |columns| {
         show_material_labels(&mut columns[0], &editor_params.material_labels);
-
-        columns[1].horizontal(|ui| {
-            ui.add(egui::Separator::default().vertical());
-            show_editing_area(ui, selected_particle, editor_params);
-        });
+        show_editing_area(&mut columns[1], selected_particle, editor_params);
     })
 }
 
@@ -88,42 +93,38 @@ fn show_material_labels(ui: &mut egui::Ui, material_labels: &ParticleMaterialLab
 
 fn show_editing_area(
     ui: &mut egui::Ui,
-    selected_particle: Option<Res<SelectedEditorParticle>>,
+    selected_particle: &mut Option<ResMut<SelectedEditorParticle>>,
     mut editor_params: ParticleEditorParams,
 ) {
     egui::ScrollArea::vertical()
         .id_salt("editing_area")
         .show(ui, |ui| {
-            if selected_particle.is_none() {
+            let Some(selected_particle) = selected_particle else {
                 ui.label("No particle selected for editing.");
                 return;
-            }
+            };
 
-            let selected_particle = selected_particle.unwrap();
-            let entity = editor_params
-                .registry
-                .get(&selected_particle.0.name)
-                .expect("Invalid particle for SelectedEditorParticle: {selected_particle.0}");
-            let (mut particle_type, material) = editor_params
+            let (particle_type, material, density, speed) = editor_params
                 .particle_types
-                .get_mut(*entity)
+                .get_mut(selected_particle.0)
                 .expect("No matching query found for selected particle");
 
-            ui.columns(2, |columns| {
-                show_particle_type_text_edit(&mut columns[0], &selected_particle, particle_type);
-                let selected_material = show_material_combo_box(&mut columns[1], material);
-            });
+            egui::Grid::new("editing_grid")
+                .num_columns(2)
+                .show(ui, |ui| {
+                    show_particle_type_text_edit(ui, particle_type);
+                    show_material_combo_box(ui, material);
+                    show_density(ui, density);
+                    show_speed_threshold(ui, speed);
+                });
         });
 }
 
-fn show_particle_type_text_edit(
-    ui: &mut egui::Ui,
-    selected_particle: &SelectedEditorParticle,
-    mut particle_type: Mut<'_, ParticleType>,
-) {
-    let mut name = selected_particle.0.name.to_string();
-    ui.add(egui::Label::new("Name: "));
+fn show_particle_type_text_edit(ui: &mut egui::Ui, mut particle_type: Mut<'_, ParticleType>) {
+    let mut name = particle_type.name.to_string();
+    ui.label("Name:");
     ui.add(egui::TextEdit::singleline(&mut name));
+    ui.end_row();
     particle_type.set_if_neq(name.into());
 }
 
@@ -136,5 +137,38 @@ fn show_material_combo_box(ui: &mut egui::Ui, material: &MaterialState) -> Mater
                 ui.selectable_value(&mut selection, variant, variant.variant_name());
             }
         });
+    ui.end_row();
     selection
+}
+
+fn show_density(ui: &mut egui::Ui, density: Option<Mut<'_, Density>>) {
+    ui.label("Density");
+    if let Some(mut density) = density {
+        let mut value = density.0.to_string();
+        ui.add(egui::TextEdit::singleline(&mut value));
+        if let Ok(new) = value.parse::<u32>() {
+            density.set_if_neq(Density(new));
+        } else if value.len() == 0 {
+            density.set_if_neq(Density(0));
+        }
+    }
+    ui.end_row();
+}
+
+fn show_speed_threshold(ui: &mut egui::Ui, speed: Option<Mut<'_, Speed>>) {
+    ui.label("Speed Increase Threshold").on_hover_ui(|ui| {
+        ui.label("Number of turns a particle must move unobstructed before increasing speed.");
+    });
+    if let Some(mut speed) = speed {
+        let mut value = speed.threshold.to_string();
+        ui.add(egui::TextEdit::singleline(&mut value));
+        if let Ok(new) = value.parse::<u8>() {
+            if speed.threshold != new {
+                speed.threshold = new;
+            }
+        } else if value.len() == 0 && speed.threshold != 0 {
+            speed.threshold = 0;
+        }
+    }
+    ui.end_row();
 }
