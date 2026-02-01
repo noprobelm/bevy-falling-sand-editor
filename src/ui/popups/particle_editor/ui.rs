@@ -1,5 +1,10 @@
+use std::ops::RangeInclusive;
+
 use bevy::{ecs::system::SystemParam, prelude::*, reflect::Enum};
-use bevy_egui::{EguiContexts, EguiPrimaryContextPass, egui};
+use bevy_egui::{
+    EguiContexts, EguiPrimaryContextPass,
+    egui::{self, emath::Numeric},
+};
 use bevy_falling_sand::prelude::*;
 
 use crate::ui::{
@@ -34,6 +39,9 @@ pub struct ParticleEditorParams<'w, 's> {
             &'static MaterialState,
             Option<&'static mut Density>,
             Option<&'static mut Speed>,
+            Option<&'static Momentum>,
+            Option<&'static TimedLifetime>,
+            Option<&'static ChanceLifetime>,
         ),
     >,
 }
@@ -104,18 +112,45 @@ fn show_editing_area(
                 return;
             };
 
-            let (particle_type, material, density, speed) = editor_params
+            let (
+                particle_type,
+                material,
+                density,
+                speed,
+                momentum,
+                timed_lifetime,
+                chance_lifetime,
+            ) = editor_params
                 .particle_types
                 .get_mut(selected_particle.0)
                 .expect("No matching query found for selected particle");
 
             egui::Grid::new("editing_grid")
-                .num_columns(2)
+                .num_columns(3)
                 .show(ui, |ui| {
                     show_particle_type_text_edit(ui, particle_type);
                     show_material_combo_box(ui, material);
                     show_density(ui, density);
-                    show_speed_threshold(ui, speed);
+                    show_speed(ui, speed);
+                    show_momentum(
+                        &mut editor_params.commands,
+                        selected_particle.0,
+                        ui,
+                        material,
+                        momentum,
+                    );
+                    show_timed_lifetime(
+                        &mut editor_params.commands,
+                        selected_particle.0,
+                        ui,
+                        timed_lifetime,
+                    );
+                    show_chance_lifetime(
+                        &mut editor_params.commands,
+                        selected_particle.0,
+                        ui,
+                        chance_lifetime,
+                    );
                 });
         });
 }
@@ -142,33 +177,152 @@ fn show_material_combo_box(ui: &mut egui::Ui, material: &MaterialState) -> Mater
 }
 
 fn show_density(ui: &mut egui::Ui, density: Option<Mut<'_, Density>>) {
-    ui.label("Density");
     if let Some(mut density) = density {
-        let mut value = density.0.to_string();
-        ui.add(egui::TextEdit::singleline(&mut value));
-        if let Ok(new) = value.parse::<u32>() {
-            density.set_if_neq(Density(new));
-        } else if value.len() == 0 {
-            density.set_if_neq(Density(0));
-        }
+        let new_value = add_label_with_numeric_text_edit(ui, "Density", density.0, 0..=u32::MAX);
+        density.set_if_neq(Density(new_value));
     }
-    ui.end_row();
 }
 
-fn show_speed_threshold(ui: &mut egui::Ui, speed: Option<Mut<'_, Speed>>) {
-    ui.label("Speed Increase Threshold").on_hover_ui(|ui| {
-        ui.label("Number of turns a particle must move unobstructed before increasing speed.");
-    });
+fn show_speed(ui: &mut egui::Ui, speed: Option<Mut<'_, Speed>>) {
     if let Some(mut speed) = speed {
-        let mut value = speed.threshold.to_string();
-        ui.add(egui::TextEdit::singleline(&mut value));
-        if let Ok(new) = value.parse::<u8>() {
-            if speed.threshold != new {
-                speed.threshold = new;
-            }
-        } else if value.len() == 0 && speed.threshold != 0 {
-            speed.threshold = 0;
+        let new_max = add_label_with_slider_and_text_edit(ui, "Max Speed", speed.max, 0..=100);
+        if speed.max != new_max {
+            speed.max = new_max;
+        }
+
+        let new_threshold = add_label_with_slider_and_text_edit(
+            ui,
+            "Speed Increase Threshold",
+            speed.threshold,
+            0..=100,
+        );
+        if speed.threshold != new_threshold {
+            speed.threshold = new_threshold;
         }
     }
+}
+
+fn show_momentum(
+    commands: &mut Commands,
+    entity: Entity,
+    ui: &mut egui::Ui,
+    material: &MaterialState,
+    momentum: Option<&Momentum>,
+) {
+    if material != &MaterialState::Wall {
+        let enabled = momentum.is_some();
+        let new_value = add_label_with_toggle_switch(ui, "Momentum", enabled);
+        if new_value != enabled {
+            if new_value {
+                commands.entity(entity).insert(Momentum::default());
+            } else {
+                commands.entity(entity).remove::<Momentum>();
+            }
+        }
+    }
+}
+
+fn show_timed_lifetime(
+    commands: &mut Commands,
+    entity: Entity,
+    ui: &mut egui::Ui,
+    timed_lifetime: Option<&TimedLifetime>,
+) {
+    let enabled = timed_lifetime.is_some();
+    let new_value = add_label_with_toggle_switch(ui, "Lifetime (Timer)", enabled);
+}
+
+fn show_chance_lifetime(
+    commands: &mut Commands,
+    entity: Entity,
+    ui: &mut egui::Ui,
+    chance_lifetime: Option<&ChanceLifetime>,
+) {
+    let enabled = chance_lifetime.is_some();
+    let new_value = add_label_with_toggle_switch(ui, "Lifetime (Chance)", enabled);
+}
+
+fn add_label_with_numeric_text_edit<Num>(
+    ui: &mut egui::Ui,
+    label: impl Into<egui::WidgetText>,
+    value: Num,
+    range: RangeInclusive<Num>,
+) -> Num
+where
+    Num: std::fmt::Display + std::str::FromStr + Default + PartialOrd + Copy,
+{
+    ui.label(label);
+    add_empty_space(ui);
+    let mut text = value.to_string();
+    ui.add(egui::TextEdit::singleline(&mut text));
+    let result = if let Ok(new) = text.parse::<Num>() {
+        clamp(new, range)
+    } else if text.is_empty() {
+        Num::default()
+    } else {
+        value
+    };
     ui.end_row();
+    result
+}
+
+fn add_label_with_slider_and_text_edit<Num>(
+    ui: &mut egui::Ui,
+    label: impl Into<egui::WidgetText>,
+    value: Num,
+    range: RangeInclusive<Num>,
+) -> Num
+where
+    Num: Numeric + std::fmt::Display + std::str::FromStr + Default + Copy,
+{
+    ui.label(label);
+    let mut slider_value = value;
+    ui.add(egui::Slider::new(&mut slider_value, range.clone()).show_value(false));
+    let mut text = slider_value.to_string();
+    ui.add(egui::TextEdit::singleline(&mut text));
+    let result = if let Ok(new) = text.parse::<Num>() {
+        clamp_numeric(new, range)
+    } else if text.is_empty() {
+        Num::default()
+    } else {
+        slider_value
+    };
+    ui.end_row();
+    result
+}
+
+fn add_label_with_toggle_switch(
+    ui: &mut egui::Ui,
+    label: impl Into<egui::WidgetText>,
+    mut is_on: bool,
+) -> bool {
+    ui.label(label);
+    add_empty_space(ui);
+    ui.add(crate::ui::widgets::toggle_switch::toggle(&mut is_on));
+    ui.end_row();
+    is_on
+}
+
+fn clamp<Num: PartialOrd + Copy>(value: Num, range: RangeInclusive<Num>) -> Num {
+    if value < *range.start() {
+        return *range.start();
+    }
+    if value > *range.end() {
+        return *range.end();
+    }
+    value
+}
+
+fn clamp_numeric<Num: Numeric + Copy>(value: Num, range: RangeInclusive<Num>) -> Num {
+    if value.to_f64() < range.start().to_f64() {
+        return *range.start();
+    }
+    if value.to_f64() > range.end().to_f64() {
+        return *range.end();
+    }
+    value
+}
+
+fn add_empty_space(ui: &mut egui::Ui) {
+    ui.label("");
 }

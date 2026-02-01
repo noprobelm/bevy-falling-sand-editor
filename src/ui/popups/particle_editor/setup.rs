@@ -17,7 +17,7 @@ impl Plugin for SetupPlugin {
 }
 
 fn spawn_selected_particle(mut commands: Commands, registry: Res<ParticleTypeRegistry>) {
-    const DEFAULT_PARTICLE_NAME: &str = "Dirt Wall";
+    const DEFAULT_PARTICLE_NAME: &str = "Flammable Gas";
     let entity = registry
         .get(DEFAULT_PARTICLE_NAME)
         .or_else(|| registry.entities().next())
