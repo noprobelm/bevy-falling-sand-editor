@@ -1,4 +1,4 @@
-use std::ops::RangeInclusive;
+use std::{ops::RangeInclusive, time::Duration};
 
 use bevy::{ecs::system::SystemParam, prelude::*, reflect::Enum};
 use bevy_egui::{
@@ -40,8 +40,8 @@ pub struct ParticleEditorParams<'w, 's> {
             Option<&'static mut Density>,
             Option<&'static mut Speed>,
             Option<&'static Momentum>,
-            Option<&'static TimedLifetime>,
-            Option<&'static ChanceLifetime>,
+            Option<&'static mut TimedLifetime>,
+            Option<&'static mut ChanceLifetime>,
         ),
     >,
 }
@@ -178,19 +178,19 @@ fn show_material_combo_box(ui: &mut egui::Ui, material: &MaterialState) -> Mater
 
 fn show_density(ui: &mut egui::Ui, density: Option<Mut<'_, Density>>) {
     if let Some(mut density) = density {
-        let new_value = add_label_with_numeric_text_edit(ui, "Density", density.0, 0..=u32::MAX);
+        let new_value = add_label_with_drag_value(ui, "Density", density.0, 0..=u32::MAX);
         density.set_if_neq(Density(new_value));
     }
 }
 
 fn show_speed(ui: &mut egui::Ui, speed: Option<Mut<'_, Speed>>) {
     if let Some(mut speed) = speed {
-        let new_max = add_label_with_slider_and_text_edit(ui, "Max Speed", speed.max, 0..=100);
+        let new_max = add_label_with_slider_and_drag_value(ui, "Max Speed", speed.max, 0..=100);
         if speed.max != new_max {
             speed.max = new_max;
         }
 
-        let new_threshold = add_label_with_slider_and_text_edit(
+        let new_threshold = add_label_with_slider_and_drag_value(
             ui,
             "Speed Increase Threshold",
             speed.threshold,
@@ -226,69 +226,83 @@ fn show_timed_lifetime(
     commands: &mut Commands,
     entity: Entity,
     ui: &mut egui::Ui,
-    timed_lifetime: Option<&TimedLifetime>,
+    timed_lifetime: Option<Mut<'_, TimedLifetime>>,
 ) {
     let enabled = timed_lifetime.is_some();
-    let new_value = add_label_with_toggle_switch(ui, "Lifetime (Timer)", enabled);
+    let new_value = add_label_with_toggle_switch(ui, "Lifetime (timed)", enabled);
+    if new_value != enabled {
+        if new_value {
+            commands.entity(entity).insert(TimedLifetime::default());
+        } else {
+            commands.entity(entity).remove::<TimedLifetime>();
+        }
+    }
+    if let Some(mut lifetime) = timed_lifetime {
+        let duration_ms = lifetime.duration().as_millis() as u64;
+        let new_value =
+            add_label_with_drag_value(ui, "    Lifetime (ms):", duration_ms, 0..=u64::MAX);
+        if new_value != duration_ms {
+            lifetime.0.set_duration(Duration::from_millis(new_value));
+        }
+    }
 }
 
 fn show_chance_lifetime(
     commands: &mut Commands,
     entity: Entity,
     ui: &mut egui::Ui,
-    chance_lifetime: Option<&ChanceLifetime>,
+    chance_lifetime: Option<Mut<'_, ChanceLifetime>>,
 ) {
     let enabled = chance_lifetime.is_some();
     let new_value = add_label_with_toggle_switch(ui, "Lifetime (Chance)", enabled);
+    if new_value != enabled {
+        if new_value {
+            commands.entity(entity).insert(ChanceLifetime::default());
+        } else {
+            commands.entity(entity).remove::<ChanceLifetime>();
+        }
+    }
+    if let Some(mut lifetime) = chance_lifetime {
+        let new_value =
+            add_label_with_drag_value(ui, "    Lifetime (pct):", lifetime.chance, 0.0..=1.);
+        if new_value != lifetime.chance {
+            lifetime.chance = new_value;
+        }
+    }
 }
 
-fn add_label_with_numeric_text_edit<Num>(
+fn add_label_with_drag_value<Num>(
     ui: &mut egui::Ui,
     label: impl Into<egui::WidgetText>,
     value: Num,
     range: RangeInclusive<Num>,
 ) -> Num
 where
-    Num: std::fmt::Display + std::str::FromStr + Default + PartialOrd + Copy,
+    Num: Numeric,
 {
     ui.label(label);
     add_empty_space(ui);
-    let mut text = value.to_string();
-    ui.add(egui::TextEdit::singleline(&mut text));
-    let result = if let Ok(new) = text.parse::<Num>() {
-        clamp(new, range)
-    } else if text.is_empty() {
-        Num::default()
-    } else {
-        value
-    };
+    let mut drag_value = value;
+    ui.add(egui::DragValue::new(&mut drag_value).range(range));
     ui.end_row();
-    result
+    drag_value
 }
 
-fn add_label_with_slider_and_text_edit<Num>(
+fn add_label_with_slider_and_drag_value<Num>(
     ui: &mut egui::Ui,
     label: impl Into<egui::WidgetText>,
     value: Num,
     range: RangeInclusive<Num>,
 ) -> Num
 where
-    Num: Numeric + std::fmt::Display + std::str::FromStr + Default + Copy,
+    Num: Numeric,
 {
     ui.label(label);
-    let mut slider_value = value;
-    ui.add(egui::Slider::new(&mut slider_value, range.clone()).show_value(false));
-    let mut text = slider_value.to_string();
-    ui.add(egui::TextEdit::singleline(&mut text));
-    let result = if let Ok(new) = text.parse::<Num>() {
-        clamp_numeric(new, range)
-    } else if text.is_empty() {
-        Num::default()
-    } else {
-        slider_value
-    };
+    let mut drag_value = value;
+    ui.add(egui::Slider::new(&mut drag_value, range.clone()).show_value(false));
+    ui.add(egui::DragValue::new(&mut drag_value).range(range));
     ui.end_row();
-    result
+    drag_value
 }
 
 fn add_label_with_toggle_switch(
@@ -301,26 +315,6 @@ fn add_label_with_toggle_switch(
     ui.add(crate::ui::widgets::toggle_switch::toggle(&mut is_on));
     ui.end_row();
     is_on
-}
-
-fn clamp<Num: PartialOrd + Copy>(value: Num, range: RangeInclusive<Num>) -> Num {
-    if value < *range.start() {
-        return *range.start();
-    }
-    if value > *range.end() {
-        return *range.end();
-    }
-    value
-}
-
-fn clamp_numeric<Num: Numeric + Copy>(value: Num, range: RangeInclusive<Num>) -> Num {
-    if value.to_f64() < range.start().to_f64() {
-        return *range.start();
-    }
-    if value.to_f64() > range.end().to_f64() {
-        return *range.end();
-    }
-    value
 }
 
 fn add_empty_space(ui: &mut egui::Ui) {
