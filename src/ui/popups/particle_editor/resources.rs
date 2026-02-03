@@ -1,6 +1,7 @@
+use std::time::Duration;
+
 use bevy::{platform::collections::HashMap, prelude::*};
 use bevy_falling_sand::prelude::*;
-use serde::{Deserialize, Serialize};
 
 #[derive(Resource, Default)]
 pub struct ParticleMaterialLabels {
@@ -53,24 +54,50 @@ pub const ALL_MATERIAL_STATES: [MaterialState; 7] = [
 #[derive(Resource, Copy, Clone, PartialEq, Debug, Reflect)]
 pub struct SelectedParticle(pub Entity);
 
-#[derive(Resource, Clone, Debug, Reflect)]
-pub struct EditorRegistry {
+#[derive(Resource, Default, Clone, Debug, Reflect)]
+pub struct EditorState {
     pub map: HashMap<Entity, ParticleData>,
 }
 
 #[derive(Clone, Debug, Reflect)]
 pub struct ParticleData {
-    pub particle_type: ParticleType,
-    pub state: MaterialState,
-    pub density: Density,
-    pub speed: Speed,
-    pub momentum: Momentum,
     pub timed_lifetime: TimedLifetime,
-    pub chance_lifetim: ChanceLifetime,
+    pub chance_lifetime: ChanceLifetime,
     pub static_rigid_body: StaticRigidBodyParticle,
-    pub color: ParticleColor,
     pub changes_color: ChangesColor,
-    pub fire: Fire,
     pub burns: Burns,
-    pub burning: Burning,
+}
+
+impl Default for ParticleData {
+    fn default() -> Self {
+        let timed_lifetime = TimedLifetime::new(Duration::from_millis(10000));
+        let chance_lifetime = ChanceLifetime::new(0.01);
+        let static_rigid_body = StaticRigidBodyParticle::default();
+        let changes_color = ChangesColor::Chance(0.1);
+        let burns = Burns::new(
+            Duration::from_millis(1000),
+            Duration::from_millis(100),
+            Some(0.5),
+            None,
+            Some(ColorProfile::palette(vec![
+                Color::Srgba(Srgba::new(1., 0.34901962, 0., 1.)),
+                Color::Srgba(Srgba::new(1., 0.5686275, 0., 1.)),
+                Color::Srgba(Srgba::new(1., 0.8117647, 0., 1.)),
+                Color::Srgba(Srgba::new(0.78039217, 0.2901961, 0.019607844, 1.)),
+            ])),
+            Some(Fire {
+                burn_radius: 1.5,
+                chance_to_spread: 0.01,
+                destroys_on_spread: false,
+            }),
+            false,
+        );
+        Self {
+            timed_lifetime,
+            chance_lifetime,
+            static_rigid_body,
+            changes_color,
+            burns,
+        }
+    }
 }

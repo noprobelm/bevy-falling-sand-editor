@@ -7,7 +7,7 @@ mod systems;
 use bevy::prelude::*;
 
 use crate::brush::{gizmos::GizmosPlugin, setup::SetupPlugin, systems::SystemsPlugin};
-pub use components::SelectedBrushParticle;
+pub use components::*;
 pub use setup::*;
 pub use states::*;
 

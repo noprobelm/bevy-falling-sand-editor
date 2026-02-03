@@ -1,11 +1,9 @@
-mod components;
 mod resources;
 mod setup;
 mod states;
 mod systems;
 mod ui;
 
-pub use components::*;
 pub use resources::*;
 use setup::*;
 pub use states::*;

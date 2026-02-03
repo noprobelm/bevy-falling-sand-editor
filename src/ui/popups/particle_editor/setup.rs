@@ -1,18 +1,20 @@
 use bevy::prelude::*;
 use bevy_falling_sand::prelude::*;
 
-use crate::ui::{ParticleMaterialLabels, SelectedParticle};
+use crate::ui::{EditorState, ParticleMaterialLabels, SelectedParticle};
 
 pub struct SetupPlugin;
 
 impl Plugin for SetupPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<ParticleMaterialLabels>().add_systems(
-            Update,
-            spawn_selected_particle
-                .run_if(not(resource_exists::<SelectedParticle>))
-                .run_if(condition_particle_types_loaded),
-        );
+        app.init_resource::<ParticleMaterialLabels>()
+            .init_resource::<EditorState>()
+            .add_systems(
+                Update,
+                spawn_selected_particle
+                    .run_if(not(resource_exists::<SelectedParticle>))
+                    .run_if(condition_particle_types_loaded),
+            );
     }
 }
 

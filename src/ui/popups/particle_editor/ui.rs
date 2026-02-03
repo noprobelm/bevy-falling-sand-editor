@@ -8,8 +8,8 @@ use bevy_egui::{
 use bevy_falling_sand::prelude::*;
 
 use crate::ui::{
-    ALL_MATERIAL_STATES, ParticleEditorApplicationState, ParticleMaterialLabels, PopupState,
-    SelectedParticle, ShowUi, UiSystems,
+    ALL_MATERIAL_STATES, EditorState, ParticleEditorApplicationState, ParticleMaterialLabels,
+    PopupState, SelectedParticle, ShowUi, UiSystems,
 };
 
 pub(super) struct UiPlugin;
@@ -29,8 +29,10 @@ impl Plugin for UiPlugin {
 #[derive(SystemParam)]
 pub struct ParticleEditorParams<'w, 's> {
     pub commands: Commands<'w, 's>,
+    pub brush: Single<'w, 's, &'static crate::brush::SelectedParticle>,
     pub material_labels: Res<'w, ParticleMaterialLabels>,
-    pub registry: Res<'w, ParticleTypeRegistry>,
+    pub particle_registry: Res<'w, ParticleTypeRegistry>,
+    pub editor_state: ResMut<'w, EditorState>,
     pub particle_types: Query<
         'w,
         's,
@@ -48,14 +50,15 @@ pub struct ParticleEditorParams<'w, 's> {
 
 fn show(
     mut contexts: EguiContexts,
-    mut is_on: Local<bool>,
+    mut synchronize_brush_selection: Local<Option<bool>>,
     mut selected_particle: Option<ResMut<SelectedParticle>>,
     editor_params: ParticleEditorParams,
 ) -> Result {
+    let synchronize_brush_selection = synchronize_brush_selection.get_or_insert(true);
     let ctx = contexts.ctx_mut()?;
 
     egui::Window::new("Particle Editor").show(ctx, |ui| {
-        show_top_options(ui, &mut is_on);
+        show_top_options(ui, synchronize_brush_selection);
 
         ui.separator();
 
@@ -82,7 +85,7 @@ fn show_editor(
             &mut columns[0],
             &mut editor_params.commands,
             &editor_params.material_labels,
-            &editor_params.registry,
+            &editor_params.particle_registry,
         );
         show_editing_area(&mut columns[1], selected_particle, editor_params);
     })
@@ -142,6 +145,12 @@ fn show_editing_area(
             egui::Grid::new("editing_grid")
                 .num_columns(3)
                 .show(ui, |ui| {
+                    let cached = editor_params
+                        .editor_state
+                        .map
+                        .get_mut(&selected_particle.0)
+                        .expect("Failed to find particle type entity in editor registry");
+
                     show_particle_type_text_edit(ui, particle_type);
                     show_material_combo_box(ui, material);
                     show_density(ui, density);
@@ -158,12 +167,14 @@ fn show_editing_area(
                         selected_particle.0,
                         ui,
                         timed_lifetime,
+                        &mut cached.timed_lifetime,
                     );
                     show_chance_lifetime(
                         &mut editor_params.commands,
                         selected_particle.0,
                         ui,
                         chance_lifetime,
+                        &mut cached.chance_lifetime,
                     );
                 });
         });
@@ -241,12 +252,15 @@ fn show_timed_lifetime(
     entity: Entity,
     ui: &mut egui::Ui,
     timed_lifetime: Option<Mut<'_, TimedLifetime>>,
+    cached_timed_lifetime: &mut TimedLifetime,
 ) {
     let enabled = timed_lifetime.is_some();
-    let new_value = add_label_with_toggle_switch(ui, "Lifetime (timed)", enabled);
+    let new_value = add_label_with_toggle_switch(ui, "Lifetime (Timed)", enabled);
     if new_value != enabled {
         if new_value {
-            commands.entity(entity).insert(TimedLifetime::default());
+            commands
+                .entity(entity)
+                .insert(cached_timed_lifetime.clone());
         } else {
             commands.entity(entity).remove::<TimedLifetime>();
         }
@@ -254,9 +268,12 @@ fn show_timed_lifetime(
     if let Some(mut lifetime) = timed_lifetime {
         let duration_ms = lifetime.duration().as_millis() as u64;
         let new_value =
-            add_label_with_drag_value(ui, "    Lifetime (ms):", duration_ms, 0..=u64::MAX, 1.0);
+            add_label_with_drag_value(ui, "    Timer (ms):", duration_ms, 0..=u64::MAX, 1.0);
         if new_value != duration_ms {
             lifetime.0.set_duration(Duration::from_millis(new_value));
+            cached_timed_lifetime
+                .0
+                .set_duration(Duration::from_millis(new_value));
         }
     }
 }
@@ -266,12 +283,15 @@ fn show_chance_lifetime(
     entity: Entity,
     ui: &mut egui::Ui,
     chance_lifetime: Option<Mut<'_, ChanceLifetime>>,
+    cached_chance_lifetime: &mut ChanceLifetime,
 ) {
     let enabled = chance_lifetime.is_some();
     let new_value = add_label_with_toggle_switch(ui, "Lifetime (Chance)", enabled);
     if new_value != enabled {
         if new_value {
-            commands.entity(entity).insert(ChanceLifetime::default());
+            commands
+                .entity(entity)
+                .insert(cached_chance_lifetime.clone());
         } else {
             commands.entity(entity).remove::<ChanceLifetime>();
         }
@@ -279,7 +299,7 @@ fn show_chance_lifetime(
     if let Some(mut lifetime) = chance_lifetime {
         let new_value = add_label_with_drag_value(
             ui,
-            "    Lifetime (pct):",
+            "    Chance (pct):",
             lifetime.chance * 100.,
             0.0..=100.,
             0.1,
@@ -287,6 +307,18 @@ fn show_chance_lifetime(
         let new_chance = new_value / 100.;
         if (lifetime.chance - new_chance).abs() > f64::EPSILON {
             lifetime.chance = new_chance;
+            cached_chance_lifetime.chance = new_chance;
+        }
+        let duration_ms = lifetime.tick_timer.duration().as_millis() as u64;
+        let new_value =
+            add_label_with_drag_value(ui, "    Tick Timer (ms):", duration_ms, 0..=u64::MAX, 1.0);
+        if new_value != duration_ms {
+            lifetime
+                .tick_timer
+                .set_duration(Duration::from_millis(new_value));
+            cached_chance_lifetime
+                .tick_timer
+                .set_duration(Duration::from_millis(new_value));
         }
     }
 }
