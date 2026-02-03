@@ -9,7 +9,7 @@ use bevy_falling_sand::prelude::*;
 
 use crate::ui::{
     ALL_MATERIAL_STATES, ParticleEditorApplicationState, ParticleMaterialLabels, PopupState,
-    SelectedEditorParticle, ShowUi, UiSystems,
+    SelectedParticle, ShowUi, UiSystems,
 };
 
 pub(super) struct UiPlugin;
@@ -49,7 +49,7 @@ pub struct ParticleEditorParams<'w, 's> {
 fn show(
     mut contexts: EguiContexts,
     mut is_on: Local<bool>,
-    mut selected_particle: Option<ResMut<SelectedEditorParticle>>,
+    mut selected_particle: Option<ResMut<SelectedParticle>>,
     editor_params: ParticleEditorParams,
 ) -> Result {
     let ctx = contexts.ctx_mut()?;
@@ -74,16 +74,26 @@ fn show_top_options(ui: &mut egui::Ui, is_on: &mut bool) {
 
 fn show_editor(
     ui: &mut egui::Ui,
-    selected_particle: &mut Option<ResMut<SelectedEditorParticle>>,
-    editor_params: ParticleEditorParams,
+    selected_particle: &mut Option<ResMut<SelectedParticle>>,
+    mut editor_params: ParticleEditorParams,
 ) {
     ui.columns(2, |columns| {
-        show_material_labels(&mut columns[0], &editor_params.material_labels);
+        show_material_labels(
+            &mut columns[0],
+            &mut editor_params.commands,
+            &editor_params.material_labels,
+            &editor_params.registry,
+        );
         show_editing_area(&mut columns[1], selected_particle, editor_params);
     })
 }
 
-fn show_material_labels(ui: &mut egui::Ui, material_labels: &ParticleMaterialLabels) {
+fn show_material_labels(
+    ui: &mut egui::Ui,
+    commands: &mut Commands,
+    material_labels: &ParticleMaterialLabels,
+    registry: &ParticleTypeRegistry,
+) {
     egui::ScrollArea::vertical()
         .id_salt("material_labels")
         .show(ui, |ui| {
@@ -91,9 +101,13 @@ fn show_material_labels(ui: &mut egui::Ui, material_labels: &ParticleMaterialLab
                 egui::CollapsingHeader::new(heading)
                     .default_open(false)
                     .show(ui, |ui| {
-                        items
-                            .iter()
-                            .for_each(|label| if ui.button(label).clicked() {});
+                        items.iter().for_each(|label| {
+                            if ui.button(label).clicked()
+                                && let Some(entity) = registry.get(label)
+                            {
+                                commands.insert_resource(SelectedParticle(*entity));
+                            }
+                        });
                     });
             });
         });
@@ -101,7 +115,7 @@ fn show_material_labels(ui: &mut egui::Ui, material_labels: &ParticleMaterialLab
 
 fn show_editing_area(
     ui: &mut egui::Ui,
-    selected_particle: &mut Option<ResMut<SelectedEditorParticle>>,
+    selected_particle: &mut Option<ResMut<SelectedParticle>>,
     mut editor_params: ParticleEditorParams,
 ) {
     egui::ScrollArea::vertical()
@@ -178,7 +192,7 @@ fn show_material_combo_box(ui: &mut egui::Ui, material: &MaterialState) -> Mater
 
 fn show_density(ui: &mut egui::Ui, density: Option<Mut<'_, Density>>) {
     if let Some(mut density) = density {
-        let new_value = add_label_with_drag_value(ui, "Density", density.0, 0..=u32::MAX);
+        let new_value = add_label_with_drag_value(ui, "Density", density.0, 0..=u32::MAX, 1.0);
         density.set_if_neq(Density(new_value));
     }
 }
@@ -240,7 +254,7 @@ fn show_timed_lifetime(
     if let Some(mut lifetime) = timed_lifetime {
         let duration_ms = lifetime.duration().as_millis() as u64;
         let new_value =
-            add_label_with_drag_value(ui, "    Lifetime (ms):", duration_ms, 0..=u64::MAX);
+            add_label_with_drag_value(ui, "    Lifetime (ms):", duration_ms, 0..=u64::MAX, 1.0);
         if new_value != duration_ms {
             lifetime.0.set_duration(Duration::from_millis(new_value));
         }
@@ -263,10 +277,16 @@ fn show_chance_lifetime(
         }
     }
     if let Some(mut lifetime) = chance_lifetime {
-        let new_value =
-            add_label_with_drag_value(ui, "    Lifetime (pct):", lifetime.chance, 0.0..=1.);
-        if new_value != lifetime.chance {
-            lifetime.chance = new_value;
+        let new_value = add_label_with_drag_value(
+            ui,
+            "    Lifetime (pct):",
+            lifetime.chance * 100.,
+            0.0..=100.,
+            0.1,
+        );
+        let new_chance = new_value / 100.;
+        if (lifetime.chance - new_chance).abs() > f64::EPSILON {
+            lifetime.chance = new_chance;
         }
     }
 }
@@ -276,6 +296,7 @@ fn add_label_with_drag_value<Num>(
     label: impl Into<egui::WidgetText>,
     value: Num,
     range: RangeInclusive<Num>,
+    speed: f64,
 ) -> Num
 where
     Num: Numeric,
@@ -283,7 +304,11 @@ where
     ui.label(label);
     add_empty_space(ui);
     let mut drag_value = value;
-    ui.add(egui::DragValue::new(&mut drag_value).range(range));
+    ui.add(
+        egui::DragValue::new(&mut drag_value)
+            .range(range)
+            .speed(speed),
+    );
     ui.end_row();
     drag_value
 }

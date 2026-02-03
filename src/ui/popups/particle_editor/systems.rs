@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_falling_sand::prelude::*;
 
-use crate::ui::ParticleMaterialLabels;
+use crate::ui::{EditorRegistry, ParticleMaterialLabels};
 
 pub(super) struct SystemsPlugin;
 
@@ -13,6 +13,15 @@ impl Plugin for SystemsPlugin {
         );
     }
 }
+
+fn on_remove_particle_type(
+    removed: On<Remove, ParticleType>,
+    mut registry: ResMut<EditorRegistry>,
+) {
+    registry.map.remove(&removed.entity);
+}
+
+fn on_add_particle_type(added: On<Add, ParticleType>, mut registry: ResMut<EditorRegistry>) {}
 
 // This doesn't strictly indicate a particle has actually changed its material type, but this query
 // is a little more palatable than doing antoher query like `ParticleTypeMaterials` (except with the
@@ -29,6 +38,6 @@ fn refresh_particle_labels(
     commands.insert_resource(labels);
 }
 
-fn condition_particle_movement_changed(movement: Query<Entity, Changed<Movement>>) -> bool {
+fn condition_particle_movement_changed(movement: Query<Entity, Changed<MaterialState>>) -> bool {
     !movement.is_empty()
 }

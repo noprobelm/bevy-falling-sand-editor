@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_falling_sand::prelude::*;
 
-use crate::ui::{ParticleMaterialLabels, SelectedEditorParticle};
+use crate::ui::{ParticleMaterialLabels, SelectedParticle};
 
 pub struct SetupPlugin;
 
@@ -10,7 +10,7 @@ impl Plugin for SetupPlugin {
         app.init_resource::<ParticleMaterialLabels>().add_systems(
             Update,
             spawn_selected_particle
-                .run_if(not(resource_exists::<SelectedEditorParticle>))
+                .run_if(not(resource_exists::<SelectedParticle>))
                 .run_if(condition_particle_types_loaded),
         );
     }
@@ -24,7 +24,7 @@ fn spawn_selected_particle(mut commands: Commands, registry: Res<ParticleTypeReg
         .copied()
         .expect("No particle types found in the world");
 
-    commands.insert_resource(SelectedEditorParticle(entity));
+    commands.insert_resource(SelectedParticle(entity));
 }
 
 fn condition_particle_types_loaded(particle_types: Query<(), Added<ParticleType>>) -> bool {

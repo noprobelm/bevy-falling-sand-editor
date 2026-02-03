@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{platform::collections::HashMap, prelude::*};
 use bevy_falling_sand::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -51,4 +51,26 @@ pub const ALL_MATERIAL_STATES: [MaterialState; 7] = [
 ];
 
 #[derive(Resource, Copy, Clone, PartialEq, Debug, Reflect)]
-pub struct SelectedEditorParticle(pub Entity);
+pub struct SelectedParticle(pub Entity);
+
+#[derive(Resource, Clone, Debug, Reflect)]
+pub struct EditorRegistry {
+    pub map: HashMap<Entity, ParticleData>,
+}
+
+#[derive(Clone, Debug, Reflect)]
+pub struct ParticleData {
+    pub particle_type: ParticleType,
+    pub state: MaterialState,
+    pub density: Density,
+    pub speed: Speed,
+    pub momentum: Momentum,
+    pub timed_lifetime: TimedLifetime,
+    pub chance_lifetim: ChanceLifetime,
+    pub static_rigid_body: StaticRigidBodyParticle,
+    pub color: ParticleColor,
+    pub changes_color: ChangesColor,
+    pub fire: Fire,
+    pub burns: Burns,
+    pub burning: Burning,
+}
