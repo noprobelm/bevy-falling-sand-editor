@@ -29,7 +29,7 @@ impl Plugin for UiPlugin {
 #[derive(SystemParam)]
 pub struct ParticleEditorParams<'w, 's> {
     pub commands: Commands<'w, 's>,
-    pub brush: Single<'w, 's, &'static crate::brush::SelectedParticle>,
+    pub brush: Single<'w, 's, &'static mut crate::brush::SelectedParticle>,
     pub material_labels: Res<'w, ParticleMaterialLabels>,
     pub particle_registry: Res<'w, ParticleTypeRegistry>,
     pub editor_state: ResMut<'w, EditorState>,
@@ -62,7 +62,12 @@ fn show(
 
         ui.separator();
 
-        show_editor(ui, &mut selected_particle, editor_params);
+        show_editor(
+            ui,
+            &mut selected_particle,
+            editor_params,
+            *synchronize_brush_selection,
+        );
     });
 
     Ok(())
@@ -79,13 +84,13 @@ fn show_editor(
     ui: &mut egui::Ui,
     selected_particle: &mut Option<ResMut<SelectedParticle>>,
     mut editor_params: ParticleEditorParams,
+    synchronize_brush_selection: bool,
 ) {
     ui.columns(2, |columns| {
         show_material_labels(
             &mut columns[0],
-            &mut editor_params.commands,
-            &editor_params.material_labels,
-            &editor_params.particle_registry,
+            &mut editor_params,
+            synchronize_brush_selection,
         );
         show_editing_area(&mut columns[1], selected_particle, editor_params);
     })
@@ -93,27 +98,43 @@ fn show_editor(
 
 fn show_material_labels(
     ui: &mut egui::Ui,
-    commands: &mut Commands,
-    material_labels: &ParticleMaterialLabels,
-    registry: &ParticleTypeRegistry,
+    editor_params: &mut ParticleEditorParams,
+    synchronize_brush_selection: bool,
 ) {
+    let categories: Vec<_> = editor_params
+        .material_labels
+        .categories()
+        .map(|(h, items)| (h.to_string(), items.clone()))
+        .collect();
+
+    let mut selected_label: Option<String> = None;
+
     egui::ScrollArea::vertical()
         .id_salt("material_labels")
         .show(ui, |ui| {
-            material_labels.categories().for_each(|(heading, items)| {
+            for (heading, items) in &categories {
                 egui::CollapsingHeader::new(heading)
                     .default_open(false)
                     .show(ui, |ui| {
-                        items.iter().for_each(|label| {
-                            if ui.button(label).clicked()
-                                && let Some(entity) = registry.get(label)
-                            {
-                                commands.insert_resource(SelectedParticle(*entity));
+                        for label in items {
+                            if ui.button(label).clicked() {
+                                selected_label = Some(label.clone());
                             }
-                        });
+                        }
                     });
-            });
+            }
         });
+
+    if let Some(label) = selected_label
+        && let Some(entity) = editor_params.particle_registry.get(&label)
+    {
+        editor_params
+            .commands
+            .insert_resource(SelectedParticle(*entity));
+        if synchronize_brush_selection {
+            editor_params.brush.0 = Particle::from(label);
+        }
+    }
 }
 
 fn show_editing_area(
