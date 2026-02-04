@@ -199,12 +199,7 @@ fn show_editing_area(
                         chance_lifetime,
                         &mut cached.chance_lifetime,
                     );
-                    show_color_assignment_source(
-                        ui,
-                        color_profile,
-                        &mut cached.palette,
-                        &mut cached.gradient,
-                    );
+                    show_color_source(ui, color_profile, &mut cached.palette, &mut cached.gradient);
                 });
         });
 }
@@ -352,7 +347,7 @@ fn show_chance_lifetime(
     }
 }
 
-fn show_color_assignment_source(
+fn show_color_source(
     ui: &mut egui::Ui,
     mut color_profile: Mut<'_, ColorProfile>,
     cached_palette: &mut Palette,
@@ -387,6 +382,17 @@ fn show_color_assignment_source(
                 }
             }
         });
+    ui.end_row();
+}
+
+fn show_color_assignment(
+    ui: &mut egui::Ui,
+    mut color_profile: Mut<'_, ColorProfile>,
+    cached_assignment: &mut ColorAssignment,
+) {
+    egui::ComboBox::from_id_salt("color_assignment_combo")
+        .selected_text(color_profile.assignment.variant_name())
+        .show_ui(ui, |ui| {});
     ui.end_row();
 }
 
