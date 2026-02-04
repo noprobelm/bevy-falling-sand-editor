@@ -124,7 +124,6 @@ fn load_settings(
         )
         .with(BrushAction::Draw, settings_config.brush.draw);
 
-    info!("We ran");
     commands.entity(brush.entity()).insert(input_map);
 }
 

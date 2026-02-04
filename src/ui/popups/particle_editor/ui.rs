@@ -159,32 +159,26 @@ fn show_editing_area(
                 momentum,
                 timed_lifetime,
                 chance_lifetime,
-                color_profile,
+                mut color_profile,
             ) = editor_params
                 .particle_types
                 .get_mut(selected_particle.0)
                 .expect("No matching query found for selected particle");
 
+            let cached = editor_params
+                .editor_state
+                .map
+                .get_mut(&selected_particle.0)
+                .expect("Failed to find particle type entity in editor registry");
+
             egui::Grid::new("editing_grid")
                 .num_columns(3)
                 .show(ui, |ui| {
-                    let cached = editor_params
-                        .editor_state
-                        .map
-                        .get_mut(&selected_particle.0)
-                        .expect("Failed to find particle type entity in editor registry");
-
                     show_particle_type_text_edit(ui, particle_type);
                     show_material_combo_box(ui, material);
-                    show_density(ui, density);
-                    show_speed(ui, speed);
-                    show_momentum(
-                        &mut editor_params.commands,
-                        selected_particle.0,
-                        ui,
-                        material,
-                        momentum,
-                    );
+
+                    add_grid_separator(ui);
+
                     show_timed_lifetime(
                         &mut editor_params.commands,
                         selected_particle.0,
@@ -199,7 +193,28 @@ fn show_editing_area(
                         chance_lifetime,
                         &mut cached.chance_lifetime,
                     );
-                    show_color_source(ui, color_profile, &mut cached.palette, &mut cached.gradient);
+
+                    add_grid_separator(ui);
+
+                    show_density(ui, density);
+                    show_speed(ui, speed);
+                    show_momentum(
+                        &mut editor_params.commands,
+                        selected_particle.0,
+                        ui,
+                        material,
+                        momentum,
+                    );
+
+                    add_grid_separator(ui);
+
+                    show_color_source(
+                        ui,
+                        &mut color_profile.source,
+                        &mut cached.palette,
+                        &mut cached.gradient,
+                    );
+                    show_color_assignment(ui, &mut color_profile.assignment);
                 });
         });
 }
@@ -207,12 +222,15 @@ fn show_editing_area(
 fn show_particle_type_text_edit(ui: &mut egui::Ui, mut particle_type: Mut<'_, ParticleType>) {
     let mut name = particle_type.name.to_string();
     ui.label("Name:");
+    skip_grid_column(ui);
     ui.add(egui::TextEdit::singleline(&mut name));
     ui.end_row();
     particle_type.set_if_neq(name.into());
 }
 
-fn show_material_combo_box(ui: &mut egui::Ui, material: &MaterialState) -> MaterialState {
+fn show_material_combo_box(ui: &mut egui::Ui, material: &MaterialState) {
+    ui.label("State:");
+    skip_grid_column(ui);
     let mut selection = *material;
     egui::ComboBox::from_id_salt("material_state_combo")
         .selected_text(selection.variant_name())
@@ -222,7 +240,6 @@ fn show_material_combo_box(ui: &mut egui::Ui, material: &MaterialState) -> Mater
             }
         });
     ui.end_row();
-    selection
 }
 
 fn show_density(ui: &mut egui::Ui, density: Option<Mut<'_, Density>>) {
@@ -349,35 +366,31 @@ fn show_chance_lifetime(
 
 fn show_color_source(
     ui: &mut egui::Ui,
-    mut color_profile: Mut<'_, ColorProfile>,
+    color_source: &mut ColorSource,
     cached_palette: &mut Palette,
     cached_gradient: &mut ColorGradient,
 ) {
+    ui.label("Color Source: ");
+    skip_grid_column(ui);
     egui::ComboBox::from_id_salt("color_source_combo")
-        .selected_text(color_profile.source.variant_name())
+        .selected_text(color_source.variant_name())
         .show_ui(ui, |ui| {
             let changed = ui
-                .selectable_label(
-                    matches!(color_profile.source, ColorSource::Palette(_)),
-                    "Palette",
-                )
+                .selectable_label(matches!(color_source, ColorSource::Palette(_)), "Palette")
                 .clicked()
                 || ui
-                    .selectable_label(
-                        matches!(color_profile.source, ColorSource::Gradient(_)),
-                        "Gradient",
-                    )
+                    .selectable_label(matches!(color_source, ColorSource::Gradient(_)), "Gradient")
                     .clicked();
 
             if changed {
-                match &color_profile.source {
+                match color_source {
                     ColorSource::Palette(palette) => {
                         *cached_palette = palette.clone();
-                        color_profile.source = ColorSource::Gradient(cached_gradient.clone());
+                        *color_source = ColorSource::Gradient(cached_gradient.clone());
                     }
                     ColorSource::Gradient(gradient) => {
                         *cached_gradient = gradient.clone();
-                        color_profile.source = ColorSource::Palette(cached_palette.clone());
+                        *color_source = ColorSource::Palette(cached_palette.clone());
                     }
                 }
             }
@@ -385,14 +398,16 @@ fn show_color_source(
     ui.end_row();
 }
 
-fn show_color_assignment(
-    ui: &mut egui::Ui,
-    mut color_profile: Mut<'_, ColorProfile>,
-    cached_assignment: &mut ColorAssignment,
-) {
+fn show_color_assignment(ui: &mut egui::Ui, color_assignment: &mut ColorAssignment) {
+    ui.label("Color Assignment:");
+    skip_grid_column(ui);
+
     egui::ComboBox::from_id_salt("color_assignment_combo")
-        .selected_text(color_profile.assignment.variant_name())
-        .show_ui(ui, |ui| {});
+        .selected_text(color_assignment.variant_name())
+        .show_ui(ui, |ui| {
+            ui.selectable_value(color_assignment, ColorAssignment::Sequential, "Sequential");
+            ui.selectable_value(color_assignment, ColorAssignment::Random, "Random");
+        });
     ui.end_row();
 }
 
@@ -407,13 +422,15 @@ where
     Num: Numeric,
 {
     ui.label(label);
-    add_empty_space(ui);
+    skip_grid_column(ui);
     let mut drag_value = value;
-    ui.add(
-        egui::DragValue::new(&mut drag_value)
-            .range(range)
-            .speed(speed),
-    );
+    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+        ui.add(
+            egui::DragValue::new(&mut drag_value)
+                .range(range)
+                .speed(speed),
+        );
+    });
     ui.end_row();
     drag_value
 }
@@ -430,7 +447,9 @@ where
     ui.label(label);
     let mut drag_value = value;
     ui.add(egui::Slider::new(&mut drag_value, range.clone()).show_value(false));
-    ui.add(egui::DragValue::new(&mut drag_value).range(range));
+    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+        ui.add(egui::DragValue::new(&mut drag_value).range(range));
+    });
     ui.end_row();
     drag_value
 }
@@ -441,12 +460,27 @@ fn add_label_with_toggle_switch(
     mut is_on: bool,
 ) -> bool {
     ui.label(label);
-    add_empty_space(ui);
-    ui.add(crate::ui::widgets::toggle_switch::toggle(&mut is_on));
+    skip_grid_column(ui);
+    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+        ui.add(crate::ui::widgets::toggle_switch::toggle(&mut is_on));
+    });
     ui.end_row();
     is_on
 }
 
-fn add_empty_space(ui: &mut egui::Ui) {
+fn skip_grid_column(ui: &mut egui::Ui) {
     ui.label("");
+}
+
+fn add_grid_separator(ui: &mut egui::Ui) {
+    let row_spacing = ui.spacing().item_spacing.y;
+    let padding = 8.0;
+    let rect = ui.max_rect();
+    // Line is drawn at: current position + padding above
+    // Total space needed: padding above + padding below - row_spacing (which end_row adds)
+    let y = ui.cursor().top() + padding;
+    let stroke = ui.visuals().widgets.noninteractive.bg_stroke;
+    ui.painter().hline(rect.left()..=rect.right(), y, stroke);
+    ui.allocate_space(egui::vec2(0.0, (padding * 2.0 - row_spacing).max(0.0)));
+    ui.end_row();
 }
