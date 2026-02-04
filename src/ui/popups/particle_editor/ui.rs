@@ -44,6 +44,7 @@ pub struct ParticleEditorParams<'w, 's> {
             Option<&'static Momentum>,
             Option<&'static mut TimedLifetime>,
             Option<&'static mut ChanceLifetime>,
+            &'static mut ColorProfile,
         ),
     >,
 }
@@ -158,6 +159,7 @@ fn show_editing_area(
                 momentum,
                 timed_lifetime,
                 chance_lifetime,
+                color_profile,
             ) = editor_params
                 .particle_types
                 .get_mut(selected_particle.0)
@@ -196,6 +198,12 @@ fn show_editing_area(
                         ui,
                         chance_lifetime,
                         &mut cached.chance_lifetime,
+                    );
+                    show_color_assignment_source(
+                        ui,
+                        color_profile,
+                        &mut cached.palette,
+                        &mut cached.gradient,
                     );
                 });
         });
@@ -342,6 +350,44 @@ fn show_chance_lifetime(
                 .set_duration(Duration::from_millis(new_value));
         }
     }
+}
+
+fn show_color_assignment_source(
+    ui: &mut egui::Ui,
+    mut color_profile: Mut<'_, ColorProfile>,
+    cached_palette: &mut Palette,
+    cached_gradient: &mut ColorGradient,
+) {
+    egui::ComboBox::from_id_salt("color_source_combo")
+        .selected_text(color_profile.source.variant_name())
+        .show_ui(ui, |ui| {
+            let changed = ui
+                .selectable_label(
+                    matches!(color_profile.source, ColorSource::Palette(_)),
+                    "Palette",
+                )
+                .clicked()
+                || ui
+                    .selectable_label(
+                        matches!(color_profile.source, ColorSource::Gradient(_)),
+                        "Gradient",
+                    )
+                    .clicked();
+
+            if changed {
+                match &color_profile.source {
+                    ColorSource::Palette(palette) => {
+                        *cached_palette = palette.clone();
+                        color_profile.source = ColorSource::Gradient(cached_gradient.clone());
+                    }
+                    ColorSource::Gradient(gradient) => {
+                        *cached_gradient = gradient.clone();
+                        color_profile.source = ColorSource::Palette(cached_palette.clone());
+                    }
+                }
+            }
+        });
+    ui.end_row();
 }
 
 fn add_label_with_drag_value<Num>(

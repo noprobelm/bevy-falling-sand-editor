@@ -64,6 +64,8 @@ pub struct ParticleData {
     pub timed_lifetime: TimedLifetime,
     pub chance_lifetime: ChanceLifetime,
     pub static_rigid_body: StaticRigidBodyParticle,
+    pub palette: Palette,
+    pub gradient: ColorGradient,
     pub changes_color: ChangesColor,
     pub burns: Burns,
 }
@@ -92,10 +94,14 @@ impl Default for ParticleData {
             }),
             false,
         );
+        let palette = Palette::default();
+        let gradient = ColorGradient::default();
         Self {
             timed_lifetime,
             chance_lifetime,
             static_rigid_body,
+            palette,
+            gradient,
             changes_color,
             burns,
         }

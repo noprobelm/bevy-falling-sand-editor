@@ -35,6 +35,7 @@ struct PhysicsQuery {
 
 #[derive(QueryData)]
 struct ColorQuery {
+    profile: &'static ColorProfile,
     changes_color: Option<&'static ChangesColor>,
 }
 
@@ -62,37 +63,50 @@ fn synchronize_editor_registry(
 
     for entity in particle_registry.entities() {
         let cached = editor_state.map.get(entity);
-        let queried = query.get(*entity).ok();
 
-        let particle_data = ParticleData {
-            timed_lifetime: queried
-                .as_ref()
-                .and_then(|q| q.core.timed_lifetime.cloned())
-                .or_else(|| cached.map(|c| c.timed_lifetime.clone()))
-                .unwrap_or_else(|| defaults.timed_lifetime.clone()),
-            chance_lifetime: queried
-                .as_ref()
-                .and_then(|q| q.core.chance_lifetime.cloned())
-                .or_else(|| cached.map(|c| c.chance_lifetime.clone()))
-                .unwrap_or_else(|| defaults.chance_lifetime.clone()),
-            static_rigid_body: queried
-                .as_ref()
-                .and_then(|q| q.physics.static_rigid_body.cloned())
-                .or_else(|| cached.map(|c| c.static_rigid_body.clone()))
-                .unwrap_or_else(|| defaults.static_rigid_body.clone()),
-            changes_color: queried
-                .as_ref()
-                .and_then(|q| q.color.changes_color.cloned())
-                .or_else(|| cached.map(|c| c.changes_color.clone()))
-                .unwrap_or_else(|| defaults.changes_color.clone()),
-            burns: queried
-                .as_ref()
-                .and_then(|q| q.reactions.burns.cloned())
-                .or_else(|| cached.map(|c| c.burns.clone()))
-                .unwrap_or_else(|| defaults.burns.clone()),
-        };
+        if let Ok(data) = query.get(*entity) {
+            let (palette, gradient) = match &data.color.profile.source {
+                ColorSource::Palette(p) => (
+                    p.clone(),
+                    cached.map(|c| c.gradient.clone()).unwrap_or_default(),
+                ),
+                ColorSource::Gradient(g) => (
+                    cached.map(|c| c.palette.clone()).unwrap_or_default(),
+                    g.clone(),
+                ),
+            };
+            let particle_data = ParticleData {
+                timed_lifetime: data
+                    .core
+                    .timed_lifetime
+                    .cloned()
+                    .unwrap_or_else(|| defaults.timed_lifetime.clone()),
+                chance_lifetime: data
+                    .core
+                    .chance_lifetime
+                    .cloned()
+                    .unwrap_or_else(|| defaults.chance_lifetime.clone()),
+                static_rigid_body: data
+                    .physics
+                    .static_rigid_body
+                    .cloned()
+                    .unwrap_or(defaults.static_rigid_body),
+                palette,
+                gradient,
+                changes_color: data
+                    .color
+                    .changes_color
+                    .cloned()
+                    .unwrap_or(defaults.changes_color),
+                burns: data
+                    .reactions
+                    .burns
+                    .cloned()
+                    .unwrap_or_else(|| defaults.burns.clone()),
+            };
 
-        new_state.map.insert(*entity, particle_data);
+            new_state.map.insert(*entity, particle_data);
+        }
     }
 
     commands.insert_resource(new_state);
