@@ -8,8 +8,8 @@ use bevy_egui::{
 use bevy_falling_sand::prelude::*;
 
 use crate::ui::{
-    ALL_MATERIAL_STATES, EditorState, ParticleEditorApplicationState, ParticleMaterialLabels,
-    PopupState, SelectedParticle, ShowUi, UiSystems,
+    EditorState, ParticleEditorApplicationState, ParticleMaterialLabels, PopupState,
+    SelectedParticle, ShowUi, UiSystems, all_material_states,
 };
 
 pub(super) struct UiPlugin;
@@ -165,7 +165,7 @@ fn show_editing_area(
                 .get_mut(selected_particle.0)
                 .expect("No matching query found for selected particle");
 
-            let cached = editor_params
+            let data = editor_params
                 .editor_state
                 .map
                 .get_mut(&selected_particle.0)
@@ -176,23 +176,6 @@ fn show_editing_area(
                 .show(ui, |ui| {
                     show_particle_type_text_edit(ui, particle_type);
                     show_material_combo_box(ui, material);
-
-                    add_grid_separator(ui);
-
-                    show_timed_lifetime(
-                        &mut editor_params.commands,
-                        selected_particle.0,
-                        ui,
-                        timed_lifetime,
-                        &mut cached.timed_lifetime,
-                    );
-                    show_chance_lifetime(
-                        &mut editor_params.commands,
-                        selected_particle.0,
-                        ui,
-                        chance_lifetime,
-                        &mut cached.chance_lifetime,
-                    );
 
                     add_grid_separator(ui);
 
@@ -208,11 +191,28 @@ fn show_editing_area(
 
                     add_grid_separator(ui);
 
+                    show_timed_lifetime(
+                        &mut editor_params.commands,
+                        selected_particle.0,
+                        ui,
+                        timed_lifetime,
+                        &mut data.timed_lifetime,
+                    );
+                    show_chance_lifetime(
+                        &mut editor_params.commands,
+                        selected_particle.0,
+                        ui,
+                        chance_lifetime,
+                        &mut data.chance_lifetime,
+                    );
+
+                    add_grid_separator(ui);
+
                     show_color_source(
                         ui,
                         &mut color_profile.source,
-                        &mut cached.palette,
-                        &mut cached.gradient,
+                        &mut data.palette,
+                        &mut data.gradient,
                     );
                     show_color_assignment(ui, &mut color_profile.assignment);
                 });
@@ -231,12 +231,13 @@ fn show_particle_type_text_edit(ui: &mut egui::Ui, mut particle_type: Mut<'_, Pa
 fn show_material_combo_box(ui: &mut egui::Ui, material: &MaterialState) {
     ui.label("State:");
     skip_grid_column(ui);
-    let mut selection = *material;
+    let mut selection = material.clone();
     egui::ComboBox::from_id_salt("material_state_combo")
         .selected_text(selection.variant_name())
         .show_ui(ui, |ui| {
-            for variant in ALL_MATERIAL_STATES {
-                ui.selectable_value(&mut selection, variant, variant.variant_name());
+            for variant in all_material_states() {
+                let name = variant.variant_name().to_string();
+                ui.selectable_value(&mut selection, variant, name);
             }
         });
     ui.end_row();
@@ -275,7 +276,7 @@ fn show_momentum(
     material: &MaterialState,
     momentum: Option<&Momentum>,
 ) {
-    if material != &MaterialState::Wall {
+    if !matches!(material, MaterialState::Wall(_)) {
         let enabled = momentum.is_some();
         let new_value = add_label_with_toggle_switch(ui, "Momentum", enabled);
         if new_value != enabled {
@@ -293,15 +294,13 @@ fn show_timed_lifetime(
     entity: Entity,
     ui: &mut egui::Ui,
     timed_lifetime: Option<Mut<'_, TimedLifetime>>,
-    cached_timed_lifetime: &mut TimedLifetime,
+    lifetime_state: &mut TimedLifetime,
 ) {
     let enabled = timed_lifetime.is_some();
     let new_value = add_label_with_toggle_switch(ui, "Lifetime (Timed)", enabled);
     if new_value != enabled {
         if new_value {
-            commands
-                .entity(entity)
-                .insert(cached_timed_lifetime.clone());
+            commands.entity(entity).insert(lifetime_state.clone());
         } else {
             commands.entity(entity).remove::<TimedLifetime>();
         }
@@ -312,7 +311,7 @@ fn show_timed_lifetime(
             add_label_with_drag_value(ui, "    Timer (ms):", duration_ms, 0..=u64::MAX, 1.0);
         if new_value != duration_ms {
             lifetime.0.set_duration(Duration::from_millis(new_value));
-            cached_timed_lifetime
+            lifetime_state
                 .0
                 .set_duration(Duration::from_millis(new_value));
         }
@@ -324,15 +323,13 @@ fn show_chance_lifetime(
     entity: Entity,
     ui: &mut egui::Ui,
     chance_lifetime: Option<Mut<'_, ChanceLifetime>>,
-    cached_chance_lifetime: &mut ChanceLifetime,
+    lifetime_state: &mut ChanceLifetime,
 ) {
     let enabled = chance_lifetime.is_some();
     let new_value = add_label_with_toggle_switch(ui, "Lifetime (Chance)", enabled);
     if new_value != enabled {
         if new_value {
-            commands
-                .entity(entity)
-                .insert(cached_chance_lifetime.clone());
+            commands.entity(entity).insert(lifetime_state.clone());
         } else {
             commands.entity(entity).remove::<ChanceLifetime>();
         }
@@ -348,7 +345,7 @@ fn show_chance_lifetime(
         let new_chance = new_value / 100.;
         if (lifetime.chance - new_chance).abs() > f64::EPSILON {
             lifetime.chance = new_chance;
-            cached_chance_lifetime.chance = new_chance;
+            lifetime_state.chance = new_chance;
         }
         let duration_ms = lifetime.tick_timer.duration().as_millis() as u64;
         let new_value =
@@ -357,7 +354,7 @@ fn show_chance_lifetime(
             lifetime
                 .tick_timer
                 .set_duration(Duration::from_millis(new_value));
-            cached_chance_lifetime
+            lifetime_state
                 .tick_timer
                 .set_duration(Duration::from_millis(new_value));
         }

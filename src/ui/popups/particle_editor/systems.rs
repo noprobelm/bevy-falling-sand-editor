@@ -2,7 +2,10 @@ use bevy::{ecs::query::QueryData, prelude::*};
 use bevy_egui::EguiPrimaryContextPass;
 use bevy_falling_sand::prelude::*;
 
-use crate::ui::{EditorState, ParticleData, ParticleMaterialLabels, UiSystems};
+use crate::ui::{
+    EditorState, GasState, InsectState, LiquidState, MovableSolidState, MovementStates, OtherState,
+    ParticleData, ParticleMaterialLabels, SolidState, UiSystems,
+};
 
 pub(super) struct SystemsPlugin;
 
@@ -29,6 +32,14 @@ struct CoreQuery {
 }
 
 #[derive(QueryData)]
+struct MovementQuery {
+    material: &'static MaterialState,
+    density: Option<&'static Density>,
+    speed: Option<&'static Speed>,
+    momentum: Option<&'static Momentum>,
+}
+
+#[derive(QueryData)]
 struct PhysicsQuery {
     static_rigid_body: Option<&'static StaticRigidBodyParticle>,
 }
@@ -47,6 +58,7 @@ struct ReactionsQuery {
 #[derive(QueryData)]
 struct ParticleDataQuery {
     core: CoreQuery,
+    movement: MovementQuery,
     physics: PhysicsQuery,
     color: ColorQuery,
     reactions: ReactionsQuery,
@@ -75,7 +87,21 @@ fn synchronize_editor_registry(
                     g.clone(),
                 ),
             };
+
+            let cached_movement = cached
+                .map(|c| c.movement_states.clone())
+                .unwrap_or_else(|| defaults.movement_states.clone());
+
+            let movement_states = build_movement_states(
+                data.movement.material,
+                data.movement.density,
+                data.movement.speed,
+                data.movement.momentum,
+                &cached_movement,
+            );
+
             let particle_data = ParticleData {
+                movement_states,
                 timed_lifetime: data
                     .core
                     .timed_lifetime
@@ -110,6 +136,68 @@ fn synchronize_editor_registry(
     }
 
     commands.insert_resource(new_state);
+}
+
+fn build_movement_states(
+    material: &MaterialState,
+    density: Option<&Density>,
+    speed: Option<&Speed>,
+    momentum: Option<&Momentum>,
+    cached: &MovementStates,
+) -> MovementStates {
+    let mut states = cached.clone();
+
+    match material {
+        MaterialState::Wall(_) => {}
+        MaterialState::Solid(_) => {
+            states.solid = SolidState {
+                density: density.cloned().unwrap_or(cached.solid.density),
+                speed: speed.cloned().unwrap_or(cached.solid.speed),
+            };
+        }
+        MaterialState::MovableSolid(ms) => {
+            states.movable_solid = MovableSolidState {
+                movable_solid: ms.clone(),
+                density: density.cloned().unwrap_or(cached.movable_solid.density),
+                speed: speed.cloned().unwrap_or(cached.movable_solid.speed),
+                momentum: momentum.cloned().unwrap_or(cached.movable_solid.momentum),
+            };
+        }
+        MaterialState::Liquid(l) => {
+            states.liquid = LiquidState {
+                liquid: l.clone(),
+                density: density.cloned().unwrap_or(cached.liquid.density),
+                speed: speed.cloned().unwrap_or(cached.liquid.speed),
+                momentum: momentum.cloned().unwrap_or(cached.liquid.momentum),
+            };
+        }
+        MaterialState::Gas(g) => {
+            states.gas = GasState {
+                gas: g.clone(),
+                density: density.cloned().unwrap_or(cached.gas.density),
+                speed: speed.cloned().unwrap_or(cached.gas.speed),
+                momentum: momentum.cloned().unwrap_or(cached.gas.momentum),
+            };
+        }
+        MaterialState::Insect(i) => {
+            states.insect = InsectState {
+                insect: i.clone(),
+                density: density.cloned().unwrap_or(cached.insect.density),
+                speed: speed.cloned().unwrap_or(cached.insect.speed),
+                momentum: momentum.cloned().unwrap_or(cached.insect.momentum),
+            };
+        }
+        MaterialState::Other(m) => {
+            states.other = OtherState {
+                movement: m.clone(),
+                density: density.cloned().unwrap_or(cached.other.density),
+                speed: speed.cloned().unwrap_or(cached.other.speed),
+                momentum: momentum.cloned().unwrap_or(cached.other.momentum),
+            };
+        }
+    }
+
+    states
 }
 
 // This doesn't strictly indicate a particle has actually changed its material type, but this query
