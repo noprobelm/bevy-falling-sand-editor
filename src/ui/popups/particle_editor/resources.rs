@@ -74,7 +74,7 @@ impl Default for ParticleData {
     fn default() -> Self {
         let timed_lifetime = TimedLifetime::new(Duration::from_millis(10000));
         let chance_lifetime = ChanceLifetime::new(0.01);
-        let static_rigid_body = StaticRigidBodyParticle::default();
+        let static_rigid_body = StaticRigidBodyParticle;
         let changes_color = ChangesColor::Chance(0.1);
         let burns = Burns::new(
             Duration::from_millis(1000),
