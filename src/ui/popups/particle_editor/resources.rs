@@ -71,13 +71,14 @@ pub struct MovementStates {
     pub other: OtherState,
 }
 
-#[derive(Clone, Debug, Reflect)]
+#[derive(Bundle, Clone, Debug, Reflect)]
 pub struct SolidState {
+    pub solid: Solid,
     pub density: Density,
     pub speed: Speed,
 }
 
-#[derive(Clone, Debug, Reflect)]
+#[derive(Bundle, Clone, Debug, Reflect)]
 pub struct MovableSolidState {
     pub movable_solid: MovableSolid,
     pub density: Density,
@@ -85,7 +86,7 @@ pub struct MovableSolidState {
     pub momentum: Momentum,
 }
 
-#[derive(Clone, Debug, Reflect)]
+#[derive(Bundle, Clone, Debug, Reflect)]
 pub struct LiquidState {
     pub liquid: Liquid,
     pub density: Density,
@@ -93,7 +94,7 @@ pub struct LiquidState {
     pub momentum: Momentum,
 }
 
-#[derive(Clone, Debug, Reflect)]
+#[derive(Bundle, Clone, Debug, Reflect)]
 pub struct GasState {
     pub gas: Gas,
     pub density: Density,
@@ -101,7 +102,7 @@ pub struct GasState {
     pub momentum: Momentum,
 }
 
-#[derive(Clone, Debug, Reflect)]
+#[derive(Bundle, Clone, Debug, Reflect)]
 pub struct InsectState {
     pub insect: Insect,
     pub density: Density,
@@ -109,7 +110,7 @@ pub struct InsectState {
     pub momentum: Momentum,
 }
 
-#[derive(Clone, Debug, Reflect)]
+#[derive(Bundle, Clone, Debug, Reflect)]
 pub struct OtherState {
     pub movement: Movement,
     pub density: Density,
@@ -129,29 +130,79 @@ pub struct ParticleData {
     pub burns: Burns,
 }
 
+impl MovementStates {
+    /// Saves the current component values to the appropriate cached state before switching materials.
+    pub fn save_current(
+        &mut self,
+        material: &MaterialState,
+        density: Option<Density>,
+        speed: Option<Speed>,
+        momentum: Option<Momentum>,
+    ) {
+        match material {
+            MaterialState::Wall(_) => {}
+            MaterialState::Solid(_) => {
+                self.solid.density = density.unwrap_or(self.solid.density);
+                self.solid.speed = speed.unwrap_or(self.solid.speed);
+            }
+            MaterialState::MovableSolid(ms) => {
+                self.movable_solid.movable_solid = ms.clone();
+                self.movable_solid.density = density.unwrap_or(self.movable_solid.density);
+                self.movable_solid.speed = speed.unwrap_or(self.movable_solid.speed);
+                self.movable_solid.momentum = momentum.unwrap_or(self.movable_solid.momentum);
+            }
+            MaterialState::Liquid(l) => {
+                self.liquid.liquid = l.clone();
+                self.liquid.density = density.unwrap_or(self.liquid.density);
+                self.liquid.speed = speed.unwrap_or(self.liquid.speed);
+                self.liquid.momentum = momentum.unwrap_or(self.liquid.momentum);
+            }
+            MaterialState::Gas(g) => {
+                self.gas.gas = g.clone();
+                self.gas.density = density.unwrap_or(self.gas.density);
+                self.gas.speed = speed.unwrap_or(self.gas.speed);
+                self.gas.momentum = momentum.unwrap_or(self.gas.momentum);
+            }
+            MaterialState::Insect(i) => {
+                self.insect.insect = i.clone();
+                self.insect.density = density.unwrap_or(self.insect.density);
+                self.insect.speed = speed.unwrap_or(self.insect.speed);
+                self.insect.momentum = momentum.unwrap_or(self.insect.momentum);
+            }
+            MaterialState::Other(m) => {
+                self.other.movement = m.clone();
+                self.other.density = density.unwrap_or(self.other.density);
+                self.other.speed = speed.unwrap_or(self.other.speed);
+                self.other.momentum = momentum.unwrap_or(self.other.momentum);
+            }
+        }
+    }
+}
+
 impl Default for MovementStates {
     fn default() -> Self {
         Self {
             solid: SolidState {
+                solid: Solid,
                 density: Density::default(),
                 speed: Speed::default(),
             },
             movable_solid: MovableSolidState {
-                movable_solid: MovableSolid::default(),
-                density: Density::default(),
-                speed: Speed::default(),
+                movable_solid: MovableSolid::new(0.75, 0.9),
+                density: Density(1250),
+                speed: Speed::new(1, 5, 10),
                 momentum: Momentum::default(),
             },
             liquid: LiquidState {
-                liquid: Liquid::default(),
-                density: Density::default(),
-                speed: Speed::default(),
+                liquid: Liquid::with_resistance(5, 0.1),
+                density: Density(750),
+                speed: Speed::new(1, 0, 3),
                 momentum: Momentum::default(),
             },
             gas: GasState {
-                gas: Gas::default(),
-                density: Density::default(),
-                speed: Speed::default(),
+                gas: Gas::new(1),
+                density: Density(200),
+                speed: Speed::new(1, 0, 1),
                 momentum: Momentum::default(),
             },
             insect: InsectState {

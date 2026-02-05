@@ -151,6 +151,7 @@ fn build_movement_states(
         MaterialState::Wall(_) => {}
         MaterialState::Solid(_) => {
             states.solid = SolidState {
+                solid: Solid,
                 density: density.cloned().unwrap_or(cached.solid.density),
                 speed: speed.cloned().unwrap_or(cached.solid.speed),
             };

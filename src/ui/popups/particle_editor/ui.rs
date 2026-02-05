@@ -8,8 +8,8 @@ use bevy_egui::{
 use bevy_falling_sand::prelude::*;
 
 use crate::ui::{
-    EditorState, ParticleEditorApplicationState, ParticleMaterialLabels, PopupState,
-    SelectedParticle, ShowUi, UiSystems, all_material_states,
+    EditorState, MovementStates, ParticleEditorApplicationState, ParticleMaterialLabels,
+    PopupState, SelectedParticle, ShowUi, UiSystems, all_material_states,
 };
 
 pub(super) struct UiPlugin;
@@ -175,7 +175,16 @@ fn show_editing_area(
                 .num_columns(3)
                 .show(ui, |ui| {
                     show_particle_type_text_edit(ui, particle_type);
-                    show_material_combo_box(ui, material);
+                    show_material_selection(
+                        ui,
+                        material,
+                        &mut editor_params.commands,
+                        selected_particle.0,
+                        &mut data.movement_states,
+                        &density,
+                        &speed,
+                        momentum,
+                    );
 
                     add_grid_separator(ui);
 
@@ -228,7 +237,16 @@ fn show_particle_type_text_edit(ui: &mut egui::Ui, mut particle_type: Mut<'_, Pa
     particle_type.set_if_neq(name.into());
 }
 
-fn show_material_combo_box(ui: &mut egui::Ui, material: &MaterialState) {
+fn show_material_selection(
+    ui: &mut egui::Ui,
+    material: &MaterialState,
+    commands: &mut Commands,
+    entity: Entity,
+    movement_states: &mut MovementStates,
+    density: &Option<Mut<'_, Density>>,
+    speed: &Option<Mut<'_, Speed>>,
+    momentum: Option<&Momentum>,
+) {
     ui.label("State:");
     skip_grid_column(ui);
     let mut selection = material.clone();
@@ -237,7 +255,48 @@ fn show_material_combo_box(ui: &mut egui::Ui, material: &MaterialState) {
         .show_ui(ui, |ui| {
             for variant in all_material_states() {
                 let name = variant.variant_name().to_string();
-                ui.selectable_value(&mut selection, variant, name);
+                if ui.selectable_value(&mut selection, variant, name).changed() {
+                    movement_states.save_current(
+                        material,
+                        density.as_ref().map(|d| **d),
+                        speed.as_ref().map(|s| **s),
+                        momentum.copied(),
+                    );
+
+                    match &selection {
+                        MaterialState::Wall(_) => {
+                            commands.entity(entity).insert(Wall);
+                        }
+                        MaterialState::Solid(_) => {
+                            commands
+                                .entity(entity)
+                                .insert(movement_states.solid.clone());
+                        }
+                        MaterialState::MovableSolid(_) => {
+                            commands
+                                .entity(entity)
+                                .insert(movement_states.movable_solid.clone());
+                        }
+                        MaterialState::Liquid(_) => {
+                            commands
+                                .entity(entity)
+                                .insert(movement_states.liquid.clone());
+                        }
+                        MaterialState::Gas(_) => {
+                            commands.entity(entity).insert(movement_states.gas.clone());
+                        }
+                        MaterialState::Insect(_) => {
+                            commands
+                                .entity(entity)
+                                .insert(movement_states.insect.clone());
+                        }
+                        MaterialState::Other(_) => {
+                            commands
+                                .entity(entity)
+                                .insert(movement_states.other.clone());
+                        }
+                    }
+                }
             }
         });
     ui.end_row();
