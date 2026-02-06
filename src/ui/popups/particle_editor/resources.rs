@@ -188,13 +188,15 @@ impl Default for MovementStates {
                 speed: Speed::default(),
             },
             movable_solid: MovableSolidState {
-                movable_solid: MovableSolid::new(0.75, 0.9),
+                movable_solid: MovableSolid::new()
+                    .with_liquid_resistance(0.75)
+                    .with_air_resistance(0.9),
                 density: Density(1250),
                 speed: Speed::new(1, 5, 10),
                 momentum: Momentum::default(),
             },
             liquid: LiquidState {
-                liquid: Liquid::with_resistance(5, 0.1),
+                liquid: Liquid::new(5).with_liquid_resistance(0.1),
                 density: Density(750),
                 speed: Speed::new(1, 0, 3),
                 momentum: Momentum::default(),
