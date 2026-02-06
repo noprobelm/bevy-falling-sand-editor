@@ -1,16 +1,12 @@
-use std::{ops::RangeInclusive, time::Duration};
-
 use bevy::{ecs::system::SystemParam, prelude::*, reflect::Enum};
 use bevy_egui::{
     EguiContexts, EguiPrimaryContextPass,
     egui::{self, emath::Numeric},
 };
 use bevy_falling_sand::prelude::*;
+use std::{ops::RangeInclusive, time::Duration};
 
-use crate::ui::{
-    EditorState, MovementStates, ParticleEditorApplicationState, ParticleMaterialLabels,
-    PopupState, SelectedParticle, ShowUi, UiSystems, all_material_states,
-};
+use crate::ui::*;
 
 pub(super) struct UiPlugin;
 
@@ -175,7 +171,7 @@ fn show_editing_area(
                 .num_columns(3)
                 .show(ui, |ui| {
                     show_particle_type_text_edit(ui, particle_type);
-                    show_material_selection(
+                    show_material_state_selection(
                         ui,
                         material,
                         &mut editor_params.commands,
@@ -237,7 +233,7 @@ fn show_particle_type_text_edit(ui: &mut egui::Ui, mut particle_type: Mut<'_, Pa
     particle_type.set_if_neq(name.into());
 }
 
-fn show_material_selection(
+fn show_material_state_selection(
     ui: &mut egui::Ui,
     material: &MaterialState,
     commands: &mut Commands,
