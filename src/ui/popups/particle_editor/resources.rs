@@ -192,23 +192,23 @@ impl Default for MovementStates {
                     .with_liquid_resistance(0.75)
                     .with_air_resistance(0.9),
                 density: Density(1250),
-                speed: Speed::new(1, 5, 10),
+                speed: Speed::new(5, 10),
                 momentum: Momentum::default(),
             },
             liquid: LiquidState {
                 liquid: Liquid::new(5).with_liquid_resistance(0.1),
                 density: Density(750),
-                speed: Speed::new(1, 0, 3),
+                speed: Speed::new(0, 3),
                 momentum: Momentum::default(),
             },
             gas: GasState {
                 gas: Gas::new(1),
                 density: Density(200),
-                speed: Speed::new(1, 0, 1),
+                speed: Speed::new(0, 1),
                 momentum: Momentum::default(),
             },
             insect: InsectState {
-                insect: Insect::default(),
+                insect: Insect,
                 density: Density::default(),
                 speed: Speed::default(),
                 momentum: Momentum::default(),
