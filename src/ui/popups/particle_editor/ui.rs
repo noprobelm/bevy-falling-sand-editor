@@ -29,20 +29,6 @@ pub struct ParticleEditorParams<'w, 's> {
     pub material_labels: Res<'w, ParticleMaterialLabels>,
     pub particle_registry: Res<'w, ParticleTypeRegistry>,
     pub editor_state: ResMut<'w, EditorState>,
-    pub particle_types: Query<
-        'w,
-        's,
-        (
-            &'static mut ParticleType,
-            &'static MaterialState,
-            Option<&'static mut Density>,
-            Option<&'static mut Speed>,
-            Option<&'static Momentum>,
-            Option<&'static mut TimedLifetime>,
-            Option<&'static mut ChanceLifetime>,
-            &'static mut ColorProfile,
-        ),
-    >,
 }
 
 fn show(
@@ -50,8 +36,11 @@ fn show(
     mut synchronize_brush_selection: Local<Option<bool>>,
     mut selected_particle: Option<ResMut<SelectedParticle>>,
     editor_params: ParticleEditorParams,
+    particle_query: Query<ParticleDataQuery>,
 ) -> Result {
+    // Set default value to true
     let synchronize_brush_selection = synchronize_brush_selection.get_or_insert(true);
+
     let ctx = contexts.ctx_mut()?;
 
     egui::Window::new("Particle Editor").show(ctx, |ui| {
@@ -64,6 +53,7 @@ fn show(
             &mut selected_particle,
             editor_params,
             *synchronize_brush_selection,
+            particle_query,
         );
     });
 
@@ -82,6 +72,7 @@ fn show_editor(
     selected_particle: &mut Option<ResMut<SelectedParticle>>,
     mut editor_params: ParticleEditorParams,
     synchronize_brush_selection: bool,
+    particle_query: Query<ParticleDataQuery>,
 ) {
     ui.columns(2, |columns| {
         show_material_labels(
@@ -89,7 +80,12 @@ fn show_editor(
             &mut editor_params,
             synchronize_brush_selection,
         );
-        show_editing_area(&mut columns[1], selected_particle, editor_params);
+        show_editing_area(
+            &mut columns[1],
+            selected_particle,
+            editor_params,
+            particle_query,
+        );
     })
 }
 
@@ -138,6 +134,7 @@ fn show_editing_area(
     ui: &mut egui::Ui,
     selected_particle: &mut Option<ResMut<SelectedParticle>>,
     mut editor_params: ParticleEditorParams,
+    mut particle_query: Query<ParticleDataQuery>,
 ) {
     egui::ScrollArea::vertical()
         .id_salt("editing_area")
@@ -147,19 +144,21 @@ fn show_editing_area(
                 return;
             };
 
-            let (
-                particle_type,
-                material,
-                density,
-                speed,
-                momentum,
-                timed_lifetime,
-                chance_lifetime,
-                mut color_profile,
-            ) = editor_params
-                .particle_types
+            let data = particle_query
                 .get_mut(selected_particle.0)
                 .expect("No matching query found for selected particle");
+            let (particle_type, timed_lifetime, chance_lifetime) = (
+                data.core.particle_type,
+                data.core.timed_lifetime,
+                data.core.chance_lifetime,
+            );
+            let (material, density, speed, momentum) = (
+                data.movement.material,
+                data.movement.density,
+                data.movement.speed,
+                data.movement.momentum,
+            );
+            let (mut color_profile, changes_color) = (data.color.profile, data.color.changes_color);
 
             let data = editor_params
                 .editor_state
@@ -220,6 +219,14 @@ fn show_editing_area(
                         &mut data.gradient,
                     );
                     show_color_assignment(ui, &mut color_profile.assignment);
+
+                    show_changes_color(
+                        &mut editor_params.commands,
+                        selected_particle.0,
+                        ui,
+                        changes_color,
+                        &mut data.changes_color,
+                    );
                 });
         });
 }
@@ -287,6 +294,9 @@ fn show_material_state_selection(
                                 .insert(movement_states.insect.clone());
                         }
                         MaterialState::Other(_) => {
+                            commands
+                                .entity(entity)
+                                .remove::<(Wall, Solid, MovableSolid, Liquid, Gas, Insect)>();
                             commands
                                 .entity(entity)
                                 .insert(movement_states.other.clone());
@@ -461,6 +471,39 @@ fn show_color_assignment(ui: &mut egui::Ui, color_assignment: &mut ColorAssignme
             ui.selectable_value(color_assignment, ColorAssignment::Random, "Random");
         });
     ui.end_row();
+}
+
+fn show_changes_color(
+    commands: &mut Commands,
+    entity: Entity,
+    ui: &mut egui::Ui,
+    changes_color: Option<Mut<'_, ChangesColor>>,
+    changes_color_state: &mut ChangesColor,
+) {
+    let enabled = changes_color.is_some();
+    let new_value = add_label_with_toggle_switch(ui, "Changes Color", enabled);
+
+    if new_value != enabled {
+        if new_value {
+            commands.entity(entity).insert(*changes_color_state);
+        } else {
+            commands.entity(entity).remove::<ChangesColor>();
+        }
+    }
+
+    if let Some(changes_color) = changes_color {
+        if ui
+            .add(egui::RadioButton::new(
+                matches!(*changes_color, ChangesColor::Chance(_)),
+                "Chance",
+            ))
+            .clicked()
+        {};
+        ui.add(egui::RadioButton::new(
+            matches!(*changes_color, ChangesColor::Timed(_)),
+            "Timed",
+        ));
+    }
 }
 
 fn add_label_with_drag_value<Num>(

@@ -284,43 +284,47 @@ impl Default for ParticleData {
 }
 
 #[derive(QueryData)]
-struct CoreQuery {
-    particle_type: &'static ParticleType,
-    timed_lifetime: Option<&'static TimedLifetime>,
-    chance_lifetime: Option<&'static ChanceLifetime>,
+#[query_data(mutable)]
+pub(crate) struct ParticleDataQuery {
+    pub core: CoreQuery,
+    pub movement: MovementQuery,
+    pub physics: PhysicsQuery,
+    pub color: ColorQuery,
+    pub reactions: ReactionsQuery,
 }
 
 #[derive(QueryData)]
-struct MovementQuery {
-    material: &'static MaterialState,
-    density: Option<&'static Density>,
-    speed: Option<&'static Speed>,
-    momentum: Option<&'static Momentum>,
+#[query_data(mutable)]
+pub(crate) struct CoreQuery {
+    pub particle_type: &'static mut ParticleType,
+    pub timed_lifetime: Option<&'static mut TimedLifetime>,
+    pub chance_lifetime: Option<&'static mut ChanceLifetime>,
 }
 
 #[derive(QueryData)]
-struct PhysicsQuery {
-    static_rigid_body: Option<&'static StaticRigidBodyParticle>,
+#[query_data(mutable)]
+pub(crate) struct MovementQuery {
+    pub material: &'static MaterialState,
+    pub density: Option<&'static mut Density>,
+    pub speed: Option<&'static mut Speed>,
+    pub momentum: Option<&'static Momentum>,
 }
 
 #[derive(QueryData)]
-struct ColorQuery {
-    profile: &'static ColorProfile,
-    changes_color: Option<&'static ChangesColor>,
+pub(crate) struct PhysicsQuery {
+    pub static_rigid_body: Option<&'static StaticRigidBodyParticle>,
 }
 
 #[derive(QueryData)]
-struct ReactionsQuery {
-    burns: Option<&'static Burns>,
+#[query_data(mutable)]
+pub(crate) struct ColorQuery {
+    pub profile: &'static mut ColorProfile,
+    pub changes_color: Option<&'static mut ChangesColor>,
 }
 
 #[derive(QueryData)]
-struct ParticleDataQuery {
-    core: CoreQuery,
-    movement: MovementQuery,
-    physics: PhysicsQuery,
-    color: ColorQuery,
-    reactions: ReactionsQuery,
+pub(crate) struct ReactionsQuery {
+    pub burns: Option<&'static Burns>,
 }
 
 fn build_movement_states(
