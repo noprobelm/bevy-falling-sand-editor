@@ -1,0 +1,7 @@
+(
+  image: "prototyping.png",
+  layers: {
+    (75, 105, 47, 255): "Grass Wall",
+    (119, 93, 15, 255): "Wood Wall",
+  },
+)

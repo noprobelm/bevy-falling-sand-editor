@@ -1,0 +1,10 @@
+(
+  image: "tree.png",
+  layers: {
+    (255, 255, 255, 255): "Background",
+    (107, 85, 26, 255): "Wood Wall",
+    (161, 127, 40, 255): "Wood Wall",
+    (215, 169, 53, 255): "Wood Wall",
+    (242, 227, 187, 255): "Wood Wall",
+  },
+)

@@ -1,0 +1,63 @@
+use bevy::prelude::*;
+use bevy_egui::EguiContextSettings;
+use bevy_persistent::Persistent;
+use leafwing_input_manager::{Actionlike, plugin::InputManagerPlugin, prelude::InputMap};
+use serde::{Deserialize, Serialize};
+
+use crate::{
+    config::{InputButton, SettingsConfig},
+    setup::SetupSystems,
+    ui::{ConsoleKeyBindings, QuickActionsKeyBindings},
+};
+
+pub(super) struct SetupPlugin;
+
+impl Plugin for SetupPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins((InputManagerPlugin::<CanvasStateActions>::default(),))
+            .add_systems(Startup, load_settings.in_set(SetupSystems::Ui))
+            .add_systems(Update, set_default_ui_scale.run_if(run_once));
+    }
+}
+
+#[derive(Resource, Default, Clone, Debug, Serialize, Deserialize)]
+pub struct UiKeyBindings {
+    pub console: ConsoleKeyBindings,
+    pub quick_actions: QuickActionsKeyBindings,
+    pub general: GeneralKeyBindings,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct GeneralKeyBindings {
+    pub hold_canvas_mode_edit: InputButton,
+}
+
+impl Default for GeneralKeyBindings {
+    fn default() -> Self {
+        Self {
+            hold_canvas_mode_edit: KeyCode::AltLeft.into(),
+        }
+    }
+}
+
+#[derive(Actionlike, PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
+pub enum CanvasStateActions {
+    Modify,
+}
+
+fn set_default_ui_scale(mut egui_settings: Single<&mut EguiContextSettings>) {
+    egui_settings.scale_factor = 1.25;
+}
+
+fn load_settings(mut commands: Commands, settings_config: Res<Persistent<SettingsConfig>>) {
+    let mut input_map = InputMap::default();
+    settings_config
+        .get()
+        .keys
+        .ui
+        .general
+        .hold_canvas_mode_edit
+        .insert_into_input_map(&mut input_map, CanvasStateActions::Modify);
+    commands.spawn(input_map);
+    commands.insert_resource(settings_config.get().keys.ui.clone());
+}
