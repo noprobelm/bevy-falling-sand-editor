@@ -18,7 +18,7 @@ impl Plugin for StatesPlugin {
             .add_systems(
                 Update,
                 (
-                    handle_brush_state,
+                    handle_brush_state.run_if(in_state(CanvasState::Brush)),
                     handle_brush_mode_state.run_if(action_just_pressed(BrushAction::ToggleMode)),
                 ),
             );

@@ -120,9 +120,7 @@ impl ConsoleCommand for BrushSetModeConsoleCommand {
         }
 
         match args[0].to_lowercase().as_str() {
-            "particles" => {
-                commands.trigger(BrushSetModeSignal(BrushModeSpawnState::Particles))
-            }
+            "particles" => commands.trigger(BrushSetModeSignal(BrushModeSpawnState::Particles)),
             "conway" => commands.trigger(BrushSetModeSignal(BrushModeSpawnState::Conway)),
             _ => error!("Invalid brush mode. Specify one of 'particles', 'conway'"),
         };
