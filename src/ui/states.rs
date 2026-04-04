@@ -1,8 +1,5 @@
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, EguiPrimaryContextPass};
-use leafwing_input_manager::prelude::ActionState;
-
-use crate::ui::CanvasStateActions;
 
 pub struct UiStatePlugin;
 
@@ -10,7 +7,6 @@ impl Plugin for UiStatePlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<UiState>()
             .add_sub_state::<CanvasState>()
-            .add_systems(Update, handle_canvas_state)
             .add_systems(EguiPrimaryContextPass, handle_ui_state);
     }
 }
@@ -25,23 +21,9 @@ pub enum UiState {
 #[derive(SubStates, Reflect, Default, Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[source(UiState = UiState::Canvas)]
 pub enum CanvasState {
+    Select,
     #[default]
-    Interact,
-    Edit,
-}
-
-fn handle_canvas_state(
-    actions: Single<&ActionState<CanvasStateActions>>,
-    mut state: ResMut<NextState<CanvasState>>,
-) -> Result {
-    if actions.just_pressed(&CanvasStateActions::Modify) {
-        state.set(CanvasState::Edit);
-    }
-    if actions.just_released(&CanvasStateActions::Modify) {
-        state.set(CanvasState::Interact);
-    }
-
-    Ok(())
+    Brush,
 }
 
 fn handle_ui_state(

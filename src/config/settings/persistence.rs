@@ -6,7 +6,7 @@ use leafwing_input_manager::prelude::InputMap;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    brush::{BrushKeyBindings, BrushModeState, BrushSize, BrushTypeState},
+    brush::{BrushKeyBindings, BrushSize, BrushSpawnState, BrushTypeState},
     camera::CameraKeyBindings,
     ui::UiKeyBindings,
 };
@@ -68,7 +68,7 @@ pub struct SettingsConfig {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BrushConfig {
     pub btype: BrushTypeState,
-    pub mode: BrushModeState,
+    pub mode: BrushSpawnState,
     pub size: BrushSize,
 }
 
@@ -76,7 +76,7 @@ impl Default for BrushConfig {
     fn default() -> Self {
         Self {
             btype: BrushTypeState::default(),
-            mode: BrushModeState::default(),
+            mode: BrushSpawnState::default(),
             size: BrushSize(2),
         }
     }

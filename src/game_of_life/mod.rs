@@ -3,8 +3,8 @@ mod render;
 use bevy::image::ImageSampler;
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat, TextureUsages};
-use bevy_falling_sand::render::pipeline::textures::WorldTextureOrigin;
 use bevy_falling_sand::prelude::*;
+use bevy_falling_sand::render::pipeline::textures::WorldTextureOrigin;
 use leafwing_input_manager::common_conditions::action_pressed;
 
 use crate::Cursor;
@@ -40,7 +40,7 @@ impl Plugin for GameOfLifePlugin {
                 gol_spawn_input
                     .run_if(resource_exists::<GolTextures>)
                     .run_if(action_pressed(BrushAction::Draw))
-                    .run_if(in_state(CanvasState::Interact))
+                    .run_if(in_state(CanvasState::Brush))
                     .run_if(in_state(BrushModeSpawnState::Conway)),
             )
             .add_systems(

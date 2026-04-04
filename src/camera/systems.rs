@@ -18,7 +18,7 @@ impl Plugin for SystemsPlugin {
                 pan_left.run_if(action_pressed(CameraAction::PanLeft)),
                 pan_down.run_if(action_pressed(CameraAction::PanDown)),
                 pan_right.run_if(action_pressed(CameraAction::PanRight)),
-                handle_zoom_target.run_if(in_state(CanvasState::Interact)),
+                handle_zoom_target.run_if(in_state(CanvasState::Brush)),
             )
                 .chain()
                 .run_if(in_state(UiState::Canvas))

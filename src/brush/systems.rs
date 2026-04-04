@@ -7,10 +7,9 @@ use leafwing_input_manager::{common_conditions::action_pressed, prelude::ActionS
 use crate::{
     Cursor,
     brush::{
-        BrushAction, BrushModeSpawnState, BrushModeState, BrushTypeState,
+        BrushAction, BrushModeSpawnState, BrushSpawnState, BrushState, BrushTypeState,
         components::{BrushSize, SelectedParticle, SelectedParticleType},
     },
-    ui::CanvasState,
 };
 
 pub(super) struct SystemsPlugin;
@@ -24,18 +23,18 @@ impl Plugin for SystemsPlugin {
                 sync_selected_particle_name.after(sync_selected_particle_type),
             ),
         )
-        .add_systems(Update, resize_brush.run_if(in_state(CanvasState::Edit)))
+        .add_systems(Update, resize_brush.run_if(in_state(BrushState::Edit)))
         .add_systems(
             Update,
             (
                 brush_action_spawn_particles
                     .run_if(action_pressed(BrushAction::Draw))
-                    .run_if(in_state(CanvasState::Interact))
+                    .run_if(in_state(BrushState::Draw))
                     .run_if(in_state(BrushModeSpawnState::Particles)),
                 brush_action_despawn_particles
                     .run_if(action_pressed(BrushAction::Draw))
-                    .run_if(in_state(CanvasState::Interact))
-                    .run_if(in_state(BrushModeState::Despawn)),
+                    .run_if(in_state(BrushState::Draw))
+                    .run_if(in_state(BrushSpawnState::Despawn)),
             ),
         );
     }

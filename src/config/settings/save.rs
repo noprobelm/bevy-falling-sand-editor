@@ -3,7 +3,7 @@ use bevy_falling_sand::debug::{ChunkColor, DebugDirtyRects, DebugParticleMap, Di
 use bevy_persistent::Persistent;
 
 use crate::{
-    brush::{BrushKeyBindings, BrushModeState, BrushSize, BrushTypeState},
+    brush::{BrushKeyBindings, BrushSize, BrushSpawnState, BrushTypeState},
     camera::CameraKeyBindings,
     config::{
         AvianDebugConfig, BevyFallingSandDebugConfig, BrushConfig, Keybindings, OptionalColor,
@@ -45,7 +45,7 @@ pub struct SaveSettingsBuilder {
 fn on_prepare_save_brush(
     _trigger: On<PrepareSaveSettingsEvent>,
     brush_type_state: Res<State<BrushTypeState>>,
-    brush_mode_state: Res<State<BrushModeState>>,
+    brush_mode_state: Res<State<BrushSpawnState>>,
     brush_size: Single<&BrushSize>,
     mut builder: ResMut<SaveSettingsBuilder>,
 ) {
