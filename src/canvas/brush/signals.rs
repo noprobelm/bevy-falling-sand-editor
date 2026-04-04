@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::brush::{BrushModeSpawnState, BrushSize, BrushTypeState};
+use crate::canvas::brush::{BrushModeSpawnState, BrushSize, BrushTypeState};
 
 pub(super) struct SignalsPlugin;
 

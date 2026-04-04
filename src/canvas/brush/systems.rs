@@ -6,7 +6,7 @@ use leafwing_input_manager::{common_conditions::action_pressed, prelude::ActionS
 
 use crate::{
     Cursor,
-    brush::{
+    canvas::brush::{
         BrushAction, BrushModeSpawnState, BrushSpawnState, BrushState, BrushTypeState,
         components::{BrushSize, SelectedParticle, SelectedParticleType},
     },
@@ -123,7 +123,7 @@ fn brush_action_despawn_particles(
 pub mod alg {
     use bevy::prelude::*;
 
-    use crate::brush::BrushTypeState;
+    use crate::canvas::brush::BrushTypeState;
 
     pub fn get_positions(
         p1: Vec2,

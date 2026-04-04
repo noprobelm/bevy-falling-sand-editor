@@ -8,7 +8,7 @@ pub mod systems;
 use bevy::prelude::*;
 pub use signals::*;
 
-use crate::brush::{gizmos::GizmosPlugin, setup::SetupPlugin, systems::SystemsPlugin};
+use crate::canvas::brush::{gizmos::GizmosPlugin, setup::SetupPlugin, systems::SystemsPlugin};
 pub use components::*;
 pub use setup::*;
 pub use states::*;

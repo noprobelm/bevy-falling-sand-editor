@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     Cursor,
-    brush::{
+    canvas::brush::{
         components::{Brush, BrushColor, BrushSize},
         states::BrushTypeState,
     },

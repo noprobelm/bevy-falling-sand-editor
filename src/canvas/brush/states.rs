@@ -3,7 +3,7 @@ use leafwing_input_manager::{common_conditions::action_just_pressed, prelude::Ac
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    brush::{BrushAction, CanvasStateActions},
+    canvas::brush::{BrushAction, CanvasStateActions},
     ui::CanvasState,
 };
 

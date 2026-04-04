@@ -1,8 +1,8 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![warn(nonstandard_style, rustdoc::broken_intra_doc_links)]
 
-mod brush;
 mod camera;
+mod canvas;
 mod chunk_effects;
 mod config;
 mod console_command;
@@ -21,8 +21,8 @@ use bevy_falling_sand::prelude::{FallingSandPersistencePlugin, FallingSandPlugin
 use chunk_effects::ChunkEffectsPlugin;
 use game_of_life::GameOfLifePlugin;
 
-use brush::*;
 use camera::CameraPlugin;
+use canvas::*;
 use config::*;
 use console_command::*;
 pub use cursor::*;
@@ -63,7 +63,6 @@ fn main() {
             CameraPlugin,
             UiPlugin,
             ConsoleCommandPlugin,
-            BrushPlugin,
             FallingSandPlugin::default()
                 .with_chunk_size(64)
                 .with_map_size(32),
@@ -75,7 +74,7 @@ fn main() {
             RecordPlugin,
             DebugPlugin,
         ))
-        .add_plugins((GameOfLifePlugin, FramesPlugin))
+        .add_plugins((CanvasPlugin, GameOfLifePlugin, FramesPlugin))
         .insert_gizmo_config(
             PhysicsGizmos {
                 collider_color: None,

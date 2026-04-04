@@ -9,7 +9,7 @@ use leafwing_input_manager::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    brush::{
+    canvas::brush::{
         BrushSpawnState, BrushTypeState,
         components::{Brush, BrushColor, BrushSize, SelectedParticle, SelectedParticleType},
         gizmos::BrushGizmos,
