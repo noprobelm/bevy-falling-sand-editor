@@ -8,7 +8,8 @@ use bevy_falling_sand::render::pipeline::textures::WorldTextureOrigin;
 use leafwing_input_manager::common_conditions::action_pressed;
 
 use crate::Cursor;
-use crate::brush::{BrushAction, BrushModeSpawnState, BrushSize, BrushState, BrushTypeState};
+use crate::CanvasAction;
+use crate::brush::{BrushModeSpawnState, BrushSize, BrushState, BrushTypeState};
 
 const SHADER_ASSET_PATH: &str = "shaders/game_of_life.wgsl";
 
@@ -38,7 +39,7 @@ impl Plugin for GameOfLifePlugin {
                 Update,
                 gol_spawn_input
                     .run_if(resource_exists::<GolTextures>)
-                    .run_if(action_pressed(BrushAction::Draw))
+                    .run_if(action_pressed(CanvasAction::Draw))
                     .run_if(in_state(BrushState::Draw))
                     .run_if(in_state(BrushModeSpawnState::Conway)),
             )

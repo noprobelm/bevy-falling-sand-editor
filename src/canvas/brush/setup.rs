@@ -22,10 +22,7 @@ pub(super) struct SetupPlugin;
 
 impl Plugin for SetupPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((
-            InputManagerPlugin::<BrushAction>::default(),
-            InputManagerPlugin::<CanvasStateActions>::default(),
-        ))
+        app.add_plugins(InputManagerPlugin::<BrushAction>::default())
         .insert_gizmo_config(
             BrushGizmos,
             GizmoConfig {
@@ -67,12 +64,6 @@ pub enum BrushAction {
     ToggleType,
     #[actionlike(Axis)]
     ChangeSize,
-    Draw,
-}
-
-#[derive(Actionlike, PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
-pub enum CanvasStateActions {
-    Modify,
 }
 
 fn spawn_brush(mut commands: Commands) {
@@ -122,8 +113,6 @@ fn load_settings(
     let mut input_map = InputMap::default().with_axis(BrushAction::ChangeSize, MouseScrollAxis::Y);
     keys.toggle_brush_mode
         .insert_into_input_map(&mut input_map, BrushAction::ToggleMode);
-    keys.draw
-        .insert_into_input_map(&mut input_map, BrushAction::Draw);
 
     commands
         .entity(brush.entity())
@@ -131,17 +120,6 @@ fn load_settings(
     commands.insert_resource(settings_config.keys.brush.clone());
     next_brush_type_state.set(settings_config.brush.btype);
     next_brush_mode_state.set(settings_config.brush.mode);
-
-    let mut input_map = InputMap::default();
-    settings_config
-        .get()
-        .keys
-        .ui
-        .general
-        .hold_canvas_mode_edit
-        .insert_into_input_map(&mut input_map, CanvasStateActions::Modify);
-    commands.spawn(input_map);
-    commands.insert_resource(settings_config.get().keys.ui.clone());
 }
 
 fn condition_setup_brush_particle_ready(

@@ -8,8 +8,8 @@ use super::{KeybindsListeningState, ListeningForKeybind};
 use crate::{
     brush::{
         BrushAction, BrushKeyBindings, BrushSize, BrushSpawnState, BrushTypeState,
-        CanvasStateActions,
     },
+    CanvasAction, CanvasStateActions,
     camera::{CameraAction, CameraKeyBindings},
     config::{AvianDebugConfig, InputButton, OptionalColor},
     ui::{
@@ -601,6 +601,7 @@ pub fn listen_for_keybind(
     mut brush_input_map: Query<&mut InputMap<BrushAction>>,
     mut quick_action_input_map: Query<&mut InputMap<QuickAction>>,
     mut console_input_map: Query<&mut InputMap<ConsoleAction>>,
+    mut canvas_action_input_map: Query<&mut InputMap<CanvasAction>>,
     mut canvas_input_map: Query<&mut InputMap<CanvasStateActions>>,
 ) {
     // Check for Escape to cancel
@@ -675,9 +676,12 @@ pub fn listen_for_keybind(
                 brush_keys
                     .toggle_brush_mode
                     .insert_into_input_map(&mut map, BrushAction::ToggleMode);
+            }
+            if let Ok(mut map) = canvas_action_input_map.single_mut() {
+                *map = InputMap::default();
                 brush_keys
                     .draw
-                    .insert_into_input_map(&mut map, BrushAction::Draw);
+                    .insert_into_input_map(&mut map, CanvasAction::Draw);
             }
         }
         id if id.starts_with("quick_actions.") => {
