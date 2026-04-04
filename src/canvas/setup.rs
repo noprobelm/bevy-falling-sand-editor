@@ -2,11 +2,7 @@ use bevy::prelude::*;
 use bevy_persistent::Persistent;
 use leafwing_input_manager::{Actionlike, plugin::InputManagerPlugin, prelude::InputMap};
 
-use crate::{
-    canvas::brush::Brush,
-    config::SettingsConfig,
-    setup::SetupSystems,
-};
+use crate::{config::SettingsConfig, setup::SetupSystems};
 
 pub(super) struct SetupPlugin;
 
@@ -16,10 +12,7 @@ impl Plugin for SetupPlugin {
             InputManagerPlugin::<CanvasAction>::default(),
             InputManagerPlugin::<CanvasStateActions>::default(),
         ))
-        .add_systems(
-            Startup,
-            load_settings.in_set(SetupSystems::Brush),
-        );
+        .add_systems(Startup, load_settings.in_set(SetupSystems::Canvas));
     }
 }
 
@@ -33,18 +26,14 @@ pub enum CanvasStateActions {
     Modify,
 }
 
-fn load_settings(
-    mut commands: Commands,
-    brush: Single<Entity, With<Brush>>,
-    settings_config: Res<Persistent<SettingsConfig>>,
-) {
+fn load_settings(mut commands: Commands, settings_config: Res<Persistent<SettingsConfig>>) {
     let mut input_map = InputMap::default();
     settings_config
         .keys
         .brush
         .draw
         .insert_into_input_map(&mut input_map, CanvasAction::Draw);
-    commands.entity(brush.entity()).insert(input_map);
+    commands.spawn(input_map);
 
     let mut input_map = InputMap::default();
     settings_config

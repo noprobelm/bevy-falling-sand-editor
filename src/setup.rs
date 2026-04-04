@@ -11,7 +11,7 @@ impl Plugin for SetupPlugin {
                 SetupSystems::Ui,
                 SetupSystems::Camera,
                 SetupSystems::Particles,
-                SetupSystems::Brush,
+                SetupSystems::Canvas,
                 SetupSystems::Debug,
             )
                 .chain(),
@@ -26,6 +26,6 @@ pub enum SetupSystems {
     Ui,
     Camera,
     Particles,
-    Brush,
+    Canvas,
     Debug,
 }

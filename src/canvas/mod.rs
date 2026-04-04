@@ -1,15 +1,15 @@
 pub mod brush;
 mod select;
+mod setup;
 
 use bevy::prelude::*;
 
-pub use brush::*;
-pub use select::*;
+pub use setup::*;
 
 pub struct CanvasPlugin;
 
 impl Plugin for CanvasPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((brush::BrushPlugin, select::SelectPlugin));
+        app.add_plugins((setup::SetupPlugin, brush::BrushPlugin, select::SelectPlugin));
     }
 }

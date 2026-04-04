@@ -34,7 +34,7 @@ impl Plugin for SetupPlugin {
             Startup,
             (spawn_brush, load_settings)
                 .chain()
-                .in_set(SetupSystems::Brush),
+                .in_set(SetupSystems::Canvas),
         )
         .add_systems(
             Update,
@@ -120,6 +120,7 @@ fn load_settings(
     commands.insert_resource(settings_config.keys.brush.clone());
     next_brush_type_state.set(settings_config.brush.btype);
     next_brush_mode_state.set(settings_config.brush.mode);
+
 }
 
 fn condition_setup_brush_particle_ready(
