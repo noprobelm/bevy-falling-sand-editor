@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -5,7 +7,10 @@ pub(super) struct ResourcesPlugin;
 
 impl Plugin for ResourcesPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<SelectedRegion>();
+        app.init_resource::<SelectedParticles>()
+            .init_resource::<DragOrigins>()
+            .init_resource::<LastClickTime>()
+            .init_resource::<SelectedRegion>();
     }
 }
 
@@ -17,5 +22,16 @@ pub(super) struct SelectedRegion {
 
 #[derive(Resource, Clone, Default, PartialEq, Debug, Serialize, Deserialize, Reflect)]
 pub struct SelectedParticles {
-    particles: Vec<Entity>,
+    pub particles: Vec<Entity>,
 }
+
+/// Stores drag start state: cursor position and original grid positions of selected particles.
+#[derive(Resource, Clone, Default, Debug)]
+pub(super) struct DragOrigins {
+    pub cursor_start: IVec2,
+    pub origins: HashMap<Entity, IVec2>,
+}
+
+/// Tracks the last click time for double-click detection.
+#[derive(Resource, Clone, Default, Debug)]
+pub(super) struct LastClickTime(pub f64);
