@@ -8,9 +8,9 @@ use crate::{
     console_command::ConsoleCommandRegistry,
     setup::SetupSystems,
     ui::{
-        BrushConsoleCommand, CommandHistory, ConwayConsoleCommand,
-        ConsoleInformationAreaState, ConsolePromptState, ExitConsoleCommand,
-        ParticlesConsoleCommand, SceneConsoleCommand,
+        BrushConsoleCommand, CanvasCommand, CommandHistory, ConsoleInformationAreaState,
+        ConsolePromptState, ConwayConsoleCommand, ExitConsoleCommand, ParticlesConsoleCommand,
+        SceneConsoleCommand,
     },
 };
 
@@ -26,7 +26,11 @@ impl Plugin for SetupPlugin {
             .init_resource::<ConsolePromptState>()
             .add_systems(
                 Startup,
-                (load_settings, setup_console_command_registry, load_command_history)
+                (
+                    load_settings,
+                    setup_console_command_registry,
+                    load_command_history,
+                )
                     .in_set(SetupSystems::Ui),
             );
     }
@@ -82,5 +86,6 @@ fn setup_console_command_registry(mut commands: Commands) {
     registry.register(BrushConsoleCommand);
     registry.register(ConwayConsoleCommand);
     registry.register(SceneConsoleCommand);
+    registry.register(CanvasCommand);
     commands.insert_resource(registry);
 }

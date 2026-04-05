@@ -6,12 +6,15 @@ use leafwing_input_manager::prelude::{InputMap, MouseScrollAxis};
 
 use super::{KeybindsListeningState, ListeningForKeybind};
 use crate::{
-    brush::{BrushAction, BrushKeyBindings, BrushModeState, BrushSize, BrushTypeState},
+    brush::{
+        BrushAction, BrushKeyBindings, BrushSize, BrushSpawnState, BrushTypeState,
+    },
+    CanvasAction, CanvasStateActions,
     camera::{CameraAction, CameraKeyBindings},
     config::{AvianDebugConfig, InputButton, OptionalColor},
     ui::{
-        CanvasStateActions, ConsoleAction, QuickAction, SettingsApplicationState, SettingsCategory,
-        ShowUi, UiKeyBindings, UiSystems, add_label_with_drag_value, add_label_with_toggle_switch,
+        ConsoleAction, QuickAction, SettingsApplicationState, SettingsCategory, ShowUi,
+        UiKeyBindings, UiSystems, add_label_with_drag_value, add_label_with_toggle_switch,
         add_major_grid_separator,
     },
 };
@@ -42,8 +45,8 @@ struct BrushSettingsParam<'w, 's> {
     pub size: Single<'w, 's, &'static mut crate::brush::BrushSize>,
     pub current_type_state: Res<'w, State<BrushTypeState>>,
     pub next_type_state: ResMut<'w, NextState<BrushTypeState>>,
-    pub current_mode_state: Res<'w, State<BrushModeState>>,
-    pub next_mode_state: ResMut<'w, NextState<BrushModeState>>,
+    pub current_mode_state: Res<'w, State<BrushSpawnState>>,
+    pub next_mode_state: ResMut<'w, NextState<BrushSpawnState>>,
 }
 
 #[derive(SystemParam)]
@@ -185,7 +188,7 @@ fn show_brush_mode_selection(ui: &mut egui::Ui, settings_param: &mut SettingsPar
                     .selectable_label(
                         matches!(
                             settings_param.brush.current_mode_state.get(),
-                            BrushModeState::Spawn
+                            BrushSpawnState::Spawn
                         ),
                         "Spawn",
                     )
@@ -194,12 +197,12 @@ fn show_brush_mode_selection(ui: &mut egui::Ui, settings_param: &mut SettingsPar
                     settings_param
                         .brush
                         .next_mode_state
-                        .set(BrushModeState::Spawn)
+                        .set(BrushSpawnState::Spawn)
                 } else if ui
                     .selectable_label(
                         matches!(
                             settings_param.brush.current_mode_state.get(),
-                            BrushModeState::Despawn
+                            BrushSpawnState::Despawn
                         ),
                         "Despawn",
                     )
@@ -208,7 +211,7 @@ fn show_brush_mode_selection(ui: &mut egui::Ui, settings_param: &mut SettingsPar
                     settings_param
                         .brush
                         .next_mode_state
-                        .set(BrushModeState::Despawn)
+                        .set(BrushSpawnState::Despawn)
                 };
             });
     });
@@ -598,6 +601,7 @@ pub fn listen_for_keybind(
     mut brush_input_map: Query<&mut InputMap<BrushAction>>,
     mut quick_action_input_map: Query<&mut InputMap<QuickAction>>,
     mut console_input_map: Query<&mut InputMap<ConsoleAction>>,
+    mut canvas_action_input_map: Query<&mut InputMap<CanvasAction>>,
     mut canvas_input_map: Query<&mut InputMap<CanvasStateActions>>,
 ) {
     // Check for Escape to cancel
@@ -672,9 +676,12 @@ pub fn listen_for_keybind(
                 brush_keys
                     .toggle_brush_mode
                     .insert_into_input_map(&mut map, BrushAction::ToggleMode);
+            }
+            if let Ok(mut map) = canvas_action_input_map.single_mut() {
+                *map = InputMap::default();
                 brush_keys
                     .draw
-                    .insert_into_input_map(&mut map, BrushAction::Draw);
+                    .insert_into_input_map(&mut map, CanvasAction::Draw);
             }
         }
         id if id.starts_with("quick_actions.") => {

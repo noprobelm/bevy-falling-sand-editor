@@ -1,4 +1,5 @@
 mod brush;
+mod canvas;
 mod conway;
 mod exit;
 mod help;
@@ -9,6 +10,7 @@ pub(crate) mod scene;
 use bevy::prelude::*;
 
 pub use brush::*;
+pub use canvas::*;
 pub use conway::*;
 pub use exit::*;
 pub use help::*;
