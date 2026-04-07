@@ -6,6 +6,7 @@ mod help;
 mod helpers;
 mod particles;
 pub(crate) mod scene;
+mod select;
 
 use bevy::prelude::*;
 
@@ -17,6 +18,7 @@ pub use help::*;
 use helpers::*;
 pub use particles::*;
 pub use scene::*;
+pub use select::*;
 
 pub struct CommandsPlugin;
 

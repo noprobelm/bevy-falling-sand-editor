@@ -1,3 +1,4 @@
+use avian2d::prelude::{LinearVelocity, RigidBodyDisabled};
 use bevy::{prelude::*, sprite::Anchor};
 use bevy_falling_sand::prelude::*;
 use leafwing_input_manager::{
@@ -13,7 +14,7 @@ use crate::{
             SelectAction,
             gizmos::SelectGizmos,
             resources::{DragOrigins, LastClickTime, SelectedParticles},
-            states::SelectState,
+            states::{SelectModeState, SelectState},
         },
     },
     ui::CanvasState,
@@ -23,6 +24,7 @@ use super::resources::SelectedRegion;
 use super::setup::OverlayImage;
 
 const DOUBLE_CLICK_THRESHOLD: f64 = 0.3;
+const THROW_VELOCITY_SCALE: f32 = 10.0;
 
 pub(super) struct SystemsPlugin;
 
@@ -41,7 +43,11 @@ impl Plugin for SystemsPlugin {
                     .chain()
                     .run_if(in_state(SelectState::ExpandSelection)),
                 (
-                    update_drag_overlays.run_if(action_pressed(CanvasAction::Draw)),
+                    (
+                        update_drag_overlays,
+                        update_throw_drag.run_if(in_state(SelectModeState::Throw)),
+                    )
+                        .run_if(action_pressed(CanvasAction::Draw)),
                     finish_select_action.run_if(action_just_released(CanvasAction::Draw)),
                 )
                     .chain()
@@ -128,8 +134,6 @@ fn handle_select_action_pressed(
     mut selected_particles: ResMut<SelectedParticles>,
     map: Res<ParticleMap>,
     positions: Query<&GridPosition>,
-    chunk_index: Res<ChunkIndex>,
-    mut chunk_query: Query<&mut ChunkDirtyState>,
     mut drag_origins: ResMut<DragOrigins>,
     mut last_click_time: ResMut<LastClickTime>,
     mut region: ResMut<SelectedRegion>,
@@ -137,6 +141,8 @@ fn handle_select_action_pressed(
     mut next_state: ResMut<NextState<SelectState>>,
     overlay_image: Res<OverlayImage>,
     overlay_entities: Query<Entity, With<SelectionOverlay>>,
+    select_mode: Res<State<SelectModeState>>,
+    mut msgw: MessageWriter<DynamicRigidBodySignal>,
 ) {
     let cursor_pos = cursor.current.round().as_ivec2();
     let clicked_entity = map.get(cursor_pos).ok().and_then(|e| e.copied());
@@ -155,6 +161,16 @@ fn handle_select_action_pressed(
             commands.entity(*entity).remove::<Movement>();
         }
 
+        // In throw mode, promote particles to dynamic rigid bodies immediately.
+        // RigidBodyDisabled is added so the bfs promote system carries it to the proxy,
+        // preventing the rejoin system from reclaiming them.
+        if *select_mode.get() == SelectModeState::Throw {
+            for entity in &selected_particles.particles {
+                commands.entity(*entity).insert(RigidBodyDisabled);
+                msgw.write(DynamicRigidBodySignal::new(*entity));
+            }
+        }
+
         next_state.set(SelectState::DragParticles);
         return;
     }
@@ -163,7 +179,6 @@ fn handle_select_action_pressed(
     if let Some(entity) = clicked_entity {
         if !selected_particles.particles.contains(&entity) {
             selected_particles.particles.push(entity);
-            mark_dirty(cursor_pos, &chunk_index, &mut chunk_query);
             spawn_particle_overlay(&mut commands, entity, cursor_pos, &overlay_image.0);
         }
         return;
@@ -249,6 +264,29 @@ fn update_drag_overlays(
     }
 }
 
+/// In throw mode, moves the proxy rigid body entities with the cursor.
+fn update_throw_drag(
+    cursor: Res<Cursor>,
+    selected_particles: Res<SelectedParticles>,
+    drag_origins: Res<DragOrigins>,
+    suspended: Query<&SuspendedParticle>,
+    mut transforms: Query<&mut Transform>,
+) {
+    let delta = cursor.current.round() - drag_origins.cursor_start.as_vec2();
+
+    for entity in &selected_particles.particles {
+        if let Ok(sp) = suspended.get(*entity) {
+            if let Ok(mut transform) = transforms.get_mut(sp.rigid_body_entity) {
+                if let Some(&origin) = drag_origins.origins.get(entity) {
+                    let pos = origin.as_vec2() + delta;
+                    transform.translation.x = pos.x;
+                    transform.translation.y = pos.y;
+                }
+            }
+        }
+    }
+}
+
 fn finish_select_action(
     mut commands: Commands,
     cursor: Res<Cursor>,
@@ -260,6 +298,9 @@ fn finish_select_action(
     mut positions: Query<&mut GridPosition>,
     mut next_state: ResMut<NextState<SelectState>>,
     mut overlays: Query<(Entity, &SelectionOverlay, &mut Transform)>,
+    select_mode: Res<State<SelectModeState>>,
+    suspended: Query<&SuspendedParticle>,
+    mut velocities: Query<&mut LinearVelocity>,
 ) {
     let delta = cursor.current.round().as_ivec2() - drag_origins.cursor_start;
 
@@ -276,6 +317,18 @@ fn finish_select_action(
             }
             mark_dirty(drag_origins.cursor_start, &chunk_index, &mut chunk_query);
         }
+        // In throw mode, revert any promoted particles back to the grid
+        if *select_mode.get() == SelectModeState::Throw {
+            revert_throw_particles(
+                &mut commands,
+                &selected_particles,
+                &drag_origins,
+                &suspended,
+                &mut map,
+                &chunk_index,
+                &mut chunk_query,
+            );
+        }
         for entity in &selected_particles.particles {
             commands.trigger(SyncParticleSignal::from_entity(*entity));
         }
@@ -285,6 +338,49 @@ fn finish_select_action(
         return;
     }
 
+    match select_mode.get() {
+        SelectModeState::Drag => {
+            finish_drag(
+                &mut commands,
+                &mut selected_particles,
+                &drag_origins,
+                &mut map,
+                &chunk_index,
+                &mut chunk_query,
+                &mut positions,
+                delta,
+            );
+            sync_overlays_to_positions(&mut overlays, &positions);
+        }
+        SelectModeState::Throw => {
+            let velocity = (cursor.current - cursor.previous) * THROW_VELOCITY_SCALE;
+            finish_throw(
+                &mut commands,
+                &mut selected_particles,
+                &suspended,
+                &mut velocities,
+                velocity,
+            );
+            for (overlay_entity, _, _) in &overlays {
+                commands.entity(overlay_entity).despawn();
+            }
+        }
+    }
+
+    drag_origins.origins.clear();
+    next_state.set(SelectState::Idle);
+}
+
+fn finish_drag(
+    commands: &mut Commands,
+    selected_particles: &mut SelectedParticles,
+    drag_origins: &DragOrigins,
+    map: &mut ParticleMap,
+    chunk_index: &ChunkIndex,
+    chunk_query: &mut Query<&mut ChunkDirtyState>,
+    positions: &mut Query<&mut GridPosition>,
+    delta: IVec2,
+) {
     // Remove all selected particles from the map so they don't block each other
     for entity in &selected_particles.particles {
         if let Ok(grid_position) = positions.get(*entity) {
@@ -309,14 +405,55 @@ fn finish_select_action(
         let _ = map.insert(target, *entity);
         grid_position.0 = target;
 
-        mark_dirty(origin, &chunk_index, &mut chunk_query);
-        mark_dirty(target, &chunk_index, &mut chunk_query);
+        mark_dirty(origin, chunk_index, chunk_query);
+        mark_dirty(target, chunk_index, chunk_query);
         commands.trigger(SyncParticleSignal::from_entity(*entity));
     }
+}
 
-    sync_overlays_to_positions(&mut overlays, &positions);
-    drag_origins.origins.clear();
-    next_state.set(SelectState::Idle);
+fn finish_throw(
+    commands: &mut Commands,
+    selected_particles: &mut SelectedParticles,
+    suspended: &Query<&SuspendedParticle>,
+    velocities: &mut Query<&mut LinearVelocity>,
+    velocity: Vec2,
+) {
+    for (i, entity) in selected_particles.particles.drain(..).enumerate() {
+        if let Ok(sp) = suspended.get(entity) {
+            commands
+                .entity(sp.rigid_body_entity)
+                .remove::<RigidBodyDisabled>();
+            if let Ok(mut lv) = velocities.get_mut(sp.rigid_body_entity) {
+                // Perturb each particle's velocity slightly so they spread and collide
+                let hash = (i as f32 * 1.618).sin() * 43758.5453;
+                let jitter = Vec2::new(hash.fract(), (hash * 1.37).fract()) * 2.0 - Vec2::ONE;
+                lv.0 = velocity + jitter * velocity.length() * 0.15;
+            }
+        }
+    }
+}
+
+/// Reverts throw-mode promoted particles back to the grid at their drag origins.
+fn revert_throw_particles(
+    commands: &mut Commands,
+    selected_particles: &SelectedParticles,
+    drag_origins: &DragOrigins,
+    suspended: &Query<&SuspendedParticle>,
+    map: &mut ParticleMap,
+    chunk_index: &ChunkIndex,
+    chunk_query: &mut Query<&mut ChunkDirtyState>,
+) {
+    for entity in &selected_particles.particles {
+        if let Ok(sp) = suspended.get(*entity) {
+            commands.entity(sp.rigid_body_entity).despawn();
+            commands.entity(*entity).remove::<SuspendedParticle>();
+            if let Some(&origin) = drag_origins.origins.get(entity) {
+                commands.entity(*entity).insert(GridPosition(origin));
+                let _ = map.insert(origin, *entity);
+                mark_dirty(origin, chunk_index, chunk_query);
+            }
+        }
+    }
 }
 
 // Continuous Systems (runs every frame while in CanvasState::Select, except during drag)
@@ -341,6 +478,7 @@ fn cleanup_drag_state(
     selected_particles: Res<SelectedParticles>,
     drag_origins: Res<DragOrigins>,
     overlays: Query<Entity, With<SelectionOverlay>>,
+    suspended: Query<&SuspendedParticle>,
     mut map: ResMut<ParticleMap>,
     chunk_index: Res<ChunkIndex>,
     mut chunk_query: Query<&mut ChunkDirtyState>,
@@ -352,6 +490,15 @@ fn cleanup_drag_state(
 
     // If a drag was in progress (not yet committed), revert particles to their origins
     if !drag_origins.origins.is_empty() {
+        // Revert any throw-mode promoted particles
+        for entity in &selected_particles.particles {
+            if let Ok(sp) = suspended.get(*entity) {
+                commands.entity(sp.rigid_body_entity).despawn();
+                commands.entity(*entity).remove::<SuspendedParticle>();
+            }
+        }
+
+        // Revert grid positions
         for entity in &selected_particles.particles {
             if let Ok(grid_position) = positions.get(*entity) {
                 let _ = map.remove(grid_position.0);
@@ -362,11 +509,13 @@ fn cleanup_drag_state(
             let Some(&origin) = drag_origins.origins.get(entity) else {
                 continue;
             };
-            let Ok(mut grid_position) = positions.get_mut(*entity) else {
-                continue;
-            };
+            // For throw-mode particles that lost GridPosition, re-insert it
+            if positions.get(*entity).is_err() {
+                commands.entity(*entity).insert(GridPosition(origin));
+            } else if let Ok(mut grid_position) = positions.get_mut(*entity) {
+                grid_position.0 = origin;
+            }
             let _ = map.insert(origin, *entity);
-            grid_position.0 = origin;
             mark_dirty(origin, &chunk_index, &mut chunk_query);
         }
     }

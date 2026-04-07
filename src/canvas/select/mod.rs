@@ -1,7 +1,7 @@
 mod gizmos;
 mod resources;
 mod setup;
-mod states;
+pub mod states;
 mod systems;
 
 use bevy::prelude::*;

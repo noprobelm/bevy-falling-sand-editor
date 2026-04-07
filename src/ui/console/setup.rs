@@ -10,7 +10,7 @@ use crate::{
     ui::{
         BrushConsoleCommand, CanvasCommand, CommandHistory, ConsoleInformationAreaState,
         ConsolePromptState, ConwayConsoleCommand, ExitConsoleCommand, ParticlesConsoleCommand,
-        SceneConsoleCommand,
+        SceneConsoleCommand, SelectCommand,
     },
 };
 
@@ -87,5 +87,6 @@ fn setup_console_command_registry(mut commands: Commands) {
     registry.register(ConwayConsoleCommand);
     registry.register(SceneConsoleCommand);
     registry.register(CanvasCommand);
+    registry.register(SelectCommand);
     commands.insert_resource(registry);
 }

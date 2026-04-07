@@ -52,8 +52,14 @@ impl ConsoleCommand for CanvasSetModeCommand {
 
     fn run(&self, args: &[String], commands: &mut Commands) {
         match args[0].to_lowercase().as_str() {
-            "select" => commands.trigger(SetCanvasStateEvent(CanvasState::Select)),
-            "brush" => commands.trigger(SetCanvasStateEvent(CanvasState::Brush)),
+            "select" => {
+                info!("Canvas state set to Select");
+                commands.trigger(SetCanvasStateEvent(CanvasState::Select));
+            }
+            "brush" => {
+                info!("Canvas state set to Brush");
+                commands.trigger(SetCanvasStateEvent(CanvasState::Brush));
+            }
             _ => error!("Invalid canvas state. Specify one of 'select', 'brush'"),
         };
     }
