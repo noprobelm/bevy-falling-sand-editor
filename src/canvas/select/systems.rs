@@ -142,7 +142,7 @@ fn handle_select_action_pressed(
     overlay_image: Res<OverlayImage>,
     overlay_entities: Query<Entity, With<SelectionOverlay>>,
     select_mode: Res<State<SelectModeState>>,
-    mut msgw: MessageWriter<DynamicRigidBodySignal>,
+    mut msgw: MessageWriter<EmitDynamicRigidBodyParticleSignal>,
 ) {
     let cursor_pos = cursor.current.round().as_ivec2();
     let clicked_entity = map.get(cursor_pos).ok().and_then(|e| e.copied());
@@ -167,7 +167,7 @@ fn handle_select_action_pressed(
         if *select_mode.get() == SelectModeState::Throw {
             for entity in &selected_particles.particles {
                 commands.entity(*entity).insert(RigidBodyDisabled);
-                msgw.write(DynamicRigidBodySignal::new(*entity));
+                msgw.write(EmitDynamicRigidBodyParticleSignal::new(*entity));
             }
         }
 
