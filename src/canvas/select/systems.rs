@@ -103,7 +103,7 @@ fn spawn_particle_overlay(
             custom_size: Some(Vec2::ONE),
             ..default()
         },
-        Transform::from_xyz(position.x as f32, position.y as f32, 10.0),
+        Transform::from_xyz(position.x as f32 + 0.5, position.y as f32 + 0.5, 10.0),
     ));
 }
 
@@ -113,8 +113,8 @@ fn sync_overlays_to_positions(
 ) {
     for (_, overlay, mut transform) in overlays.iter_mut() {
         if let Ok(grid_pos) = positions.get(overlay.0) {
-            transform.translation.x = grid_pos.0.x as f32;
-            transform.translation.y = grid_pos.0.y as f32;
+            transform.translation.x = grid_pos.0.x as f32 + 0.5;
+            transform.translation.y = grid_pos.0.y as f32 + 0.5;
         }
     }
 }
@@ -241,8 +241,8 @@ fn update_drag_overlays(
     for (overlay, mut transform) in &mut overlays {
         if let Some(&origin) = drag_origins.origins.get(&overlay.0) {
             let pos = origin.as_vec2() + delta;
-            transform.translation.x = pos.x;
-            transform.translation.y = pos.y;
+            transform.translation.x = pos.x + 0.5;
+            transform.translation.y = pos.y + 0.5;
         }
     }
 }
@@ -416,8 +416,8 @@ fn sync_overlay_positions(
 ) {
     for (overlay, mut transform) in &mut overlays {
         if let Ok(grid_pos) = positions.get(overlay.0) {
-            transform.translation.x = grid_pos.0.x as f32;
-            transform.translation.y = grid_pos.0.y as f32;
+            transform.translation.x = grid_pos.0.x as f32 + 0.5;
+            transform.translation.y = grid_pos.0.y as f32 + 0.5;
         }
     }
 }
