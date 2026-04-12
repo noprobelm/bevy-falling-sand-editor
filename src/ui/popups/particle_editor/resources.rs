@@ -132,12 +132,6 @@ impl Default for ParticleData {
             Duration::from_millis(100),
             0.5,
             None,
-            Some(ColorProfile::palette(vec![
-                Color::Srgba(Srgba::new(1., 0.34901962, 0., 1.)),
-                Color::Srgba(Srgba::new(1., 0.5686275, 0., 1.)),
-                Color::Srgba(Srgba::new(1., 0.8117647, 0., 1.)),
-                Color::Srgba(Srgba::new(0.78039217, 0.2901961, 0.019607844, 1.)),
-            ])),
             0.01,
             true,
             1.0,

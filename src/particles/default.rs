@@ -52,22 +52,6 @@ fn gas_movement(horizontal_spread: i32) -> Movement {
     Movement::new(groups.into())
 }
 
-fn fire_color_profile() -> ColorProfile {
-    ColorProfile {
-        source: ColorSource::Palette(Palette {
-            index: 0,
-            colors: vec![
-                Color::srgba(1.0, 0.34901962, 0.0, 1.0),
-                Color::srgba(1.0, 0.0, 0.0, 1.0),
-                Color::srgba(1.0, 0.6, 0.0, 1.0),
-                Color::srgba(1.0, 0.8117647, 0.0, 1.0),
-                Color::srgba(1.0, 0.9098039, 0.03137255, 1.0),
-            ],
-        }),
-        assignment: ColorAssignment::Sequential,
-    }
-}
-
 pub(super) fn spawn_default_particles(commands: &mut Commands) {
     // ── Walls ──
 
@@ -108,7 +92,6 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
                 produces: Particle::from("Water"),
                 chance_to_produce: 0.2,
             }),
-            color: None,
             chance_to_ignite: 0.0,
             spreads_fire: false,
             spread_radius: 1.0,
@@ -130,7 +113,6 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
                 produces: Particle::from("Smoke"),
                 chance_to_produce: 0.035,
             }),
-            color: Some(fire_color_profile()),
             chance_to_ignite: 0.2,
             spreads_fire: true,
             spread_radius: 1.0,
@@ -152,7 +134,6 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
                 produces: Particle::from("FIRE"),
                 chance_to_produce: 1.0,
             }),
-            color: Some(fire_color_profile()),
             chance_to_ignite: 0.36,
             spreads_fire: true,
             spread_radius: 1.0,
@@ -411,7 +392,6 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
                 produces: Particle::from("Smoke"),
                 chance_to_produce: 0.035,
             }),
-            color: Some(fire_color_profile()),
             chance_to_ignite: 0.2,
             spreads_fire: true,
             spread_radius: 1.0,
@@ -454,7 +434,6 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
                 produces: Particle::from("Water"),
                 chance_to_produce: 1.0,
             }),
-            color: None,
             chance_to_ignite: 0.0,
             spreads_fire: false,
             spread_radius: 1.0,
@@ -496,7 +475,6 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             tick_rate: Duration::from_millis(100),
             chance_despawn_per_tick: 0.5,
             reaction: None,
-            color: None,
             chance_to_ignite: 0.0,
             spreads_fire: true,
             spread_radius: 1.0,
@@ -521,7 +499,6 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             tick_rate: Duration::from_millis(100),
             chance_despawn_per_tick: 0.5,
             reaction: None,
-            color: Some(fire_color_profile()),
             chance_to_ignite: 0.35,
             spreads_fire: true,
             spread_radius: 1.0,

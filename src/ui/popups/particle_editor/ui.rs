@@ -776,14 +776,14 @@ fn show_flammability(
         add_minor_grid_separator(ui);
 
         show_burns_spreads(ui, &mut burns, burns_state);
-
-        add_minor_grid_separator(ui);
-
-        show_burns_color(ui, &mut burns, burns_state);
     }
 }
 
-fn show_burns_timing(ui: &mut egui::Ui, burns: &mut Mut<'_, Flammable>, burns_state: &mut Flammable) {
+fn show_burns_timing(
+    ui: &mut egui::Ui,
+    burns: &mut Mut<'_, Flammable>,
+    burns_state: &mut Flammable,
+) {
     let duration_ms = burns.duration.as_millis() as u64;
     let new_value =
         add_label_with_drag_value(ui, 0, "    Duration (ms):", duration_ms, 0..=u64::MAX, 1.0);
@@ -834,7 +834,11 @@ fn show_burns_ignites_on_spawn(
     }
 }
 
-fn show_burns_reaction(ui: &mut egui::Ui, burns: &mut Mut<'_, Flammable>, burns_state: &mut Flammable) {
+fn show_burns_reaction(
+    ui: &mut egui::Ui,
+    burns: &mut Mut<'_, Flammable>,
+    burns_state: &mut Flammable,
+) {
     let reaction_enabled = burns.reaction.is_some();
     let new_value = add_label_with_toggle_switch(ui, 0, "    Reaction", reaction_enabled);
     if new_value != reaction_enabled {
@@ -871,7 +875,11 @@ fn show_burns_reaction(ui: &mut egui::Ui, burns: &mut Mut<'_, Flammable>, burns_
     }
 }
 
-fn show_burns_spreads(ui: &mut egui::Ui, burns: &mut Mut<'_, Flammable>, burns_state: &mut Flammable) {
+fn show_burns_spreads(
+    ui: &mut egui::Ui,
+    burns: &mut Mut<'_, Flammable>,
+    burns_state: &mut Flammable,
+) {
     let spreads_enabled = burns.spreads_fire;
     let new_value = add_label_with_toggle_switch(ui, 0, "    Spreads fire", spreads_enabled);
     if new_value != spreads_enabled {
@@ -887,72 +895,6 @@ fn show_burns_spreads(ui: &mut egui::Ui, burns: &mut Mut<'_, Flammable>, burns_s
             burns.spread_radius = new_value;
             burns_state.spread_radius = new_value;
         }
-    }
-}
-
-fn show_burns_color(ui: &mut egui::Ui, burns: &mut Mut<'_, Flammable>, burns_state: &mut Flammable) {
-    let color_enabled = burns.color.is_some();
-    let new_value = add_label_with_toggle_switch(ui, 0, "    Burn color", color_enabled);
-    if new_value != color_enabled {
-        if new_value {
-            burns.color = Some(burns_state.color.clone().unwrap_or_else(|| {
-                ColorProfile::palette(vec![
-                    Color::srgba_u8(255, 89, 0, 255),
-                    Color::srgba_u8(255, 145, 0, 255),
-                    Color::srgba_u8(255, 207, 0, 255),
-                    Color::srgba_u8(199, 74, 5, 255),
-                ])
-            }));
-        } else {
-            burns.color = None;
-        }
-        burns_state.color = burns.color.clone();
-    }
-    if let Some(ref mut color_profile) = burns.color {
-        if let ColorSource::Palette(ref mut palette) = color_profile.source {
-            ui.label("        Palette Colors");
-            if ui.button("Add Color").clicked() {
-                let new_color = palette
-                    .colors
-                    .last()
-                    .copied()
-                    .unwrap_or(Color::srgba_u8(255, 128, 0, 255));
-                palette.colors.push(new_color);
-            }
-            ui.end_row();
-
-            let mut to_remove: Option<usize> = None;
-            let colors_len = palette.colors.len();
-            for (i, color) in palette.colors.iter_mut().enumerate() {
-                let srgba = color.to_srgba();
-                let original = egui::Color32::from_rgba_unmultiplied(
-                    (srgba.red * 255.0) as u8,
-                    (srgba.green * 255.0) as u8,
-                    (srgba.blue * 255.0) as u8,
-                    (srgba.alpha * 255.0) as u8,
-                );
-                let mut color32 = original;
-                skip_grid_column(ui);
-                ui.push_id(format!("burn_palette_color_{}", i), |ui| {
-                    ui.horizontal(|ui| {
-                        ui.color_edit_button_srgba(&mut color32);
-                        if ui.button("X").clicked() && colors_len > 1 {
-                            to_remove = Some(i);
-                        }
-                    });
-                });
-                ui.end_row();
-
-                if color32 != original {
-                    *color = Color::srgba_u8(color32.r(), color32.g(), color32.b(), color32.a());
-                }
-            }
-
-            if let Some(remove_index) = to_remove {
-                palette.colors.remove(remove_index);
-            }
-        }
-        burns_state.color = Some(color_profile.clone());
     }
 }
 
