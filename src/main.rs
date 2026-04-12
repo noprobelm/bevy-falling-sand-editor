@@ -53,6 +53,8 @@ fn main() {
                     ..default()
                 })
                 .set(LogPlugin {
+                    // Silence warnings from https://github.com/avianphysics/avian/issues/922 (fixed in avian 0.6)
+                    filter: "wgpu=error,naga=warn,avian2d::dynamics::solver::islands::sleeping=error,bevy_ecs::error::handler=error".to_string(),
                     custom_layer: console_capture_layer,
                     ..default()
                 }),
