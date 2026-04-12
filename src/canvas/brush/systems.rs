@@ -177,7 +177,7 @@ pub mod alg {
     /// Find all cursor points interpolated between a start and end position.
     fn get_interpolated_cursor_points(start: Vec2, end: Vec2) -> Vec<IVec2> {
         if start == end {
-            return vec![start.as_ivec2()];
+            return vec![start.floor().as_ivec2()];
         }
 
         let mut positions = vec![];
@@ -187,7 +187,7 @@ pub mod alg {
 
         for i in 0..=num_samples {
             let t = i as f32 / num_samples as f32;
-            positions.push((start + direction * length * t).as_ivec2());
+            positions.push((start + direction * length * t).floor().as_ivec2());
         }
         positions
     }

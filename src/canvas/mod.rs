@@ -1,5 +1,5 @@
 pub mod brush;
-mod select;
+pub mod select;
 mod setup;
 
 use bevy::prelude::*;
