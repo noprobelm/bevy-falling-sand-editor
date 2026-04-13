@@ -7,7 +7,7 @@ impl Plugin for UiStatePlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<UiState>()
             .add_sub_state::<CanvasState>()
-            .init_resource::<PendingCanvasState>()
+            .init_resource::<PreviousCanvasState>()
             .add_observer(on_set_canvas_state)
             .add_systems(OnEnter(UiState::Canvas), apply_pending_canvas_state)
             .add_systems(EguiPrimaryContextPass, handle_ui_state);
@@ -15,7 +15,7 @@ impl Plugin for UiStatePlugin {
 }
 
 #[derive(Resource, Default)]
-pub struct PendingCanvasState(pub Option<CanvasState>);
+pub struct PreviousCanvasState(pub CanvasState);
 
 #[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
 pub enum UiState {
@@ -66,19 +66,17 @@ pub struct SetCanvasStateEvent(pub CanvasState);
 
 fn on_set_canvas_state(
     trigger: On<SetCanvasStateEvent>,
-    mut pending: ResMut<PendingCanvasState>,
+    mut pending: ResMut<PreviousCanvasState>,
     mut state: ResMut<NextState<CanvasState>>,
 ) {
     let desired = trigger.event().0;
-    pending.0 = Some(desired);
+    pending.0 = desired;
     state.set(desired);
 }
 
 fn apply_pending_canvas_state(
-    mut pending: ResMut<PendingCanvasState>,
+    pending: Res<PreviousCanvasState>,
     mut state: ResMut<NextState<CanvasState>>,
 ) {
-    if let Some(desired) = pending.0.take() {
-        state.set(desired);
-    }
+    state.set(pending.0);
 }
