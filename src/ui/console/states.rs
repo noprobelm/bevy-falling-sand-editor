@@ -1,7 +1,7 @@
 use std::{
     fs,
     io::{BufRead, BufReader, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use bevy::{platform::collections::HashMap, prelude::*};
@@ -113,7 +113,7 @@ pub struct CommandHistory {
 }
 
 impl CommandHistory {
-    pub fn load(config_path: &PathBuf) -> Self {
+    pub fn load(config_path: &Path) -> Self {
         let path = config_path.join(CMDS_LOG_FILE);
         let entries = if path.exists() {
             let file = fs::File::open(&path).unwrap_or_else(|e| {
