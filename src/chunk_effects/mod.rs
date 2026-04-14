@@ -74,14 +74,10 @@ fn remove_burn_overlay(
         (Entity, &GridPosition),
         (With<BurningOverlay>, Without<Burning>, Without<BurnEffect>),
     >,
-    mut removed_burning: RemovedComponents<Burning>,
-    mut removed_burn_effect: RemovedComponents<BurnEffect>,
 ) {
-    for entity in removed_burning.read().chain(removed_burn_effect.read()) {
-        if let Ok((entity, pos)) = has_overlay.get(entity) {
-            commands.entity(entity).remove::<BurningOverlay>();
-            mark_chunk_dirty(pos.0, &chunk_index, &mut chunk_query);
-        }
+    for (entity, pos) in has_overlay.iter() {
+        commands.entity(entity).remove::<BurningOverlay>();
+        mark_chunk_dirty(pos.0, &chunk_index, &mut chunk_query);
     }
 }
 
