@@ -7,8 +7,8 @@ use bevy_falling_sand::prelude::*;
 use bevy_falling_sand::render::pipeline::textures::WorldTextureOrigin;
 use leafwing_input_manager::common_conditions::action_pressed;
 
-use crate::Cursor;
 use crate::CanvasAction;
+use crate::Cursor;
 use crate::brush::{BrushModeSpawnState, BrushSize, BrushState, BrushTypeState};
 
 const SHADER_ASSET_PATH: &str = "shaders/game_of_life.wgsl";

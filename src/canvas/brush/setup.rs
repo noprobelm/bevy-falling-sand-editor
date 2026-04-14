@@ -23,23 +23,23 @@ pub(super) struct SetupPlugin;
 impl Plugin for SetupPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(InputManagerPlugin::<BrushAction>::default())
-        .insert_gizmo_config(
-            BrushGizmos,
-            GizmoConfig {
-                enabled: true,
-                ..default()
-            },
-        )
-        .add_systems(
-            Startup,
-            (spawn_brush, load_settings)
-                .chain()
-                .in_set(SetupSystems::Canvas),
-        )
-        .add_systems(
-            Update,
-            insert_selected_particle.run_if(condition_setup_brush_particle_ready),
-        );
+            .insert_gizmo_config(
+                BrushGizmos,
+                GizmoConfig {
+                    enabled: true,
+                    ..default()
+                },
+            )
+            .add_systems(
+                Startup,
+                (spawn_brush, load_settings)
+                    .chain()
+                    .in_set(SetupSystems::Canvas),
+            )
+            .add_systems(
+                Update,
+                insert_selected_particle.run_if(condition_setup_brush_particle_ready),
+            );
     }
 }
 
@@ -120,7 +120,6 @@ fn load_settings(
     commands.insert_resource(settings_config.keys.brush.clone());
     next_brush_type_state.set(settings_config.brush.btype);
     next_brush_mode_state.set(settings_config.brush.mode);
-
 }
 
 fn condition_setup_brush_particle_ready(
