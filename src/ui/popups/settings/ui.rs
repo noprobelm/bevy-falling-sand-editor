@@ -6,10 +6,8 @@ use leafwing_input_manager::prelude::{InputMap, MouseScrollAxis};
 
 use super::{KeybindsListeningState, ListeningForKeybind};
 use crate::{
-    brush::{
-        BrushAction, BrushKeyBindings, BrushSize, BrushSpawnState, BrushTypeState,
-    },
     CanvasAction, CanvasStateActions,
+    brush::{BrushAction, BrushKeyBindings, BrushSize, BrushSpawnState, BrushTypeState},
     camera::{CameraAction, CameraKeyBindings},
     config::{AvianDebugConfig, InputButton, OptionalColor},
     ui::{

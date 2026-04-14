@@ -393,7 +393,7 @@ fn finish_throw(
         mark_dirty(origin, chunk_index, chunk_query);
         mark_dirty(target, chunk_index, chunk_query);
 
-        let hash = (i as f32 * 1.618).sin() * 43758.5453;
+        let hash = (i as f32 * 1.618).sin() * 43_758.547;
         let jitter = Vec2::new(hash.fract(), (hash * 1.37).fract()) * 2.0 - Vec2::ONE;
         let v = velocity + jitter * velocity.length() * 0.15;
         msgw.write(PromoteDynamicRigidBodyParticle::new(entity).with_linear_velocity(v));

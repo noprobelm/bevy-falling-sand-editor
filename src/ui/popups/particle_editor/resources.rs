@@ -261,9 +261,9 @@ fn synchronize_editor_registry(
                 .unwrap_or_else(|| defaults.cached_movement.clone());
 
             let new_cached = build_cached_movement(
-                data.movement.movement.as_deref(),
-                data.movement.density.as_deref(),
-                data.movement.speed.as_deref(),
+                data.movement.movement,
+                data.movement.density,
+                data.movement.speed,
                 data.movement.momentum,
                 data.movement.resistor,
                 &cached_movement,

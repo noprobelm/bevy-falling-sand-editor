@@ -1,7 +1,7 @@
 use std::{
     fs,
     io::{BufRead, BufReader, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use bevy::{platform::collections::HashMap, prelude::*};
@@ -113,12 +113,11 @@ pub struct CommandHistory {
 }
 
 impl CommandHistory {
-    pub fn load(config_path: &PathBuf) -> Self {
+    pub fn load(config_path: &Path) -> Self {
         let path = config_path.join(CMDS_LOG_FILE);
         let entries = if path.exists() {
-            let file = fs::File::open(&path).unwrap_or_else(|e| {
-                panic!("Failed to open command history file {:?}: {}", path, e)
-            });
+            let file = fs::File::open(&path)
+                .unwrap_or_else(|e| panic!("Failed to open command history file {path:?}: {e}"));
             BufReader::new(file)
                 .lines()
                 .map_while(Result::ok)
@@ -184,7 +183,7 @@ impl CommandHistory {
             )
         });
         for entry in &self.entries {
-            writeln!(file, "{}", entry).unwrap_or_else(|e| {
+            writeln!(file, "{entry}").unwrap_or_else(|e| {
                 panic!(
                     "Failed to write to command history file {:?}: {}",
                     self.path, e

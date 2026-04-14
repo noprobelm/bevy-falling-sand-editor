@@ -680,7 +680,7 @@ fn show_palette_colors(ui: &mut egui::Ui, color_source: &mut ColorSource) {
             );
             let mut color32 = original;
             skip_grid_column(ui);
-            ui.push_id(format!("palette_color_{}", i), |ui| {
+            ui.push_id(format!("palette_color_{i}"), |ui| {
                 ui.horizontal(|ui| {
                     ui.color_edit_button_srgba(&mut color32);
                     if ui.button("X").clicked() && colors_len > 1 {

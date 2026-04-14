@@ -53,10 +53,10 @@ fn sync_selected_particle_type(
     registry: Res<ParticleTypeRegistry>,
 ) {
     for (selected, mut tracked) in &mut brush_query {
-        if let Some(&entity) = registry.get(&selected.0.name) {
-            if tracked.0 != entity {
-                tracked.0 = entity;
-            }
+        if let Some(&entity) = registry.get(&selected.0.name)
+            && tracked.0 != entity
+        {
+            tracked.0 = entity;
         }
     }
 }
@@ -67,10 +67,10 @@ fn sync_selected_particle_name(
     changed_types: Query<&ParticleType, Changed<ParticleType>>,
 ) {
     for (mut selected, tracked) in &mut brush_query {
-        if let Ok(particle_type) = changed_types.get(tracked.0) {
-            if selected.0.name != particle_type.name {
-                selected.0.name = particle_type.name.clone();
-            }
+        if let Ok(particle_type) = changed_types.get(tracked.0)
+            && selected.0.name != particle_type.name
+        {
+            selected.0.name = particle_type.name.clone();
         }
     }
 }
