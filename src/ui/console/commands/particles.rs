@@ -435,7 +435,9 @@ impl ConsoleCommand for ParticlesSpawnTextConsoleCommand {
 
     fn run(&self, args: &[String], commands: &mut Commands) {
         if args.len() < 3 {
-            warn!("Usage: particles spawn text <x>,<y> <font_size> [--align left|center|right] <text...>");
+            warn!(
+                "Usage: particles spawn text <x>,<y> <font_size> [--align left|center|right] <text...>"
+            );
             return;
         }
 
@@ -485,7 +487,9 @@ impl ConsoleCommand for ParticlesSpawnTextConsoleCommand {
         // with a real newline before passing it along.
         let text = args[text_start..].join(" ").replace(r"\n", "\n");
 
-        info!("Spawning text \"{text}\" at {center} with font size {font_size}, alignment {alignment:?}");
+        info!(
+            "Spawning text \"{text}\" at {center} with font size {font_size}, alignment {alignment:?}"
+        );
         commands.trigger(SpawnTextEvent {
             center,
             text,
