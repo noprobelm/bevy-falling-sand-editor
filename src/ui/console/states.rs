@@ -116,9 +116,8 @@ impl CommandHistory {
     pub fn load(config_path: &Path) -> Self {
         let path = config_path.join(CMDS_LOG_FILE);
         let entries = if path.exists() {
-            let file = fs::File::open(&path).unwrap_or_else(|e| {
-                panic!("Failed to open command history file {path:?}: {e}")
-            });
+            let file = fs::File::open(&path)
+                .unwrap_or_else(|e| panic!("Failed to open command history file {path:?}: {e}"));
             BufReader::new(file)
                 .lines()
                 .map_while(Result::ok)
