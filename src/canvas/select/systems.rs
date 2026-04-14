@@ -153,7 +153,6 @@ fn handle_select_action_pressed(
             commands.entity(*entity).remove::<Movement>();
         }
 
-
         next_state.set(SelectState::DragParticles);
         return;
     }
@@ -246,8 +245,6 @@ fn update_drag_overlays(
         }
     }
 }
-
-
 
 fn finish_select_action(
     mut commands: Commands,
@@ -399,13 +396,9 @@ fn finish_throw(
         let hash = (i as f32 * 1.618).sin() * 43758.5453;
         let jitter = Vec2::new(hash.fract(), (hash * 1.37).fract()) * 2.0 - Vec2::ONE;
         let v = velocity + jitter * velocity.length() * 0.15;
-        msgw.write(
-            PromoteDynamicRigidBodyParticle::new(entity)
-                .with_linear_velocity(v),
-        );
+        msgw.write(PromoteDynamicRigidBodyParticle::new(entity).with_linear_velocity(v));
     }
 }
-
 
 // Continuous Systems (runs every frame while in CanvasState::Select, except during drag)
 
