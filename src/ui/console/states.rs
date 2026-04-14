@@ -117,7 +117,7 @@ impl CommandHistory {
         let path = config_path.join(CMDS_LOG_FILE);
         let entries = if path.exists() {
             let file = fs::File::open(&path).unwrap_or_else(|e| {
-                panic!("Failed to open command history file {:?}: {}", path, e)
+                panic!("Failed to open command history file {path:?}: {e}")
             });
             BufReader::new(file)
                 .lines()
@@ -184,7 +184,7 @@ impl CommandHistory {
             )
         });
         for entry in &self.entries {
-            writeln!(file, "{}", entry).unwrap_or_else(|e| {
+            writeln!(file, "{entry}").unwrap_or_else(|e| {
                 panic!(
                     "Failed to write to command history file {:?}: {}",
                     self.path, e

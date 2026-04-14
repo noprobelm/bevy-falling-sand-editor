@@ -30,7 +30,7 @@ impl Plugin for ConfigSetupPlugin {
             (
                 move |mut commands: Commands| {
                     fs::create_dir_all(&config_path).unwrap_or_else(|_| {
-                        panic!("Failed to create config directory {:?}", config_path)
+                        panic!("Failed to create config directory {config_path:?}")
                     });
                     commands.insert_resource(ConfigPath(config_path.clone()));
                 },
@@ -63,7 +63,7 @@ impl Plugin for ConfigSetupPlugin {
 fn load_world_base_path(config_path: Res<ConfigPath>) {
     let world_path = config_path.0.clone().join(WORLD_PATH);
     fs::create_dir_all(&world_path)
-        .unwrap_or_else(|_| panic!("Failed to create world path {:?}", world_path));
+        .unwrap_or_else(|_| panic!("Failed to create world path {world_path:?}"));
 }
 
 /// Try to load the `media` path
@@ -74,7 +74,7 @@ fn load_world_base_path(config_path: Res<ConfigPath>) {
 fn load_media_path(mut commands: Commands, config_path: Res<ConfigPath>) {
     let media_path = config_path.0.join(MEDIA_PATH);
     fs::create_dir_all(&media_path)
-        .unwrap_or_else(|_| panic!("Failed to create active world directory {:?}", media_path));
+        .unwrap_or_else(|_| panic!("Failed to create active world directory {media_path:?}"));
     commands.insert_resource(MediaPath(media_path));
 }
 
@@ -135,15 +135,12 @@ fn load_active_world_path(
         .join(init_config.get().active_world_path());
 
     fs::create_dir_all(&active_world_path).unwrap_or_else(|_| {
-        panic!(
-            "Failed to create active world directory {:?}",
-            active_world_path
-        )
+        panic!("Failed to create active world directory {active_world_path:?}",)
     });
 
     let data_path = active_world_path.join(DATA_PATH);
     fs::create_dir_all(&data_path)
-        .unwrap_or_else(|_| panic!("Failed to create data directory {:?}", data_path));
+        .unwrap_or_else(|_| panic!("Failed to create data directory {data_path:?}"));
 
     commands.insert_resource(ActiveWorldPath(active_world_path));
 }
