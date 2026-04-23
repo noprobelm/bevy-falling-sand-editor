@@ -89,39 +89,50 @@ fn prompt_ui(
     action_state: &ActionState<ConsoleAction>,
 ) {
     // Prevent hotkey character from being added to input
-    let response = if toggled_info_area {
-        ui.add(
-            egui::TextEdit::singleline(&mut prompt.input_text.clone())
-                .desired_width(ui.available_width())
-                .code_editor(),
-        )
+    let mut output = if toggled_info_area {
+        egui::TextEdit::singleline(&mut prompt.input_text.clone())
+            .desired_width(ui.available_width())
+            .code_editor()
+            .show(ui)
     } else {
-        ui.add(
-            egui::TextEdit::singleline(&mut prompt.input_text)
-                .desired_width(ui.available_width())
-                .code_editor(),
-        )
+        egui::TextEdit::singleline(&mut prompt.input_text)
+            .desired_width(ui.available_width())
+            .code_editor()
+            .show(ui)
     };
+    let response_id = output.response.id;
 
     if prompt.request_focus {
-        response.request_focus();
+        output.response.request_focus();
         prompt.request_focus = false;
     }
     if prompt.surrender_focus {
-        response.surrender_focus();
+        output.response.surrender_focus();
         prompt.surrender_focus = false;
     }
 
-    if response.has_focus() {
+    if output.response.has_focus() {
         let up = ui.input(|i| i.key_pressed(egui::Key::ArrowUp));
         let down = ui.input(|i| i.key_pressed(egui::Key::ArrowDown));
 
+        let mut moved = false;
         if up {
             if let Some(entry) = history.navigate_up(&prompt.input_text) {
                 prompt.input_text = entry.to_string();
+                moved = true;
             }
         } else if down {
             prompt.input_text = history.navigate_down().to_string();
+            moved = true;
+        }
+
+        if moved {
+            let ccursor = egui::text::CCursor::new(prompt.input_text.chars().count());
+            output
+                .state
+                .cursor
+                .set_char_range(Some(egui::text::CCursorRange::one(ccursor)));
+            output.state.store(ui.ctx(), response_id);
         }
     }
 
@@ -131,6 +142,6 @@ fn prompt_ui(
             input: prompt.input_text.clone(),
         });
         prompt.input_text.clear();
-        response.request_focus();
+        output.response.request_focus();
     }
 }
