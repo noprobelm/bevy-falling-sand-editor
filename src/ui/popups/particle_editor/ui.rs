@@ -35,7 +35,7 @@ pub struct ParticleEditorParams<'w, 's> {
     pub particle_registry: Res<'w, ParticleTypeRegistry>,
     pub editor_state: ResMut<'w, EditorState>,
     pub msgw_reset_particle_type: MessageWriter<'w, SyncParticleTypeChildrenSignal>,
-    pub particle_types_file: Res<'w, ParticleTypesFile>,
+    pub particle_types_file: ResMut<'w, ParticleTypesFile>,
     pub msgw_save_particle: MessageWriter<'w, PersistParticleTypesSignal>,
     pub particles_saved_msg_config: Res<'w, ParticleTypesSavedMessageConfiguration>,
     pub particle_types_recently_saved: Option<Res<'w, ParticleTypesRecentlySaved>>,
@@ -138,6 +138,24 @@ fn show_editor(
                     editor_params.particle_types_file.0.clone(),
                 ));
         };
+        let full_name = editor_params
+            .particle_types_file
+            .0
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap();
+        let (stem, extension) = full_name
+            .split_once('.')
+            .map(|(s, e)| (s.to_string(), format!(".{e}")))
+            .unwrap_or_else(|| (full_name.to_string(), String::new()));
+        let mut file_name = stem;
+        if ui.add(egui::TextEdit::singleline(&mut file_name)).changed() {
+            editor_params
+                .particle_types_file
+                .0
+                .set_file_name(format!("{file_name}{extension}"));
+        }
         if let Some(recently_saved) = editor_params.particle_types_recently_saved {
             let colors = editor_params.particles_saved_msg_config.colors;
             let fade_factor = recently_saved.timer.remaining().as_secs_f32()

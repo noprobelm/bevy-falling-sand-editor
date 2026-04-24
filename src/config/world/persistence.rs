@@ -35,7 +35,7 @@ impl Default for WorldConfig {
     fn default() -> Self {
         Self {
             camera: CameraConfig::default(),
-            particle_types_file: PathBuf::from("particles.scn.ron"),
+            particle_types_file: PathBuf::from("default.scn.ron"),
         }
     }
 }
