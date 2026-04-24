@@ -4,11 +4,11 @@ use bevy_egui::{
     egui::{self},
 };
 use bevy_falling_sand::prelude::*;
-use std::time::Duration;
+use std::{fs, time::Duration};
 
 use crate::{
     chunk_effects::{BurnEffect, GasEffect, GlowEffect, LiquidEffect},
-    config::ParticleTypesFile,
+    config::{ActiveWorldPath, ParticleTypesFile},
     particles::ParticleCategory,
     ui::*,
 };
@@ -19,9 +19,14 @@ impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             EguiPrimaryContextPass,
-            show.run_if(resource_exists::<ShowUi>)
-                .run_if(in_state(PopupState::<ParticleEditorApplicationState>::Open))
-                .in_set(UiSystems::ParticleEditor),
+            (
+                show.run_if(resource_exists::<ShowUi>)
+                    .run_if(in_state(PopupState::<ParticleEditorWindowState>::Open))
+                    .in_set(UiSystems::ParticleEditor),
+                show_load_particle_types_popup
+                    .run_if(resource_exists::<ShowUi>)
+                    .run_if(in_state(PopupState::<LoadParticlesWindowState>::Open)),
+            ),
         );
     }
 }
@@ -39,6 +44,9 @@ pub struct ParticleEditorParams<'w, 's> {
     pub msgw_save_particle: MessageWriter<'w, PersistParticleTypesSignal>,
     pub particles_saved_msg_config: Res<'w, ParticleTypesSavedMessageConfiguration>,
     pub particle_types_recently_saved: Option<Res<'w, ParticleTypesRecentlySaved>>,
+    pub current_load_particles_window_state: Res<'w, State<PopupState<LoadParticlesWindowState>>>,
+    pub next_load_particles_window_state:
+        ResMut<'w, NextState<PopupState<LoadParticlesWindowState>>>,
 }
 
 fn show(
@@ -138,6 +146,21 @@ fn show_editor(
                     editor_params.particle_types_file.0.clone(),
                 ));
         };
+        if ui.button("Load").clicked() {
+            match editor_params.current_load_particles_window_state.get() {
+                PopupState::<LoadParticlesWindowState>::Open => {
+                    editor_params
+                        .next_load_particles_window_state
+                        .set(PopupState::<LoadParticlesWindowState>::Closed);
+                }
+                PopupState::<LoadParticlesWindowState>::Closed => {
+                    editor_params
+                        .next_load_particles_window_state
+                        .set(PopupState::<LoadParticlesWindowState>::Open);
+                }
+                _ => unreachable!(),
+            }
+        }
         let full_name = editor_params
             .particle_types_file
             .0
@@ -174,6 +197,42 @@ fn show_editor(
             );
         }
     });
+}
+
+fn show_load_particle_types_popup(
+    mut contexts: EguiContexts,
+    active_world_path: Res<ActiveWorldPath>,
+    mut particle_types_file: ResMut<ParticleTypesFile>,
+) -> Result {
+    let ctx = contexts.ctx_mut()?;
+
+    egui::Window::new("Load Particle Set")
+        .constrain_to(ctx.available_rect())
+        .show(ctx, |ui| {
+            ui.vertical(|ui| {
+                if let Ok(entries) = fs::read_dir(&active_world_path.0) {
+                    entries
+                        .filter_map(|e| e.ok())
+                        .map(|e| e.path())
+                        .filter(|p| {
+                            p.file_name()
+                                .and_then(|n| n.to_str())
+                                .map(|n| n.ends_with(".scn.ron"))
+                                .unwrap_or(false)
+                        })
+                        .for_each(|p| {
+                            if ui
+                                .button(p.file_name().unwrap().to_str().unwrap())
+                                .clicked()
+                            {
+                                particle_types_file.0.set_file_name(p.file_name().unwrap());
+                            }
+                        });
+                }
+            });
+        });
+
+    Ok(())
 }
 
 fn show_category_labels(

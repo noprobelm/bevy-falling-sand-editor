@@ -3,7 +3,7 @@ use bevy_egui::{EguiContexts, EguiPrimaryContextPass, egui};
 
 use super::setup::SidePanelIconTextureIds;
 use crate::ui::{
-    ParticleEditorApplicationState, PopupState, SettingsApplicationState, ShowUi, UiSystems,
+    ParticleEditorWindowState, PopupState, SettingsApplicationState, ShowUi, UiSystems,
 };
 
 pub(super) struct UiPlugin;
@@ -22,10 +22,8 @@ impl Plugin for UiPlugin {
 fn show(
     mut contexts: EguiContexts,
     icons: Res<SidePanelIconTextureIds>,
-    current_particle_editor_app_state: Res<State<PopupState<ParticleEditorApplicationState>>>,
-    mut next_particle_editor_app_state: ResMut<
-        NextState<PopupState<ParticleEditorApplicationState>>,
-    >,
+    current_particle_editor_app_state: Res<State<PopupState<ParticleEditorWindowState>>>,
+    mut next_particle_editor_app_state: ResMut<NextState<PopupState<ParticleEditorWindowState>>>,
     current_settings_app_state: Res<State<SettingsApplicationState>>,
     mut next_settings_app_state: ResMut<NextState<SettingsApplicationState>>,
 ) -> Result {

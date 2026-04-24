@@ -8,7 +8,8 @@ pub(super) struct StatesPlugin;
 
 impl Plugin for StatesPlugin {
     fn build(&self, app: &mut App) {
-        app.init_state::<PopupState<ParticleEditorApplicationState>>()
+        app.init_state::<PopupState<ParticleEditorWindowState>>()
+            .init_state::<PopupState<LoadParticlesWindowState>>()
             .init_state::<SynchronizeBrushState>()
             .add_systems(
                 Update,
@@ -22,7 +23,14 @@ impl Plugin for StatesPlugin {
 }
 
 #[derive(Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
-pub enum ParticleEditorApplicationState {
+pub enum ParticleEditorWindowState {
+    #[default]
+    Closed,
+    Open,
+}
+
+#[derive(Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
+pub enum LoadParticlesWindowState {
     #[default]
     Closed,
     Open,
