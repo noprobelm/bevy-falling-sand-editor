@@ -67,7 +67,7 @@ fn show(
                 &synchronize_brush_state,
                 &mut next_synchronize_brush_state,
                 selected_particle.as_ref().map(|s| s.0),
-                &mut editor_params.msgw_reset_particle_type,
+                &mut editor_params,
             );
 
             ui.separator();
@@ -89,7 +89,7 @@ fn show_top_options(
     synchronize_brush_state: &Res<State<SynchronizeBrushState>>,
     next_synchronize_brush_state: &mut ResMut<NextState<SynchronizeBrushState>>,
     selected_entity: Option<Entity>,
-    msgw_reset: &mut MessageWriter<SyncParticleTypeChildrenSignal>,
+    editor_params: &mut ParticleEditorParams,
 ) {
     ui.horizontal(|ui| {
         ui.label("Link to brush");
@@ -111,10 +111,70 @@ fn show_top_options(
             let remaining = ui.available_width();
             ui.add_space(remaining - 110.0_f32.min(remaining));
             if ui.button("Propagate To All").clicked() {
-                msgw_reset.write(SyncParticleTypeChildrenSignal::from_parent_handle(entity));
+                editor_params
+                    .msgw_reset_particle_type
+                    .write(SyncParticleTypeChildrenSignal::from_parent_handle(entity));
             }
         }
     });
+    ui.horizontal(|ui| {
+        let new_particle_clicked = ui
+            .add_enabled(selected_entity.is_some(), egui::Button::new("New Particle"))
+            .clicked();
+        if new_particle_clicked && let Some(entity) = selected_entity {
+            spawn_new_particle_from(entity, synchronize_brush_state, editor_params);
+        }
+
+        let remove_particle_clicked = ui
+            .add_enabled(
+                selected_entity.is_some(),
+                egui::Button::new("Remove Particle"),
+            )
+            .clicked();
+        if remove_particle_clicked && let Some(entity) = selected_entity {
+            editor_params.commands.entity(entity).despawn();
+        }
+    });
+}
+
+fn unique_new_particle_name(registry: &ParticleTypeRegistry) -> String {
+    const BASE: &str = "New Particle";
+    if !registry.contains(BASE) {
+        return BASE.to_string();
+    }
+    let mut i = 2;
+    loop {
+        let candidate = format!("{BASE} {i}");
+        if !registry.contains(&candidate) {
+            return candidate;
+        }
+        i += 1;
+    }
+}
+
+fn spawn_new_particle_from(
+    source_entity: Entity,
+    synchronize_brush_state: &Res<State<SynchronizeBrushState>>,
+    editor_params: &mut ParticleEditorParams,
+) {
+    let new_name = unique_new_particle_name(&editor_params.particle_registry);
+
+    let new_entity = editor_params
+        .commands
+        .entity(source_entity)
+        .clone_and_spawn_with_opt_out(|builder| {
+            builder.deny::<ParticleType>();
+        })
+        .insert(ParticleType::from_string(new_name.clone()))
+        .id();
+
+    editor_params
+        .commands
+        .insert_resource(SelectedParticle(new_entity));
+
+    if synchronize_brush_state.get() == &SynchronizeBrushState::Enabled {
+        editor_params.brush.0 = Particle::from(new_name);
+    }
 }
 
 fn show_editor(
