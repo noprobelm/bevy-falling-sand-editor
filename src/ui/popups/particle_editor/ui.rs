@@ -4,11 +4,11 @@ use bevy_egui::{
     egui::{self},
 };
 use bevy_falling_sand::prelude::*;
-use std::time::Duration;
+use std::{fs, time::Duration};
 
 use crate::{
     chunk_effects::{BurnEffect, GasEffect, GlowEffect, LiquidEffect},
-    config::ParticleTypesFile,
+    config::{ActiveWorldPath, ParticleTypesFile},
     particles::ParticleCategory,
     ui::*,
 };
@@ -19,9 +19,14 @@ impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             EguiPrimaryContextPass,
-            show.run_if(resource_exists::<ShowUi>)
-                .run_if(in_state(PopupState::<ParticleEditorApplicationState>::Open))
-                .in_set(UiSystems::ParticleEditor),
+            (
+                show.run_if(resource_exists::<ShowUi>)
+                    .run_if(in_state(PopupState::<ParticleEditorWindowState>::Open))
+                    .in_set(UiSystems::ParticleEditor),
+                show_load_particle_types_popup
+                    .run_if(resource_exists::<ShowUi>)
+                    .run_if(in_state(PopupState::<LoadParticlesWindowState>::Open)),
+            ),
         );
     }
 }
@@ -39,6 +44,9 @@ pub struct ParticleEditorParams<'w, 's> {
     pub msgw_save_particle: MessageWriter<'w, PersistParticleTypesSignal>,
     pub particles_saved_msg_config: Res<'w, ParticleTypesSavedMessageConfiguration>,
     pub particle_types_recently_saved: Option<Res<'w, ParticleTypesRecentlySaved>>,
+    pub current_load_particles_window_state: Res<'w, State<PopupState<LoadParticlesWindowState>>>,
+    pub next_load_particles_window_state:
+        ResMut<'w, NextState<PopupState<LoadParticlesWindowState>>>,
 }
 
 fn show(
@@ -138,6 +146,21 @@ fn show_editor(
                     editor_params.particle_types_file.0.clone(),
                 ));
         };
+        if ui.button("Load").clicked() {
+            match editor_params.current_load_particles_window_state.get() {
+                PopupState::<LoadParticlesWindowState>::Open => {
+                    editor_params
+                        .next_load_particles_window_state
+                        .set(PopupState::<LoadParticlesWindowState>::Closed);
+                }
+                PopupState::<LoadParticlesWindowState>::Closed => {
+                    editor_params
+                        .next_load_particles_window_state
+                        .set(PopupState::<LoadParticlesWindowState>::Open);
+                }
+                _ => unreachable!(),
+            }
+        }
         let full_name = editor_params
             .particle_types_file
             .0
@@ -174,6 +197,66 @@ fn show_editor(
             );
         }
     });
+}
+
+fn show_load_particle_types_popup(
+    mut commands: Commands,
+    mut contexts: EguiContexts,
+    active_world_path: Res<ActiveWorldPath>,
+    mut msgw_load_particle_types: MessageWriter<LoadParticleTypesSignal>,
+    mut next_load_particle_window_state: ResMut<NextState<PopupState<LoadParticlesWindowState>>>,
+    mut particle_types_file: ResMut<ParticleTypesFile>,
+    particle_types: Query<Entity, With<ParticleType>>,
+) -> Result {
+    let ctx = contexts.ctx_mut()?;
+
+    egui::Window::new("Load Particle Set")
+        .constrain_to(ctx.available_rect())
+        .show(ctx, |ui| {
+            ui.vertical(|ui| {
+                ui.vertical(|ui| {
+                    if let Ok(entries) = fs::read_dir(&active_world_path.0) {
+                        entries
+                            .filter_map(|e| e.ok())
+                            .map(|e| e.path())
+                            .filter(|p| {
+                                p.file_name()
+                                    .and_then(|n| n.to_str())
+                                    .map(|n| n.ends_with(".scn.ron"))
+                                    .unwrap_or(false)
+                            })
+                            .for_each(|p| {
+                                let full_name = p.file_name().unwrap().to_str().unwrap();
+                                let (stem, _) = full_name
+                                    .split_once('.')
+                                    .map(|(s, e)| (s.to_string(), format!(".{e}")))
+                                    .unwrap_or_else(|| (full_name.to_string(), String::new()));
+
+                                if ui.button(stem).clicked() {
+                                    particle_types_file.0.set_file_name(p.file_name().unwrap());
+                                }
+                            });
+                    }
+                });
+                ui.separator();
+
+                ui.horizontal(|ui| {
+                    if ui.button("Load").clicked() {
+                        particle_types.iter().for_each(|entity| {
+                            commands.entity(entity).despawn();
+                        });
+                        msgw_load_particle_types
+                            .write(LoadParticleTypesSignal(particle_types_file.0.clone()));
+                    }
+                    if ui.button("Cancel").clicked() {
+                        next_load_particle_window_state
+                            .set(PopupState::<LoadParticlesWindowState>::Closed)
+                    }
+                });
+            });
+        });
+
+    Ok(())
 }
 
 fn show_category_labels(
@@ -237,186 +320,186 @@ fn show_editing_area(
                         return;
                     };
 
-                    let data = particle_query
-                        .get_mut(selected_particle.0)
-                        .expect("No matching query found for selected particle");
-                    let (particle_type, timed_lifetime, chance_lifetime) = (
-                        data.core.particle_type,
-                        data.core.timed_lifetime,
-                        data.core.chance_lifetime,
-                    );
-                    let (
-                        mut movement,
-                        density,
-                        speed,
-                        momentum,
-                        resistor,
-                        category,
-                        air_resistance,
-                    ) = (
-                        data.movement.movement,
-                        data.movement.density,
-                        data.movement.speed,
-                        data.movement.momentum,
-                        data.movement.resistor,
-                        data.movement.category,
-                        data.movement.air_resistance,
-                    );
-                    let mut color_profile = data.color.profile;
-                    let burns = data.reactions.burns;
-                    let contact_reaction = data.reactions.contact_reaction;
-                    let (liquid_effect, gas_effect, glow_effect, burn_effect) = (
-                        data.effects.liquid,
-                        data.effects.gas,
-                        data.effects.glow,
-                        data.effects.burn,
-                    );
+                    if let Ok(data) = particle_query.get_mut(selected_particle.0) {
+                        let (particle_type, timed_lifetime, chance_lifetime) = (
+                            data.core.particle_type,
+                            data.core.timed_lifetime,
+                            data.core.chance_lifetime,
+                        );
+                        let (
+                            mut movement,
+                            density,
+                            speed,
+                            momentum,
+                            resistor,
+                            category,
+                            air_resistance,
+                        ) = (
+                            data.movement.movement,
+                            data.movement.density,
+                            data.movement.speed,
+                            data.movement.momentum,
+                            data.movement.resistor,
+                            data.movement.category,
+                            data.movement.air_resistance,
+                        );
+                        let mut color_profile = data.color.profile;
+                        let burns = data.reactions.burns;
+                        let contact_reaction = data.reactions.contact_reaction;
+                        let (liquid_effect, gas_effect, glow_effect, burn_effect) = (
+                            data.effects.liquid,
+                            data.effects.gas,
+                            data.effects.glow,
+                            data.effects.burn,
+                        );
 
-                    let state = editor_params
-                        .editor_state
-                        .map
-                        .get_mut(&selected_particle.0)
-                        .expect("Failed to find particle type entity in editor registry");
+                        let state = editor_params
+                            .editor_state
+                            .map
+                            .get_mut(&selected_particle.0)
+                            .expect("Failed to find particle type entity in editor registry");
 
-                    egui::Grid::new("identity_grid")
-                        .num_columns(2)
-                        .show(ui, |ui| {
-                            show_particle_type_text_edit(ui, particle_type);
-                            show_category(
-                                &mut editor_params.commands,
-                                selected_particle.0,
-                                ui,
-                                category,
-                            );
-                        });
-
-                    egui::CollapsingHeader::new("Movement")
-                        .default_open(false)
-                        .show(ui, |ui| {
-                            egui::Grid::new("movement_grid")
-                                .num_columns(2)
-                                .show(ui, |ui| {
-                                    show_movement_toggle(
-                                        &mut editor_params.commands,
-                                        selected_particle.0,
-                                        ui,
-                                        &mut movement,
-                                        &mut state.cached_movement.movement,
-                                    );
-                                    if let Some(ref mut movement) = movement {
-                                        show_neighbor_groups(
-                                            ui,
-                                            movement,
-                                            &mut air_resistance
-                                                .expect("No air resistance found on particle!"),
-                                        );
-                                    }
-                                    show_density(ui, density);
-                                    show_speed(ui, speed);
-                                    show_momentum(
-                                        &mut editor_params.commands,
-                                        selected_particle.0,
-                                        ui,
-                                        movement.is_some(),
-                                        momentum,
-                                    );
-                                    show_resistor(
-                                        &mut editor_params.commands,
-                                        selected_particle.0,
-                                        ui,
-                                        resistor,
-                                        &mut state.cached_movement.resistor,
-                                    );
-                                });
-                        });
-
-                    egui::CollapsingHeader::new("Lifetime")
-                        .default_open(false)
-                        .show(ui, |ui| {
-                            egui::Grid::new("lifetime_grid")
-                                .num_columns(2)
-                                .show(ui, |ui| {
-                                    show_timed_lifetime(
-                                        &mut editor_params.commands,
-                                        selected_particle.0,
-                                        ui,
-                                        timed_lifetime,
-                                        &mut state.timed_lifetime,
-                                    );
-                                    show_chance_lifetime(
-                                        &mut editor_params.commands,
-                                        selected_particle.0,
-                                        ui,
-                                        chance_lifetime,
-                                        &mut state.chance_lifetime,
-                                    );
-                                });
-                        });
-
-                    egui::CollapsingHeader::new("Color")
-                        .default_open(false)
-                        .show(ui, |ui| {
-                            egui::Grid::new("color_grid").num_columns(2).show(ui, |ui| {
-                                show_color_source(
+                        egui::Grid::new("identity_grid")
+                            .num_columns(2)
+                            .show(ui, |ui| {
+                                show_particle_type_text_edit(ui, particle_type);
+                                show_category(
+                                    &mut editor_params.commands,
+                                    selected_particle.0,
                                     ui,
-                                    &mut color_profile.source,
-                                    &mut state.palette,
-                                    &mut state.gradient,
+                                    category,
                                 );
-                                show_color_assignment(ui, &mut color_profile.assignment);
-                                show_palette_colors(ui, &mut color_profile.source);
                             });
-                        });
 
-                    egui::CollapsingHeader::new("Visual Effects")
-                        .default_open(false)
-                        .show(ui, |ui| {
-                            egui::Grid::new("effects_grid")
-                                .num_columns(2)
-                                .show(ui, |ui| {
-                                    show_effect_overlays(
-                                        &mut editor_params.commands,
-                                        selected_particle.0,
-                                        ui,
-                                        liquid_effect,
-                                        gas_effect,
-                                        glow_effect,
-                                        burn_effect,
-                                    );
-                                });
-                        });
+                        egui::CollapsingHeader::new("Movement")
+                            .default_open(false)
+                            .show(ui, |ui| {
+                                egui::Grid::new("movement_grid")
+                                    .num_columns(2)
+                                    .show(ui, |ui| {
+                                        show_movement_toggle(
+                                            &mut editor_params.commands,
+                                            selected_particle.0,
+                                            ui,
+                                            &mut movement,
+                                            &mut state.cached_movement.movement,
+                                        );
+                                        if let Some(ref mut movement) = movement {
+                                            show_neighbor_groups(
+                                                ui,
+                                                movement,
+                                                &mut air_resistance
+                                                    .expect("No air resistance found on particle!"),
+                                            );
+                                        }
+                                        show_density(ui, density);
+                                        show_speed(ui, speed);
+                                        show_momentum(
+                                            &mut editor_params.commands,
+                                            selected_particle.0,
+                                            ui,
+                                            movement.is_some(),
+                                            momentum,
+                                        );
+                                        show_resistor(
+                                            &mut editor_params.commands,
+                                            selected_particle.0,
+                                            ui,
+                                            resistor,
+                                            &mut state.cached_movement.resistor,
+                                        );
+                                    });
+                            });
 
-                    egui::CollapsingHeader::new("Flammability")
-                        .default_open(false)
-                        .show(ui, |ui| {
-                            egui::Grid::new("flammability_grid")
-                                .num_columns(2)
-                                .show(ui, |ui| {
-                                    show_flammability(
-                                        &mut editor_params.commands,
-                                        selected_particle.0,
-                                        ui,
-                                        burns,
-                                        &mut state.burns,
-                                    );
-                                });
-                        });
+                        egui::CollapsingHeader::new("Lifetime")
+                            .default_open(false)
+                            .show(ui, |ui| {
+                                egui::Grid::new("lifetime_grid")
+                                    .num_columns(2)
+                                    .show(ui, |ui| {
+                                        show_timed_lifetime(
+                                            &mut editor_params.commands,
+                                            selected_particle.0,
+                                            ui,
+                                            timed_lifetime,
+                                            &mut state.timed_lifetime,
+                                        );
+                                        show_chance_lifetime(
+                                            &mut editor_params.commands,
+                                            selected_particle.0,
+                                            ui,
+                                            chance_lifetime,
+                                            &mut state.chance_lifetime,
+                                        );
+                                    });
+                            });
 
-                    egui::CollapsingHeader::new("Contact Reactions")
-                        .default_open(false)
-                        .show(ui, |ui| {
-                            egui::Grid::new("contact_grid")
-                                .num_columns(2)
-                                .show(ui, |ui| {
-                                    show_contact_reactions(
-                                        &mut editor_params.commands,
-                                        selected_particle.0,
+                        egui::CollapsingHeader::new("Color")
+                            .default_open(false)
+                            .show(ui, |ui| {
+                                egui::Grid::new("color_grid").num_columns(2).show(ui, |ui| {
+                                    show_color_source(
                                         ui,
-                                        contact_reaction,
-                                        &mut state.contact_reaction,
+                                        &mut color_profile.source,
+                                        &mut state.palette,
+                                        &mut state.gradient,
                                     );
+                                    show_color_assignment(ui, &mut color_profile.assignment);
+                                    show_palette_colors(ui, &mut color_profile.source);
                                 });
-                        });
+                            });
+
+                        egui::CollapsingHeader::new("Visual Effects")
+                            .default_open(false)
+                            .show(ui, |ui| {
+                                egui::Grid::new("effects_grid")
+                                    .num_columns(2)
+                                    .show(ui, |ui| {
+                                        show_effect_overlays(
+                                            &mut editor_params.commands,
+                                            selected_particle.0,
+                                            ui,
+                                            liquid_effect,
+                                            gas_effect,
+                                            glow_effect,
+                                            burn_effect,
+                                        );
+                                    });
+                            });
+
+                        egui::CollapsingHeader::new("Flammability")
+                            .default_open(false)
+                            .show(ui, |ui| {
+                                egui::Grid::new("flammability_grid").num_columns(2).show(
+                                    ui,
+                                    |ui| {
+                                        show_flammability(
+                                            &mut editor_params.commands,
+                                            selected_particle.0,
+                                            ui,
+                                            burns,
+                                            &mut state.burns,
+                                        );
+                                    },
+                                );
+                            });
+
+                        egui::CollapsingHeader::new("Contact Reactions")
+                            .default_open(false)
+                            .show(ui, |ui| {
+                                egui::Grid::new("contact_grid")
+                                    .num_columns(2)
+                                    .show(ui, |ui| {
+                                        show_contact_reactions(
+                                            &mut editor_params.commands,
+                                            selected_particle.0,
+                                            ui,
+                                            contact_reaction,
+                                            &mut state.contact_reaction,
+                                        );
+                                    });
+                            });
+                    }
                 });
         });
 }
