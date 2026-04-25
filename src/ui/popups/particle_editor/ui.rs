@@ -210,25 +210,34 @@ fn show_load_particle_types_popup(
         .constrain_to(ctx.available_rect())
         .show(ctx, |ui| {
             ui.vertical(|ui| {
-                if let Ok(entries) = fs::read_dir(&active_world_path.0) {
-                    entries
-                        .filter_map(|e| e.ok())
-                        .map(|e| e.path())
-                        .filter(|p| {
-                            p.file_name()
-                                .and_then(|n| n.to_str())
-                                .map(|n| n.ends_with(".scn.ron"))
-                                .unwrap_or(false)
-                        })
-                        .for_each(|p| {
-                            if ui
-                                .button(p.file_name().unwrap().to_str().unwrap())
-                                .clicked()
-                            {
-                                particle_types_file.0.set_file_name(p.file_name().unwrap());
-                            }
-                        });
-                }
+                ui.vertical(|ui| {
+                    if let Ok(entries) = fs::read_dir(&active_world_path.0) {
+                        entries
+                            .filter_map(|e| e.ok())
+                            .map(|e| e.path())
+                            .filter(|p| {
+                                p.file_name()
+                                    .and_then(|n| n.to_str())
+                                    .map(|n| n.ends_with(".scn.ron"))
+                                    .unwrap_or(false)
+                            })
+                            .for_each(|p| {
+                                let full_name = p.file_name().unwrap().to_str().unwrap();
+                                let (stem, _) = full_name
+                                    .split_once('.')
+                                    .map(|(s, e)| (s.to_string(), format!(".{e}")))
+                                    .unwrap_or_else(|| (full_name.to_string(), String::new()));
+
+                                if ui.button(stem).clicked() {
+                                    particle_types_file.0.set_file_name(p.file_name().unwrap());
+                                }
+                            });
+                    }
+                });
+
+                ui.separator();
+
+                ui.horizontal(|ui| if ui.button("Load").clicked() {});
             });
         });
 
