@@ -202,6 +202,7 @@ fn show_editor(
 fn show_load_particle_types_popup(
     mut contexts: EguiContexts,
     active_world_path: Res<ActiveWorldPath>,
+    mut next_load_particle_window_state: ResMut<NextState<PopupState<LoadParticlesWindowState>>>,
     mut particle_types_file: ResMut<ParticleTypesFile>,
 ) -> Result {
     let ctx = contexts.ctx_mut()?;
@@ -234,10 +235,15 @@ fn show_load_particle_types_popup(
                             });
                     }
                 });
-
                 ui.separator();
 
-                ui.horizontal(|ui| if ui.button("Load").clicked() {});
+                ui.horizontal(|ui| {
+                    if ui.button("Load").clicked() {}
+                    if ui.button("Cancel").clicked() {
+                        next_load_particle_window_state
+                            .set(PopupState::<LoadParticlesWindowState>::Closed)
+                    }
+                });
             });
         });
 
