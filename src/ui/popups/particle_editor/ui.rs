@@ -4,11 +4,7 @@ use bevy_egui::{
     egui::{self},
 };
 use bevy_falling_sand::prelude::*;
-use std::{
-    fs,
-    path::Path,
-    time::Duration,
-};
+use std::{fs, path::Path, time::Duration};
 
 use crate::{
     chunk_effects::{BurnEffect, GasEffect, GlowEffect, LiquidEffect},
