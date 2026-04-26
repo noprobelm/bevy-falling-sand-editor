@@ -507,9 +507,11 @@ fn show_editing_area(
                                     show_color_assignment(ui, &mut color_profile.assignment);
                                     match &mut color_profile.source {
                                         ColorSource::Palette(palette) => {
-                                            show_palette_colors(ui, palette);
+                                            show_palette_options(ui, palette);
                                         }
-                                        ColorSource::Gradient(gradient) => {}
+                                        ColorSource::Gradient(gradient) => {
+                                            show_gradient_options(ui, gradient);
+                                        }
                                         ColorSource::Texture(texture) => {}
                                     }
                                 });
@@ -822,7 +824,7 @@ fn show_color_assignment(ui: &mut egui::Ui, color_assignment: &mut ColorAssignme
     ui.end_row();
 }
 
-fn show_palette_colors(ui: &mut egui::Ui, palette: &mut Palette) {
+fn show_palette_options(ui: &mut egui::Ui, palette: &mut Palette) {
     ui.label("    Palette Colors");
     if ui.button("Add Color").clicked() {
         let new_color = palette
@@ -863,6 +865,46 @@ fn show_palette_colors(ui: &mut egui::Ui, palette: &mut Palette) {
 
     if let Some(remove_index) = to_remove {
         palette.colors.remove(remove_index);
+    }
+}
+
+fn show_gradient_options(ui: &mut egui::Ui, gradient: &mut ColorGradient) {
+    ui.label("    Gradient Start");
+    let srgba = gradient.start.to_srgba();
+    let original = egui::Color32::from_rgba_unmultiplied(
+        (srgba.red * 255.0) as u8,
+        (srgba.green * 255.0) as u8,
+        (srgba.blue * 255.0) as u8,
+        (srgba.alpha * 255.0) as u8,
+    );
+    let mut color32 = original;
+    ui.push_id("gradient start", |ui| {
+        ui.horizontal(|ui| {
+            ui.color_edit_button_srgba(&mut color32);
+        });
+    });
+    if color32 != original {
+        gradient.start = Color::srgba_u8(color32.r(), color32.g(), color32.b(), color32.a());
+    }
+    ui.end_row();
+
+    ui.label("    Gradient End");
+    let srgba = gradient.start.to_srgba();
+    let original = egui::Color32::from_rgba_unmultiplied(
+        (srgba.red * 255.0) as u8,
+        (srgba.green * 255.0) as u8,
+        (srgba.blue * 255.0) as u8,
+        (srgba.alpha * 255.0) as u8,
+    );
+    let mut color32 = original;
+    ui.push_id("gradient end", |ui| {
+        ui.horizontal(|ui| {
+            ui.color_edit_button_srgba(&mut color32);
+        });
+    });
+    ui.end_row();
+    if color32 != original {
+        gradient.end = Color::srgba_u8(color32.r(), color32.g(), color32.b(), color32.a());
     }
 }
 
