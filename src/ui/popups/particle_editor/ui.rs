@@ -505,7 +505,13 @@ fn show_editing_area(
                                         &mut state.gradient,
                                     );
                                     show_color_assignment(ui, &mut color_profile.assignment);
-                                    show_palette_colors(ui, &mut color_profile.source);
+                                    match &mut color_profile.source {
+                                        ColorSource::Palette(palette) => {
+                                            show_palette_colors(ui, palette);
+                                        }
+                                        ColorSource::Gradient(gradient) => {}
+                                        ColorSource::Texture(texture) => {}
+                                    }
                                 });
                             });
 
@@ -816,49 +822,47 @@ fn show_color_assignment(ui: &mut egui::Ui, color_assignment: &mut ColorAssignme
     ui.end_row();
 }
 
-fn show_palette_colors(ui: &mut egui::Ui, color_source: &mut ColorSource) {
-    if let ColorSource::Palette(palette) = color_source {
-        ui.label("    Palette Colors");
-        if ui.button("Add Color").clicked() {
-            let new_color = palette
-                .colors
-                .last()
-                .copied()
-                .unwrap_or(Color::srgba_u8(255, 255, 255, 255));
-            palette.colors.push(new_color);
-        }
+fn show_palette_colors(ui: &mut egui::Ui, palette: &mut Palette) {
+    ui.label("    Palette Colors");
+    if ui.button("Add Color").clicked() {
+        let new_color = palette
+            .colors
+            .last()
+            .copied()
+            .unwrap_or(Color::srgba_u8(255, 255, 255, 255));
+        palette.colors.push(new_color);
+    }
+    ui.end_row();
+
+    let mut to_remove: Option<usize> = None;
+    let colors_len = palette.colors.len();
+    for (i, color) in palette.colors.iter_mut().enumerate() {
+        let srgba = color.to_srgba();
+        let original = egui::Color32::from_rgba_unmultiplied(
+            (srgba.red * 255.0) as u8,
+            (srgba.green * 255.0) as u8,
+            (srgba.blue * 255.0) as u8,
+            (srgba.alpha * 255.0) as u8,
+        );
+        let mut color32 = original;
+        skip_grid_column(ui);
+        ui.push_id(format!("palette_color_{i}"), |ui| {
+            ui.horizontal(|ui| {
+                ui.color_edit_button_srgba(&mut color32);
+                if ui.button("X").clicked() && colors_len > 1 {
+                    to_remove = Some(i);
+                }
+            });
+        });
         ui.end_row();
 
-        let mut to_remove: Option<usize> = None;
-        let colors_len = palette.colors.len();
-        for (i, color) in palette.colors.iter_mut().enumerate() {
-            let srgba = color.to_srgba();
-            let original = egui::Color32::from_rgba_unmultiplied(
-                (srgba.red * 255.0) as u8,
-                (srgba.green * 255.0) as u8,
-                (srgba.blue * 255.0) as u8,
-                (srgba.alpha * 255.0) as u8,
-            );
-            let mut color32 = original;
-            skip_grid_column(ui);
-            ui.push_id(format!("palette_color_{i}"), |ui| {
-                ui.horizontal(|ui| {
-                    ui.color_edit_button_srgba(&mut color32);
-                    if ui.button("X").clicked() && colors_len > 1 {
-                        to_remove = Some(i);
-                    }
-                });
-            });
-            ui.end_row();
-
-            if color32 != original {
-                *color = Color::srgba_u8(color32.r(), color32.g(), color32.b(), color32.a());
-            }
+        if color32 != original {
+            *color = Color::srgba_u8(color32.r(), color32.g(), color32.b(), color32.a());
         }
+    }
 
-        if let Some(remove_index) = to_remove {
-            palette.colors.remove(remove_index);
-        }
+    if let Some(remove_index) = to_remove {
+        palette.colors.remove(remove_index);
     }
 }
 
