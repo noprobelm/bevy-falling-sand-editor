@@ -4,7 +4,11 @@ use bevy_egui::{
     egui::{self},
 };
 use bevy_falling_sand::prelude::*;
-use std::{fs, time::Duration};
+use std::{
+    fs,
+    path::Path,
+    time::Duration,
+};
 
 use crate::{
     chunk_effects::{BurnEffect, GasEffect, GlowEffect, LiquidEffect},
@@ -503,8 +507,11 @@ fn show_editing_area(
                                         &mut color_profile.source,
                                         &mut state.palette,
                                         &mut state.gradient,
+                                        &mut state.texture,
                                     );
-                                    show_color_assignment(ui, &mut color_profile.assignment);
+                                    if !matches!(color_profile.source, ColorSource::Texture(_)) {
+                                        show_color_assignment(ui, &mut color_profile.assignment);
+                                    }
                                     match &mut color_profile.source {
                                         ColorSource::Palette(palette) => {
                                             show_palette_options(ui, palette);
@@ -512,7 +519,9 @@ fn show_editing_area(
                                         ColorSource::Gradient(gradient) => {
                                             show_gradient_options(ui, gradient);
                                         }
-                                        ColorSource::Texture(texture) => {}
+                                        ColorSource::Texture(texture) => {
+                                            show_texture_options(ui, texture);
+                                        }
                                     }
                                 });
                             });
@@ -782,32 +791,39 @@ fn show_color_source(
     color_source: &mut ColorSource,
     cached_palette: &mut Palette,
     cached_gradient: &mut ColorGradient,
+    cached_texture: &mut TextureSource,
 ) {
     ui.label("Color Source: ");
     egui::ComboBox::from_id_salt("color_source_combo")
         .selected_text(color_source.variant_name())
         .show_ui(ui, |ui| {
-            let changed = ui
+            let click_palette = ui
                 .selectable_label(matches!(color_source, ColorSource::Palette(_)), "Palette")
-                .clicked()
-                || ui
-                    .selectable_label(matches!(color_source, ColorSource::Gradient(_)), "Gradient")
-                    .clicked();
+                .clicked();
+            let click_gradient = ui
+                .selectable_label(matches!(color_source, ColorSource::Gradient(_)), "Gradient")
+                .clicked();
+            let click_texture = ui
+                .selectable_label(matches!(color_source, ColorSource::Texture(_)), "Texture")
+                .clicked();
 
-            if changed {
+            let new_source = if click_palette && !matches!(color_source, ColorSource::Palette(_)) {
+                Some(ColorSource::Palette(cached_palette.clone()))
+            } else if click_gradient && !matches!(color_source, ColorSource::Gradient(_)) {
+                Some(ColorSource::Gradient(cached_gradient.clone()))
+            } else if click_texture && !matches!(color_source, ColorSource::Texture(_)) {
+                Some(ColorSource::Texture(cached_texture.clone()))
+            } else {
+                None
+            };
+
+            if let Some(new) = new_source {
                 match color_source {
-                    ColorSource::Palette(palette) => {
-                        *cached_palette = palette.clone();
-                        *color_source = ColorSource::Gradient(cached_gradient.clone());
-                    }
-                    ColorSource::Gradient(gradient) => {
-                        *cached_gradient = gradient.clone();
-                        *color_source = ColorSource::Palette(cached_palette.clone());
-                    }
-                    ColorSource::Texture(_) => {
-                        *color_source = ColorSource::Palette(cached_palette.clone());
-                    }
+                    ColorSource::Palette(p) => *cached_palette = p.clone(),
+                    ColorSource::Gradient(g) => *cached_gradient = g.clone(),
+                    ColorSource::Texture(t) => *cached_texture = t.clone(),
                 }
+                *color_source = new;
             }
         });
     ui.end_row();
@@ -869,42 +885,141 @@ fn show_palette_options(ui: &mut egui::Ui, palette: &mut Palette) {
 }
 
 fn show_gradient_options(ui: &mut egui::Ui, gradient: &mut ColorGradient) {
-    ui.label("    Gradient Start");
-    let srgba = gradient.start.to_srgba();
-    let original = egui::Color32::from_rgba_unmultiplied(
-        (srgba.red * 255.0) as u8,
-        (srgba.green * 255.0) as u8,
-        (srgba.blue * 255.0) as u8,
-        (srgba.alpha * 255.0) as u8,
-    );
-    let mut color32 = original;
-    ui.push_id("gradient start", |ui| {
-        ui.horizontal(|ui| {
-            ui.color_edit_button_srgba(&mut color32);
-        });
-    });
-    if color32 != original {
-        gradient.start = Color::srgba_u8(color32.r(), color32.g(), color32.b(), color32.a());
+    ui.label("    Gradient Stops");
+    if ui.button("Add Stop").clicked() {
+        let new_color = gradient
+            .colors
+            .last()
+            .copied()
+            .unwrap_or(Color::srgba_u8(255, 255, 255, 255));
+        let new_steps = gradient.steps.last().copied().unwrap_or(100).max(1);
+        gradient.colors.push(new_color);
+        gradient.steps.push(new_steps);
     }
     ui.end_row();
 
-    ui.label("    Gradient End");
-    let srgba = gradient.start.to_srgba();
-    let original = egui::Color32::from_rgba_unmultiplied(
-        (srgba.red * 255.0) as u8,
-        (srgba.green * 255.0) as u8,
-        (srgba.blue * 255.0) as u8,
-        (srgba.alpha * 255.0) as u8,
-    );
-    let mut color32 = original;
-    ui.push_id("gradient end", |ui| {
-        ui.horizontal(|ui| {
-            ui.color_edit_button_srgba(&mut color32);
+    let mut to_remove: Option<usize> = None;
+    let stop_count = gradient.colors.len();
+    for i in 0..stop_count {
+        let srgba = gradient.colors[i].to_srgba();
+        let original = egui::Color32::from_rgba_unmultiplied(
+            (srgba.red * 255.0) as u8,
+            (srgba.green * 255.0) as u8,
+            (srgba.blue * 255.0) as u8,
+            (srgba.alpha * 255.0) as u8,
+        );
+        let mut color32 = original;
+        skip_grid_column(ui);
+        ui.push_id(format!("gradient_stop_{i}"), |ui| {
+            ui.horizontal(|ui| {
+                ui.color_edit_button_srgba(&mut color32);
+                if ui.button("X").clicked() && stop_count > 2 {
+                    to_remove = Some(i);
+                }
+            });
         });
+        ui.end_row();
+        if color32 != original {
+            gradient.colors[i] =
+                Color::srgba_u8(color32.r(), color32.g(), color32.b(), color32.a());
+        }
+
+        if i + 1 < stop_count && i < gradient.steps.len() {
+            skip_grid_column(ui);
+            ui.push_id(format!("gradient_steps_{i}"), |ui| {
+                ui.horizontal(|ui| {
+                    ui.label("Steps:");
+                    ui.add(egui::DragValue::new(&mut gradient.steps[i]).range(1..=u32::MAX));
+                });
+            });
+            ui.end_row();
+        }
+    }
+
+    if let Some(remove_index) = to_remove {
+        gradient.colors.remove(remove_index);
+        let step_index = remove_index.min(gradient.steps.len().saturating_sub(1));
+        if !gradient.steps.is_empty() {
+            gradient.steps.remove(step_index);
+        }
+        let total = gradient.steps.iter().sum::<usize>();
+        if total > 0 {
+            gradient.index %= total;
+        } else {
+            gradient.index = 0;
+        }
+    }
+
+    ui.label("    HSV Interpolation");
+    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+        ui.add(crate::ui::widgets::toggle_switch::toggle(
+            &mut gradient.hsv_interpolation,
+        ));
     });
     ui.end_row();
-    if color32 != original {
-        gradient.end = Color::srgba_u8(color32.r(), color32.g(), color32.b(), color32.a());
+}
+
+fn show_texture_options(ui: &mut egui::Ui, texture: &mut TextureSource) {
+    ui.label("    Texture");
+    let display = if texture.path.is_empty() {
+        "(none)".to_string()
+    } else {
+        texture.path.clone()
+    };
+    ui.label(display);
+    ui.end_row();
+
+    let textures = discover_texture_assets();
+    for path in textures {
+        skip_grid_column(ui);
+        let is_selected = texture.path == path;
+        ui.push_id(format!("texture_btn_{path}"), |ui| {
+            let btn = if is_selected {
+                egui::Button::new(&path).fill(egui::Color32::from_rgb(70, 130, 180))
+            } else {
+                egui::Button::new(&path)
+            };
+            if ui.add(btn).clicked() && !is_selected {
+                *texture = make_texture_source(&path);
+            }
+        });
+        ui.end_row();
+    }
+}
+
+fn make_texture_source(path: &str) -> TextureSource {
+    match ColorProfile::texture(path).source {
+        ColorSource::Texture(t) => t,
+        _ => unreachable!(),
+    }
+}
+
+fn discover_texture_assets() -> Vec<String> {
+    let mut out = Vec::new();
+    let assets_root = Path::new("assets");
+    walk_texture_dir(&assets_root.join("textures"), assets_root, &mut out);
+    out.sort();
+    out
+}
+
+fn walk_texture_dir(dir: &Path, assets_root: &Path, out: &mut Vec<String>) {
+    let Ok(entries) = fs::read_dir(dir) else {
+        return;
+    };
+    for entry in entries.filter_map(Result::ok) {
+        let path = entry.path();
+        if path.is_dir() {
+            walk_texture_dir(&path, assets_root, out);
+        } else if path
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(|e| matches!(e.to_ascii_lowercase().as_str(), "png" | "jpg" | "jpeg"))
+            .unwrap_or(false)
+            && let Ok(rel) = path.strip_prefix(assets_root)
+            && let Some(s) = rel.to_str()
+        {
+            out.push(s.replace('\\', "/"));
+        }
     }
 }
 

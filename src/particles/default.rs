@@ -246,10 +246,12 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         ParticleCategory("Movable Solid".into()),
         ColorProfile {
             source: ColorSource::Gradient(ColorGradient {
-                start: Color::hsla(0.0, 1.0, 0.5, 1.0),
-                end: Color::hsla(360.0, 1.0, 0.5, 1.0),
+                colors: vec![
+                    Color::hsla(0.0, 1.0, 0.5, 1.0),
+                    Color::hsla(360.0, 1.0, 0.5, 1.0),
+                ],
+                steps: vec![5000],
                 index: 0,
-                steps: 5000,
                 hsv_interpolation: true,
             }),
             assignment: ColorAssignment::Sequential,

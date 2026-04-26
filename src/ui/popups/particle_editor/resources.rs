@@ -109,6 +109,20 @@ impl Default for CachedMovementState {
     }
 }
 
+fn default_editor_gradient() -> ColorGradient {
+    ColorGradient {
+        hsv_interpolation: true,
+        ..ColorGradient::default()
+    }
+}
+
+fn default_editor_texture() -> TextureSource {
+    match ColorProfile::texture(String::new()).source {
+        ColorSource::Texture(t) => t,
+        _ => unreachable!(),
+    }
+}
+
 #[derive(Clone, Debug, Reflect)]
 pub struct ParticleData {
     pub cached_movement: CachedMovementState,
@@ -117,6 +131,7 @@ pub struct ParticleData {
     pub static_rigid_body: StaticRigidBodyParticle,
     pub palette: Palette,
     pub gradient: ColorGradient,
+    pub texture: TextureSource,
     pub burns: Flammable,
     pub contact_reaction: ContactReaction,
 }
@@ -139,7 +154,8 @@ impl Default for ParticleData {
             false,
         );
         let palette = Palette::default();
-        let gradient = ColorGradient::default();
+        let gradient = default_editor_gradient();
+        let texture = default_editor_texture();
         let contact_reaction = ContactReaction::default();
         Self {
             cached_movement,
@@ -148,6 +164,7 @@ impl Default for ParticleData {
             static_rigid_body,
             palette,
             gradient,
+            texture,
             burns,
             contact_reaction,
         }
@@ -241,18 +258,29 @@ fn synchronize_editor_registry(
         let cached = editor_state.map.get(entity);
 
         if let Ok(data) = query.get(*entity) {
-            let (palette, gradient) = match &data.color.profile.source {
+            let (palette, gradient, texture) = match &data.color.profile.source {
                 ColorSource::Palette(p) => (
                     p.clone(),
-                    cached.map(|c| c.gradient.clone()).unwrap_or_default(),
+                    cached
+                        .map(|c| c.gradient.clone())
+                        .unwrap_or_else(default_editor_gradient),
+                    cached
+                        .map(|c| c.texture.clone())
+                        .unwrap_or_else(default_editor_texture),
                 ),
                 ColorSource::Gradient(g) => (
                     cached.map(|c| c.palette.clone()).unwrap_or_default(),
                     g.clone(),
+                    cached
+                        .map(|c| c.texture.clone())
+                        .unwrap_or_else(default_editor_texture),
                 ),
-                ColorSource::Texture(_) => (
+                ColorSource::Texture(t) => (
                     cached.map(|c| c.palette.clone()).unwrap_or_default(),
-                    cached.map(|c| c.gradient.clone()).unwrap_or_default(),
+                    cached
+                        .map(|c| c.gradient.clone())
+                        .unwrap_or_else(default_editor_gradient),
+                    t.clone(),
                 ),
             };
 
@@ -288,6 +316,7 @@ fn synchronize_editor_registry(
                     .unwrap_or(defaults.static_rigid_body),
                 palette,
                 gradient,
+                texture,
                 burns: data
                     .reactions
                     .burns
