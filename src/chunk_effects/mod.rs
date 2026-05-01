@@ -205,7 +205,6 @@ pub struct GlowSettings {
 #[derive(ShaderType, Debug, Clone)]
 pub struct BurningSettings {
     pub intensity: f32,
-    pub _padding: f32,
 }
 
 // ---------------------------------------------------------------------------
@@ -224,6 +223,8 @@ pub struct LiquidEffectMaterial {
     pub effect_data: Handle<Image>,
     #[uniform(5)]
     pub uv_offset: Vec2,
+    #[uniform(6)]
+    pub quad_world_rect: Vec4,
 }
 
 impl Material2d for LiquidEffectMaterial {
@@ -245,10 +246,17 @@ impl ChunkEffectMaterial for LiquidEffectMaterial {
             chunk_texture,
             effect_data,
             uv_offset: Vec2::ZERO,
+            quad_world_rect: Vec4::ZERO,
         }
     }
     fn set_uv_offset(&mut self, offset: Vec2) {
         self.uv_offset = offset;
+    }
+    fn set_quad_world_rect(&mut self, rect: Vec4) {
+        self.quad_world_rect = rect;
+    }
+    fn affected_channels() -> &'static [(usize, usize)] {
+        &[(0, 0)]
     }
 }
 
@@ -264,6 +272,8 @@ pub struct GasEffectMaterial {
     pub effect_data: Handle<Image>,
     #[uniform(5)]
     pub uv_offset: Vec2,
+    #[uniform(6)]
+    pub quad_world_rect: Vec4,
 }
 
 impl Material2d for GasEffectMaterial {
@@ -285,10 +295,20 @@ impl ChunkEffectMaterial for GasEffectMaterial {
             chunk_texture,
             effect_data,
             uv_offset: Vec2::ZERO,
+            quad_world_rect: Vec4::ZERO,
         }
     }
     fn set_uv_offset(&mut self, offset: Vec2) {
         self.uv_offset = offset;
+    }
+    fn set_quad_world_rect(&mut self, rect: Vec4) {
+        self.quad_world_rect = rect;
+    }
+    fn affected_channels() -> &'static [(usize, usize)] {
+        &[(0, 1)]
+    }
+    fn padding() -> u32 {
+        4
     }
 }
 
@@ -304,6 +324,8 @@ pub struct GlowEffectMaterial {
     pub effect_data: Handle<Image>,
     #[uniform(5)]
     pub uv_offset: Vec2,
+    #[uniform(6)]
+    pub quad_world_rect: Vec4,
 }
 
 impl Material2d for GlowEffectMaterial {
@@ -325,10 +347,20 @@ impl ChunkEffectMaterial for GlowEffectMaterial {
             chunk_texture,
             effect_data,
             uv_offset: Vec2::ZERO,
+            quad_world_rect: Vec4::ZERO,
         }
     }
     fn set_uv_offset(&mut self, offset: Vec2) {
         self.uv_offset = offset;
+    }
+    fn set_quad_world_rect(&mut self, rect: Vec4) {
+        self.quad_world_rect = rect;
+    }
+    fn affected_channels() -> &'static [(usize, usize)] {
+        &[(0, 2)]
+    }
+    fn padding() -> u32 {
+        12
     }
 }
 
@@ -344,6 +376,8 @@ pub struct BurningEffectMaterial {
     pub effect_data: Handle<Image>,
     #[uniform(5)]
     pub uv_offset: Vec2,
+    #[uniform(6)]
+    pub quad_world_rect: Vec4,
 }
 
 impl Material2d for BurningEffectMaterial {
@@ -358,16 +392,23 @@ impl Material2d for BurningEffectMaterial {
 impl ChunkEffectMaterial for BurningEffectMaterial {
     fn new(chunk_texture: Handle<Image>, effect_data: Handle<Image>) -> Self {
         Self {
-            settings: BurningSettings {
-                intensity: 1.0,
-                _padding: 0.0,
-            },
+            settings: BurningSettings { intensity: 1.0 },
             chunk_texture,
             effect_data,
             uv_offset: Vec2::ZERO,
+            quad_world_rect: Vec4::ZERO,
         }
     }
     fn set_uv_offset(&mut self, offset: Vec2) {
         self.uv_offset = offset;
+    }
+    fn set_quad_world_rect(&mut self, rect: Vec4) {
+        self.quad_world_rect = rect;
+    }
+    fn affected_channels() -> &'static [(usize, usize)] {
+        &[(0, 3)]
+    }
+    fn padding() -> u32 {
+        6
     }
 }
