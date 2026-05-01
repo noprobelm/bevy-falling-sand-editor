@@ -1,5 +1,5 @@
+use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
-use bevy::{image::ImageSampler, prelude::*};
 use leafwing_input_manager::{Actionlike, plugin::InputManagerPlugin, prelude::InputMap};
 
 pub(super) struct SetupPlugin;
@@ -21,7 +21,7 @@ pub(super) enum SelectAction {
 pub(super) struct OverlayImage(pub Handle<Image>);
 
 fn setup_overlay_image(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
-    let mut image = Image::new(
+    let image = Image::new(
         Extent3d {
             width: 1,
             height: 1,
@@ -32,7 +32,6 @@ fn setup_overlay_image(mut commands: Commands, mut images: ResMut<Assets<Image>>
         TextureFormat::Rgba8UnormSrgb,
         default(),
     );
-    image.sampler = ImageSampler::nearest();
     commands.insert_resource(OverlayImage(images.add(image)));
 }
 

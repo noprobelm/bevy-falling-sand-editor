@@ -44,7 +44,6 @@ impl ConsoleCommand for SceneSpawnConsoleCommand {
         }
 
         let scene_name = &args[0];
-        let overwrite = args.iter().any(|a| a == "--overwrite");
 
         let position_args: Vec<&String> =
             args[1..].iter().filter(|a| *a != "--overwrite").collect();
@@ -77,11 +76,7 @@ impl ConsoleCommand for SceneSpawnConsoleCommand {
                     let handle = handle.clone();
                     world
                         .resource_mut::<Messages<SpawnSceneSignal>>()
-                        .write(SpawnSceneSignal {
-                            scene: handle,
-                            center,
-                            overwrite_existing: overwrite,
-                        });
+                        .write(SpawnSceneSignal::new(handle, center));
                 });
             }
             Err(e) => {

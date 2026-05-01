@@ -1,0 +1,20 @@
+(
+  layers: [
+    Background((image: "editor_bg.pool_background.png")),
+    Background((image: "editor_bg.pool_grout.png")),
+    Background((image: "editor_bg.pool_tiles.png")),
+    Particles((
+      image: "editor_bg.pool_particle_outline.png",
+      colors: {
+        (139, 182, 157, 255): "Dense Rock Wall",
+      },
+    )),
+    Particles((
+      image: "editor_bg.pool_particle_water.png",
+      colors: {
+        (77, 101, 180, 133): "Water",
+        (77, 101, 180, 196): "Water",
+      },
+    )),
+  ],
+)
