@@ -1,6 +1,5 @@
 mod render;
 
-use bevy::image::ImageSampler;
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat, TextureUsages};
 use bevy_falling_sand::prelude::*;
@@ -101,7 +100,6 @@ fn setup_gol_textures(
             TextureFormat::Rgba8Unorm,
             default(),
         );
-        img.sampler = ImageSampler::nearest();
         img.texture_descriptor.usage = TextureUsages::STORAGE_BINDING
             | TextureUsages::TEXTURE_BINDING
             | TextureUsages::COPY_DST;
