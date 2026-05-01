@@ -1,0 +1,19 @@
+(
+  layers: [
+    Background((image: "twilight.background.png")),
+    Background((image: "twilight.sun_background.png")),
+    Particles((
+      image: "twilight.water_particles.png",
+      colors: {
+        (74, 122, 150, 255): "Water",
+        (194, 213, 216, 255): "Water",
+      },
+    )),
+    Particles((
+      image: "twilight.ground_particles.png",
+      colors: {
+        (41, 40, 49, 255): "Dense Rock Wall",
+      },
+    )),
+  ],
+)
