@@ -258,6 +258,9 @@ impl ChunkEffectMaterial for LiquidEffectMaterial {
     fn affected_channels() -> &'static [(usize, usize)] {
         &[(0, 0)]
     }
+    fn precompute() -> bool {
+        false
+    }
 }
 
 #[derive(Asset, AsBindGroup, TypePath, Debug, Clone)]
@@ -362,6 +365,9 @@ impl ChunkEffectMaterial for GlowEffectMaterial {
     fn padding() -> u32 {
         12
     }
+    fn precompute() -> bool {
+        true
+    }
 }
 
 #[derive(Asset, AsBindGroup, TypePath, Debug, Clone)]
@@ -410,5 +416,8 @@ impl ChunkEffectMaterial for BurningEffectMaterial {
     }
     fn padding() -> u32 {
         6
+    }
+    fn precompute() -> bool {
+        false
     }
 }
