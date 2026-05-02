@@ -862,7 +862,7 @@ dependencies = [
 [[package]]
 name = "bevy_falling_sand"
 version = "0.7.0"
-source = "git+https://github.com/noprobelm/bevy_falling_sand?branch=main#85ff00ada97c8ec615418890f56790a9225ace67"
+source = "git+https://github.com/noprobelm/bevy_falling_sand?branch=main#8a299db70548de6ee202291ff3dd0e099a4d1a5c"
 dependencies = [
  "avian2d",
  "bevy",
@@ -6529,7 +6529,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.1",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
