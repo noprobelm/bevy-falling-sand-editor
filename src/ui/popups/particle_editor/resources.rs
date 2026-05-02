@@ -12,16 +12,20 @@ pub struct ResourcesPlugin;
 
 impl Plugin for ResourcesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            EguiPrimaryContextPass,
-            synchronize_editor_registry
-                .run_if(resource_changed::<ParticleTypeRegistry>)
-                .before(UiSystems::ParticleEditor),
-        )
-        .add_systems(
-            Update,
-            refresh_particle_labels.run_if(condition_particle_movement_changed),
-        );
+        app.init_resource::<NameDraft>()
+            .add_systems(
+                EguiPrimaryContextPass,
+                (
+                    synchronize_editor_registry.run_if(resource_changed::<ParticleTypeRegistry>),
+                    refresh_name_draft.run_if(condition_should_refresh_name_draft),
+                )
+                    .chain()
+                    .before(UiSystems::ParticleEditor),
+            )
+            .add_systems(
+                Update,
+                refresh_particle_labels.run_if(condition_particle_movement_changed),
+            );
     }
 }
 
@@ -354,4 +358,56 @@ fn condition_particle_movement_changed(
     categories: Query<Entity, Changed<ParticleCategory>>,
 ) -> bool {
     !movement.is_empty() || !categories.is_empty()
+}
+
+/// Buffered name for the currently-selected particle.
+///
+/// The Name text field in the editor writes to this buffer instead of the live
+/// `ParticleType` component, so partially-typed values can't collide with another
+/// particle's registered name (which would otherwise clobber the other particle's
+/// identity). The buffer is committed to the entity by the "Save Particle" button.
+#[derive(Resource, Default)]
+pub struct NameDraft {
+    pub entity: Option<Entity>,
+    pub name: String,
+}
+
+fn condition_should_refresh_name_draft(
+    selected: Option<Res<SelectedParticle>>,
+    draft: Res<NameDraft>,
+    query: Query<(), With<ParticleType>>,
+) -> bool {
+    match selected {
+        None => draft.entity.is_some(),
+        Some(s) => {
+            if draft.entity != Some(s.0) {
+                return true;
+            }
+            // Selected entity vanished — clear the stale draft once.
+            !query.contains(s.0) && (draft.entity.is_some() || !draft.name.is_empty())
+        }
+    }
+}
+
+fn refresh_name_draft(
+    selected: Option<Res<SelectedParticle>>,
+    mut draft: ResMut<NameDraft>,
+    query: Query<&ParticleType>,
+) {
+    let Some(selected) = selected else {
+        draft.entity = None;
+        draft.name.clear();
+        return;
+    };
+
+    match query.get(selected.0) {
+        Ok(particle_type) => {
+            draft.entity = Some(selected.0);
+            draft.name = particle_type.name.to_string();
+        }
+        Err(_) => {
+            draft.entity = None;
+            draft.name.clear();
+        }
+    }
 }

@@ -39,6 +39,7 @@ pub struct ParticleEditorParams<'w, 's> {
     pub category_labels: Res<'w, ParticleCategoryLabels>,
     pub particle_registry: Res<'w, ParticleTypeRegistry>,
     pub editor_state: ResMut<'w, EditorState>,
+    pub name_draft: ResMut<'w, NameDraft>,
     pub msgw_reset_particle_type: MessageWriter<'w, SyncParticleTypeChildrenSignal>,
     pub particle_types_file: ResMut<'w, ParticleTypesFile>,
     pub msgw_save_particle: MessageWriter<'w, PersistParticleTypesSignal>,
@@ -134,7 +135,54 @@ fn show_top_options(
         if remove_particle_clicked && let Some(entity) = selected_entity {
             editor_params.commands.entity(entity).despawn();
         }
+
+        let save_enabled =
+            selected_entity.is_some() && editor_params.name_draft.entity == selected_entity;
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            if ui
+                .add_enabled(save_enabled, egui::Button::new("Save Particle"))
+                .clicked()
+                && let Some(entity) = selected_entity
+            {
+                save_particle_name(entity, synchronize_brush_state, editor_params);
+            }
+        });
     });
+}
+
+/// Commit the buffered name in `NameDraft` to the entity. Refuses names that are empty,
+/// equal to the entity's current registered name (no-op), or already used by another
+/// particle. Re-inserting `ParticleType` triggers the registry hooks that keep the
+/// `ParticleTypeRegistry` in sync with the new name.
+fn save_particle_name(
+    entity: Entity,
+    synchronize_brush_state: &Res<State<SynchronizeBrushState>>,
+    editor_params: &mut ParticleEditorParams,
+) {
+    if editor_params.name_draft.entity != Some(entity) {
+        return;
+    }
+    let new_name = editor_params.name_draft.name.trim().to_string();
+    if new_name.is_empty() {
+        warn!("Save Particle: refusing to save an empty particle name");
+        return;
+    }
+    if let Some(existing) = editor_params.particle_registry.get(new_name.as_str())
+        && *existing != entity
+    {
+        warn!("Save Particle: name '{new_name}' already used by another particle type");
+        return;
+    }
+
+    editor_params
+        .commands
+        .entity(entity)
+        .remove::<ParticleType>()
+        .insert(ParticleType::from_string(new_name.clone()));
+
+    if synchronize_brush_state.get() == &SynchronizeBrushState::Enabled {
+        editor_params.brush.0 = Particle::from(new_name);
+    }
 }
 
 fn unique_new_particle_name(registry: &ParticleTypeRegistry) -> String {
@@ -422,7 +470,12 @@ fn show_editing_area(
                         egui::Grid::new("identity_grid")
                             .num_columns(2)
                             .show(ui, |ui| {
-                                show_particle_type_text_edit(ui, particle_type);
+                                show_particle_type_text_edit(
+                                    ui,
+                                    selected_particle.0,
+                                    &particle_type,
+                                    &mut editor_params.name_draft,
+                                );
                                 show_category(
                                     &mut editor_params.commands,
                                     selected_particle.0,
@@ -577,12 +630,23 @@ fn show_editing_area(
         });
 }
 
-fn show_particle_type_text_edit(ui: &mut egui::Ui, mut particle_type: Mut<'_, ParticleType>) {
-    let mut name = particle_type.name.to_string();
+fn show_particle_type_text_edit(
+    ui: &mut egui::Ui,
+    entity: Entity,
+    particle_type: &Mut<'_, ParticleType>,
+    name_draft: &mut NameDraft,
+) {
+    // Editor input is buffered in NameDraft; the live ParticleType is only updated by
+    // the "Save Particle" button. This prevents partial values typed into the Name field
+    // from being committed to the registry mid-edit and stealing another particle's
+    // identity (e.g. typing "Colorful Smoke" passing through "Colorful").
+    if name_draft.entity != Some(entity) {
+        name_draft.entity = Some(entity);
+        name_draft.name = particle_type.name.to_string();
+    }
     ui.label("Name:");
-    ui.add(egui::TextEdit::singleline(&mut name));
+    ui.add(egui::TextEdit::singleline(&mut name_draft.name));
     ui.end_row();
-    particle_type.set_if_neq(name.into());
 }
 
 fn show_category(
