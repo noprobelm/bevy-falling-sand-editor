@@ -1388,9 +1388,12 @@ fn show_burns_reaction(
 
         let produces_name = reaction.produces.name.to_string();
         ui.label("        Produces");
-        if let Some(new_name) =
-            particle_combo(ui, "burns_reaction_produces", &produces_name, particle_registry)
-        {
+        if let Some(new_name) = particle_combo(
+            ui,
+            "burns_reaction_produces",
+            &produces_name,
+            particle_registry,
+        ) {
             reaction.produces = Particle::from(new_name.clone());
             if let Some(ref mut state_reaction) = burns_state.reaction {
                 state_reaction.produces = Particle::from(new_name);
