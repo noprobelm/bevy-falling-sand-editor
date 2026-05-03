@@ -12,16 +12,20 @@ pub struct ResourcesPlugin;
 
 impl Plugin for ResourcesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            EguiPrimaryContextPass,
-            synchronize_editor_registry
-                .run_if(resource_changed::<ParticleTypeRegistry>)
-                .before(UiSystems::ParticleEditor),
-        )
-        .add_systems(
-            Update,
-            refresh_particle_labels.run_if(condition_particle_movement_changed),
-        );
+        app.init_resource::<NameDraft>()
+            .add_systems(
+                EguiPrimaryContextPass,
+                (
+                    synchronize_editor_registry.run_if(resource_changed::<ParticleTypeRegistry>),
+                    refresh_name_draft.run_if(condition_should_refresh_name_draft),
+                )
+                    .chain()
+                    .before(UiSystems::ParticleEditor),
+            )
+            .add_systems(
+                Update,
+                refresh_particle_labels.run_if(condition_particle_movement_changed),
+            );
     }
 }
 
@@ -128,6 +132,7 @@ pub struct ParticleData {
     pub cached_movement: CachedMovementState,
     pub timed_lifetime: TimedLifetime,
     pub chance_lifetime: ChanceLifetime,
+    pub chance_mutation: ChanceMutation,
     pub static_rigid_body: StaticRigidBodyParticle,
     pub palette: Palette,
     pub gradient: ColorGradient,
@@ -141,6 +146,8 @@ impl Default for ParticleData {
         let cached_movement = CachedMovementState::default();
         let timed_lifetime = TimedLifetime::new(Duration::from_millis(10000));
         let chance_lifetime = ChanceLifetime::new(0.01, Duration::from_millis(100));
+        let chance_mutation =
+            ChanceMutation::from_string(String::new(), 0.01, Duration::from_millis(100));
         let static_rigid_body = StaticRigidBodyParticle;
         let burns = Flammable::new(
             Duration::from_millis(1000),
@@ -161,6 +168,7 @@ impl Default for ParticleData {
             cached_movement,
             timed_lifetime,
             chance_lifetime,
+            chance_mutation,
             static_rigid_body,
             palette,
             gradient,
@@ -188,6 +196,7 @@ pub(crate) struct CoreQuery {
     pub particle_type: &'static mut ParticleType,
     pub timed_lifetime: Option<&'static mut TimedLifetime>,
     pub chance_lifetime: Option<&'static mut ChanceLifetime>,
+    pub chance_mutation: Option<&'static mut ChanceMutation>,
 }
 
 #[derive(QueryData)]
@@ -309,6 +318,11 @@ fn synchronize_editor_registry(
                     .chance_lifetime
                     .cloned()
                     .unwrap_or_else(|| defaults.chance_lifetime.clone()),
+                chance_mutation: data
+                    .core
+                    .chance_mutation
+                    .cloned()
+                    .unwrap_or_else(|| defaults.chance_mutation.clone()),
                 static_rigid_body: data
                     .physics
                     .static_rigid_body
@@ -354,4 +368,56 @@ fn condition_particle_movement_changed(
     categories: Query<Entity, Changed<ParticleCategory>>,
 ) -> bool {
     !movement.is_empty() || !categories.is_empty()
+}
+
+/// Buffered name for the currently-selected particle.
+///
+/// The Name text field in the editor writes to this buffer instead of the live
+/// `ParticleType` component, so partially-typed values can't collide with another
+/// particle's registered name (which would otherwise clobber the other particle's
+/// identity). The buffer is committed to the entity by the "Save Particle" button.
+#[derive(Resource, Default)]
+pub struct NameDraft {
+    pub entity: Option<Entity>,
+    pub name: String,
+}
+
+fn condition_should_refresh_name_draft(
+    selected: Option<Res<SelectedParticle>>,
+    draft: Res<NameDraft>,
+    query: Query<(), With<ParticleType>>,
+) -> bool {
+    match selected {
+        None => draft.entity.is_some(),
+        Some(s) => {
+            if draft.entity != Some(s.0) {
+                return true;
+            }
+            // Selected entity vanished — clear the stale draft once.
+            !query.contains(s.0) && (draft.entity.is_some() || !draft.name.is_empty())
+        }
+    }
+}
+
+fn refresh_name_draft(
+    selected: Option<Res<SelectedParticle>>,
+    mut draft: ResMut<NameDraft>,
+    query: Query<&ParticleType>,
+) {
+    let Some(selected) = selected else {
+        draft.entity = None;
+        draft.name.clear();
+        return;
+    };
+
+    match query.get(selected.0) {
+        Ok(particle_type) => {
+            draft.entity = Some(selected.0);
+            draft.name = particle_type.name.to_string();
+        }
+        Err(_) => {
+            draft.entity = None;
+            draft.name.clear();
+        }
+    }
 }
