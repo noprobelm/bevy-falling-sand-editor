@@ -428,10 +428,11 @@ fn show_editing_area(
                     };
 
                     if let Ok(data) = particle_query.get_mut(selected_particle.0) {
-                        let (particle_type, timed_lifetime, chance_lifetime) = (
+                        let (particle_type, timed_lifetime, chance_lifetime, chance_mutation) = (
                             data.core.particle_type,
                             data.core.timed_lifetime,
                             data.core.chance_lifetime,
+                            data.core.chance_mutation,
                         );
                         let (
                             mut movement,
@@ -543,6 +544,14 @@ fn show_editing_area(
                                             chance_lifetime,
                                             &mut state.chance_lifetime,
                                         );
+                                        show_chance_mutation(
+                                            &mut editor_params.commands,
+                                            selected_particle.0,
+                                            ui,
+                                            chance_mutation,
+                                            &mut state.chance_mutation,
+                                            &editor_params.particle_registry,
+                                        );
                                     });
                             });
 
@@ -604,6 +613,7 @@ fn show_editing_area(
                                             ui,
                                             burns,
                                             &mut state.burns,
+                                            &editor_params.particle_registry,
                                         );
                                     },
                                 );
@@ -621,6 +631,7 @@ fn show_editing_area(
                                             ui,
                                             contact_reaction,
                                             &mut state.contact_reaction,
+                                            &editor_params.particle_registry,
                                         );
                                     });
                             });
@@ -842,6 +853,104 @@ fn show_chance_lifetime(
                 .tick_timer
                 .set_duration(Duration::from_millis(new_value));
         }
+    }
+}
+
+fn show_chance_mutation(
+    commands: &mut Commands,
+    entity: Entity,
+    ui: &mut egui::Ui,
+    chance_mutation: Option<Mut<'_, ChanceMutation>>,
+    mutation_state: &mut ChanceMutation,
+    particle_registry: &ParticleTypeRegistry,
+) {
+    let enabled = chance_mutation.is_some();
+    let new_value = add_label_with_toggle_switch(ui, 0, "Mutation (Chance)", enabled);
+    if new_value != enabled {
+        if new_value {
+            commands.entity(entity).insert(mutation_state.clone());
+        } else {
+            commands.entity(entity).remove::<ChanceMutation>();
+        }
+    }
+    if let Some(mut mutation) = chance_mutation {
+        ui.label("    Target:");
+        let current = mutation.target.to_string();
+        if let Some(new_target) = particle_combo(
+            ui,
+            format!("chance_mutation_target_{entity:?}"),
+            &current,
+            particle_registry,
+        ) {
+            mutation.target = new_target.clone().into();
+            mutation_state.target = new_target.into();
+        }
+        ui.end_row();
+
+        let new_value = add_label_with_drag_value(
+            ui,
+            0,
+            "    Chance (pct):",
+            mutation.chance * 100.,
+            0.0..=100.,
+            0.1,
+        );
+        let new_chance = new_value / 100.;
+        if (mutation.chance - new_chance).abs() > f64::EPSILON {
+            mutation.chance = new_chance;
+            mutation_state.chance = new_chance;
+        }
+
+        let duration_ms = mutation.tick_timer.duration().as_millis() as u64;
+        let new_value = add_label_with_drag_value(
+            ui,
+            0,
+            "    Tick Timer (ms):",
+            duration_ms,
+            0..=u64::MAX,
+            1.0,
+        );
+        if new_value != duration_ms {
+            mutation
+                .tick_timer
+                .set_duration(Duration::from_millis(new_value));
+            mutation_state
+                .tick_timer
+                .set_duration(Duration::from_millis(new_value));
+        }
+    }
+}
+
+fn particle_combo(
+    ui: &mut egui::Ui,
+    id_salt: impl std::hash::Hash,
+    current: &str,
+    registry: &ParticleTypeRegistry,
+) -> Option<String> {
+    let mut names: Vec<String> = registry.names().map(str::to_string).collect();
+    names.sort();
+    let selected_text = if current.is_empty() {
+        "<unset>"
+    } else {
+        current
+    };
+    let new_value = ui
+        .push_id(id_salt, |ui| {
+            let mut value = current.to_string();
+            egui::ComboBox::from_id_salt("particle_combo")
+                .selected_text(selected_text)
+                .show_ui(ui, |ui| {
+                    for name in &names {
+                        ui.selectable_value(&mut value, name.clone(), name);
+                    }
+                });
+            value
+        })
+        .inner;
+    if new_value != current {
+        Some(new_value)
+    } else {
+        None
     }
 }
 
@@ -1172,6 +1281,7 @@ fn show_flammability(
     ui: &mut egui::Ui,
     burns: Option<Mut<'_, Flammable>>,
     burns_state: &mut Flammable,
+    particle_registry: &ParticleTypeRegistry,
 ) {
     let enabled = burns.is_some();
     let new_value = add_label_with_toggle_switch(ui, 0, "Flammable", enabled);
@@ -1186,7 +1296,7 @@ fn show_flammability(
     if let Some(mut burns) = burns {
         show_burns_timing(ui, &mut burns, burns_state);
         show_burns_ignites_on_spawn(ui, &mut burns, burns_state);
-        show_burns_reaction(ui, &mut burns, burns_state);
+        show_burns_reaction(ui, &mut burns, burns_state, particle_registry);
 
         add_minor_grid_separator(ui);
 
@@ -1253,6 +1363,7 @@ fn show_burns_reaction(
     ui: &mut egui::Ui,
     burns: &mut Mut<'_, Flammable>,
     burns_state: &mut Flammable,
+    particle_registry: &ParticleTypeRegistry,
 ) {
     let reaction_enabled = burns.reaction.is_some();
     let new_value = add_label_with_toggle_switch(ui, 0, "    Reaction", reaction_enabled);
@@ -1275,15 +1386,14 @@ fn show_burns_reaction(
             }
         }
 
-        let mut produces_name = reaction.produces.name.to_string();
+        let produces_name = reaction.produces.name.to_string();
         ui.label("        Produces");
-        if ui
-            .add(egui::TextEdit::singleline(&mut produces_name))
-            .changed()
+        if let Some(new_name) =
+            particle_combo(ui, "burns_reaction_produces", &produces_name, particle_registry)
         {
-            reaction.produces = Particle::from(produces_name.clone());
+            reaction.produces = Particle::from(new_name.clone());
             if let Some(ref mut state_reaction) = burns_state.reaction {
-                state_reaction.produces = Particle::from(produces_name);
+                state_reaction.produces = Particle::from(new_name);
             }
         }
         ui.end_row();
@@ -1319,6 +1429,7 @@ fn show_contact_reactions(
     ui: &mut egui::Ui,
     contact_reaction: Option<Mut<'_, ContactReaction>>,
     contact_reaction_state: &mut ContactReaction,
+    particle_registry: &ParticleTypeRegistry,
 ) {
     let enabled = contact_reaction.is_some();
     let new_value = add_label_with_toggle_switch(ui, 0, "Enabled", enabled);
@@ -1333,7 +1444,12 @@ fn show_contact_reactions(
     }
 
     if let Some(mut contact_reaction) = contact_reaction {
-        show_contact_rules(ui, &mut contact_reaction, contact_reaction_state);
+        show_contact_rules(
+            ui,
+            &mut contact_reaction,
+            contact_reaction_state,
+            particle_registry,
+        );
     }
 }
 
@@ -1341,6 +1457,7 @@ fn show_contact_rules(
     ui: &mut egui::Ui,
     contact_reaction: &mut Mut<'_, ContactReaction>,
     contact_reaction_state: &mut ContactReaction,
+    particle_registry: &ParticleTypeRegistry,
 ) {
     ui.label("    Rules");
     if ui.button("Add Rule").clicked() {
@@ -1370,33 +1487,31 @@ fn show_contact_rules(
         });
         ui.end_row();
 
-        let mut target_name = rule.target.name.to_string();
+        let target_name = rule.target.name.to_string();
         ui.label("        Target");
-        let changed = ui
-            .push_id(format!("contact_rule_target_{i}"), |ui| {
-                ui.add(egui::TextEdit::singleline(&mut target_name))
-                    .changed()
-            })
-            .inner;
-        ui.end_row();
-        if changed {
-            rule.target = Particle::from(target_name.clone());
-            contact_reaction_state.rules[i].target = Particle::from(target_name);
+        if let Some(new_name) = particle_combo(
+            ui,
+            format!("contact_rule_target_{i}"),
+            &target_name,
+            particle_registry,
+        ) {
+            rule.target = Particle::from(new_name.clone());
+            contact_reaction_state.rules[i].target = Particle::from(new_name);
         }
+        ui.end_row();
 
-        let mut becomes_name = rule.becomes.name.to_string();
+        let becomes_name = rule.becomes.name.to_string();
         ui.label("        Becomes");
-        let changed = ui
-            .push_id(format!("contact_rule_becomes_{i}"), |ui| {
-                ui.add(egui::TextEdit::singleline(&mut becomes_name))
-                    .changed()
-            })
-            .inner;
-        ui.end_row();
-        if changed {
-            rule.becomes = Particle::from(becomes_name.clone());
-            contact_reaction_state.rules[i].becomes = Particle::from(becomes_name);
+        if let Some(new_name) = particle_combo(
+            ui,
+            format!("contact_rule_becomes_{i}"),
+            &becomes_name,
+            particle_registry,
+        ) {
+            rule.becomes = Particle::from(new_name.clone());
+            contact_reaction_state.rules[i].becomes = Particle::from(new_name);
         }
+        ui.end_row();
 
         let chance = rule.chance;
         ui.label("        Chance");

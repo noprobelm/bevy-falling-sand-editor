@@ -132,6 +132,7 @@ pub struct ParticleData {
     pub cached_movement: CachedMovementState,
     pub timed_lifetime: TimedLifetime,
     pub chance_lifetime: ChanceLifetime,
+    pub chance_mutation: ChanceMutation,
     pub static_rigid_body: StaticRigidBodyParticle,
     pub palette: Palette,
     pub gradient: ColorGradient,
@@ -145,6 +146,8 @@ impl Default for ParticleData {
         let cached_movement = CachedMovementState::default();
         let timed_lifetime = TimedLifetime::new(Duration::from_millis(10000));
         let chance_lifetime = ChanceLifetime::new(0.01, Duration::from_millis(100));
+        let chance_mutation =
+            ChanceMutation::from_string(String::new(), 0.01, Duration::from_millis(100));
         let static_rigid_body = StaticRigidBodyParticle;
         let burns = Flammable::new(
             Duration::from_millis(1000),
@@ -165,6 +168,7 @@ impl Default for ParticleData {
             cached_movement,
             timed_lifetime,
             chance_lifetime,
+            chance_mutation,
             static_rigid_body,
             palette,
             gradient,
@@ -192,6 +196,7 @@ pub(crate) struct CoreQuery {
     pub particle_type: &'static mut ParticleType,
     pub timed_lifetime: Option<&'static mut TimedLifetime>,
     pub chance_lifetime: Option<&'static mut ChanceLifetime>,
+    pub chance_mutation: Option<&'static mut ChanceMutation>,
 }
 
 #[derive(QueryData)]
@@ -313,6 +318,11 @@ fn synchronize_editor_registry(
                     .chance_lifetime
                     .cloned()
                     .unwrap_or_else(|| defaults.chance_lifetime.clone()),
+                chance_mutation: data
+                    .core
+                    .chance_mutation
+                    .cloned()
+                    .unwrap_or_else(|| defaults.chance_mutation.clone()),
                 static_rigid_body: data
                     .physics
                     .static_rigid_body
