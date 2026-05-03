@@ -108,15 +108,6 @@ fn show_top_options(
                 next_synchronize_brush_state.set(SynchronizeBrushState::Disabled)
             }
         };
-        if let Some(entity) = selected_entity {
-            let remaining = ui.available_width();
-            ui.add_space(remaining - 110.0_f32.min(remaining));
-            if ui.button("Propagate To All").clicked() {
-                editor_params
-                    .msgw_reset_particle_type
-                    .write(SyncParticleTypeChildrenSignal::from_parent_handle(entity));
-            }
-        }
     });
     ui.horizontal(|ui| {
         let new_particle_clicked = ui
@@ -136,17 +127,25 @@ fn show_top_options(
             editor_params.commands.entity(entity).despawn();
         }
 
+        if let Some(entity) = selected_entity
+            && ui.button("Propagate To All").clicked()
+        {
+            {
+                editor_params
+                    .msgw_reset_particle_type
+                    .write(SyncParticleTypeChildrenSignal::from_parent_handle(entity));
+            }
+        }
+
         let save_enabled =
             selected_entity.is_some() && editor_params.name_draft.entity == selected_entity;
-        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            if ui
-                .add_enabled(save_enabled, egui::Button::new("Save Particle"))
-                .clicked()
-                && let Some(entity) = selected_entity
-            {
-                save_particle_name(entity, synchronize_brush_state, editor_params);
-            }
-        });
+        if ui
+            .add_enabled(save_enabled, egui::Button::new("Update Name"))
+            .clicked()
+            && let Some(entity) = selected_entity
+        {
+            save_particle_name(entity, synchronize_brush_state, editor_params);
+        }
     });
 }
 
@@ -961,6 +960,10 @@ fn show_gradient_options(ui: &mut egui::Ui, gradient: &mut ColorGradient) {
     let mut to_remove: Option<usize> = None;
     let stop_count = gradient.colors.len();
     for i in 0..stop_count {
+        let hsla_current = match gradient.colors[i] {
+            Color::Hsla(h) => h,
+            other => other.into(),
+        };
         let srgba = gradient.colors[i].to_srgba();
         let original = egui::Color32::from_rgba_unmultiplied(
             (srgba.red * 255.0) as u8,
@@ -969,19 +972,49 @@ fn show_gradient_options(ui: &mut egui::Ui, gradient: &mut ColorGradient) {
             (srgba.alpha * 255.0) as u8,
         );
         let mut color32 = original;
+        let mut hue = hsla_current.hue;
         skip_grid_column(ui);
-        ui.push_id(format!("gradient_stop_{i}"), |ui| {
-            ui.horizontal(|ui| {
-                ui.color_edit_button_srgba(&mut color32);
-                if ui.button("X").clicked() && stop_count > 2 {
-                    to_remove = Some(i);
-                }
-            });
-        });
+        let (color_changed, hue_changed) = ui
+            .push_id(format!("gradient_stop_{i}"), |ui| {
+                ui.horizontal(|ui| {
+                    let color_changed = ui.color_edit_button_srgba(&mut color32).changed();
+                    ui.label("H:");
+                    let hue_changed = ui
+                        .add(
+                            egui::DragValue::new(&mut hue)
+                                .range(0.0..=720.0)
+                                .speed(1.0)
+                                .suffix("°"),
+                        )
+                        .changed();
+                    if ui.button("X").clicked() && stop_count > 2 {
+                        to_remove = Some(i);
+                    }
+                    (color_changed, hue_changed)
+                })
+                .inner
+            })
+            .inner;
         ui.end_row();
-        if color32 != original {
-            gradient.colors[i] =
-                Color::srgba_u8(color32.r(), color32.g(), color32.b(), color32.a());
+        // Storage is always `Color::Hsla` so the explicit hue (especially 360°) is
+        // preserved across save/load and through the gradient sampler's HSV path.
+        if hue_changed {
+            gradient.colors[i] = Color::hsla(
+                hue,
+                hsla_current.saturation,
+                hsla_current.lightness,
+                hsla_current.alpha,
+            );
+        } else if color_changed {
+            let new_srgba =
+                bevy::color::Srgba::rgba_u8(color32.r(), color32.g(), color32.b(), color32.a());
+            let new_hsla: bevy::color::Hsla = new_srgba.into();
+            gradient.colors[i] = Color::hsla(
+                new_hsla.hue,
+                new_hsla.saturation,
+                new_hsla.lightness,
+                new_hsla.alpha,
+            );
         }
 
         if i + 1 < stop_count && i < gradient.steps.len() {
