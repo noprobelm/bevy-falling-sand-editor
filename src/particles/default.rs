@@ -75,6 +75,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             Color::srgba(0.4509804, 0.34117648, 0.23921569, 1.0),
         ]),
         StaticRigidBodyParticle,
+        Corrodible,
     ));
 
     commands.spawn((
@@ -314,6 +315,18 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         liquid_movement(6),
         ParticleResistor(0.75),
         Speed::new(0, 3),
+    ));
+
+    commands.spawn((
+        ParticleType::from("Acid"),
+        ParticleCategory("Liquid".into()),
+        palette(vec![Color::srgba(0.25490198, 0.6862745, 0.0, 1.)]),
+        Density(750),
+        Momentum(IVec2::ZERO),
+        liquid_movement(6),
+        ParticleResistor(0.75),
+        Speed::new(0, 3),
+        Corrosive::new(0.01, Duration::from_millis(100)),
     ));
 
     commands.spawn((
