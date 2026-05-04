@@ -454,6 +454,8 @@ fn show_editing_area(
                         let mut color_profile = data.color.profile;
                         let burns = data.reactions.burns;
                         let contact_reaction = data.reactions.contact_reaction;
+                        let corrosive = data.reactions.corrosive;
+                        let corrodible = data.reactions.corrodible;
                         let (liquid_effect, gas_effect, glow_effect, burn_effect) = (
                             data.effects.liquid,
                             data.effects.gas,
@@ -632,6 +634,23 @@ fn show_editing_area(
                                             contact_reaction,
                                             &mut state.contact_reaction,
                                             &editor_params.particle_registry,
+                                        );
+                                    });
+                            });
+
+                        egui::CollapsingHeader::new("Corrosion")
+                            .default_open(false)
+                            .show(ui, |ui| {
+                                egui::Grid::new("corrosion_grid")
+                                    .num_columns(2)
+                                    .show(ui, |ui| {
+                                        show_corrosion(
+                                            &mut editor_params.commands,
+                                            selected_particle.0,
+                                            ui,
+                                            corrosive,
+                                            corrodible,
+                                            &mut state.corrosive,
                                         );
                                     });
                             });
@@ -1599,6 +1618,64 @@ fn show_contact_rules(
     if let Some(idx) = to_remove {
         contact_reaction.rules.remove(idx);
         contact_reaction_state.rules.remove(idx);
+    }
+}
+
+fn show_corrosion(
+    commands: &mut Commands,
+    entity: Entity,
+    ui: &mut egui::Ui,
+    corrosive: Option<Mut<'_, Corrosive>>,
+    corrodible: Option<&Corrodible>,
+    corrosive_state: &mut Corrosive,
+) {
+    let corrodible_enabled = corrodible.is_some();
+    let new_corrodible = add_label_with_toggle_switch(ui, 0, "Corrodible", corrodible_enabled);
+    if new_corrodible != corrodible_enabled {
+        if new_corrodible {
+            commands.entity(entity).insert(Corrodible);
+        } else {
+            commands.entity(entity).remove::<Corrodible>();
+        }
+    }
+
+    let corrosive_enabled = corrosive.is_some();
+    let new_corrosive = add_label_with_toggle_switch(ui, 0, "Corrosive", corrosive_enabled);
+    if new_corrosive != corrosive_enabled {
+        if new_corrosive {
+            commands.entity(entity).insert(corrosive_state.clone());
+        } else {
+            commands.entity(entity).remove::<Corrosive>();
+        }
+    }
+
+    if let Some(mut corrosive) = corrosive {
+        let chance = corrosive.chance;
+        let new_value =
+            add_label_with_drag_value(ui, 0, "    Chance (per tick)", chance, 0.0..=1.0, 0.01);
+        if (new_value - chance).abs() > f64::EPSILON {
+            corrosive.chance = new_value;
+            corrosive_state.chance = new_value;
+        }
+
+        let tick_rate_ms = corrosive.tick_timer.duration().as_millis() as u64;
+        let new_tick_rate = add_label_with_drag_value(
+            ui,
+            0,
+            "    Tick Rate (ms)",
+            tick_rate_ms,
+            0..=u64::MAX,
+            1.0,
+        );
+        if new_tick_rate != tick_rate_ms {
+            let duration = Duration::from_millis(new_tick_rate);
+            corrosive
+                .tick_timer
+                .set_duration(duration);
+            corrosive_state
+                .tick_timer
+                .set_duration(duration);
+        }
     }
 }
 

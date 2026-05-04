@@ -139,6 +139,8 @@ pub struct ParticleData {
     pub texture: TextureSource,
     pub burns: Flammable,
     pub contact_reaction: ContactReaction,
+    pub corrosive: Corrosive,
+    pub corrodible: Corrodible,
 }
 
 impl Default for ParticleData {
@@ -164,6 +166,8 @@ impl Default for ParticleData {
         let gradient = default_editor_gradient();
         let texture = default_editor_texture();
         let contact_reaction = ContactReaction::default();
+        let corrosive = Corrosive::new(0.5, Duration::from_millis(100));
+        let corrodible = Corrodible;
         Self {
             cached_movement,
             timed_lifetime,
@@ -175,6 +179,8 @@ impl Default for ParticleData {
             texture,
             burns,
             contact_reaction,
+            corrosive,
+            corrodible,
         }
     }
 }
@@ -227,6 +233,8 @@ pub(crate) struct ColorQuery {
 pub(crate) struct ReactionsQuery {
     pub burns: Option<&'static mut Flammable>,
     pub contact_reaction: Option<&'static mut ContactReaction>,
+    pub corrosive: Option<&'static mut Corrosive>,
+    pub corrodible: Option<&'static Corrodible>,
 }
 
 #[derive(QueryData)]
@@ -341,6 +349,16 @@ fn synchronize_editor_registry(
                     .contact_reaction
                     .cloned()
                     .unwrap_or_else(|| defaults.contact_reaction.clone()),
+                corrosive: data
+                    .reactions
+                    .corrosive
+                    .cloned()
+                    .unwrap_or_else(|| defaults.corrosive.clone()),
+                corrodible: data
+                    .reactions
+                    .corrodible
+                    .copied()
+                    .unwrap_or(defaults.corrodible),
             };
 
             new_state.map.insert(*entity, particle_data);
