@@ -1357,6 +1357,20 @@ fn show_burns_ignites_on_spawn(
         burns.ignites_on_spawn = new_value;
         burns_state.ignites_on_spawn = new_value;
     }
+
+    let chance_to_ignite = burns.chance_to_ignite;
+    let new_value = add_label_with_drag_value(
+        ui,
+        0,
+        "    Ignite chance (per contact)",
+        chance_to_ignite,
+        0.0..=1.,
+        0.01,
+    );
+    if new_value != chance_to_ignite {
+        burns.chance_to_ignite = new_value;
+        burns_state.chance_to_ignite = new_value;
+    }
 }
 
 fn show_burns_reaction(
