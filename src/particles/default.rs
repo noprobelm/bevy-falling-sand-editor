@@ -65,6 +65,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             Color::srgba(0.4, 0.32941177, 0.32941177, 1.0),
         ]),
         StaticRigidBodyParticle,
+        Corrodible,
     ));
 
     commands.spawn((
@@ -99,6 +100,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             despawn_on_extinguish: false,
             ignites_on_spawn: false,
         },
+        Corrodible,
     ));
 
     commands.spawn((
@@ -120,6 +122,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             despawn_on_extinguish: true,
             ignites_on_spawn: false,
         },
+        Corrodible,
     ));
 
     commands.spawn((
@@ -141,6 +144,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             despawn_on_extinguish: false,
             ignites_on_spawn: false,
         },
+        Corrodible,
     ));
 
     commands.spawn((
@@ -162,6 +166,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             Color::srgba(0.2, 0.2352941, 0.2509803, 1.0),
         ]),
         StaticRigidBodyParticle,
+        Corrodible,
     ));
 
     commands.spawn((
@@ -192,6 +197,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         AirResistance::new([0.0, 0.9]),
         Speed::new(5, 10),
         StaticRigidBodyParticle,
+        Corrodible,
     ));
 
     commands.spawn((
@@ -207,6 +213,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         AirResistance::new([0.0, 0.2]),
         Speed::new(5, 10),
         StaticRigidBodyParticle,
+        Corrodible,
     ));
 
     commands.spawn((
@@ -222,6 +229,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         AirResistance::new([0.0, 0.6]),
         Speed::new(5, 10),
         StaticRigidBodyParticle,
+        Corrodible,
     ));
 
     commands.spawn((
@@ -263,6 +271,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         AirResistance::new([0.0, 0.4]),
         Speed::new(5, 10),
         StaticRigidBodyParticle,
+        Corrodible,
     ));
 
     // ── Solid ──
@@ -306,7 +315,14 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
                     becomes: Particle::from("Obsidian"),
                     chance: 0.45,
                     radius: 1.0,
-                    consumes: Consumes::default(),
+                    consumes: Consumes::Source,
+                },
+                ContactRule {
+                    target: Particle::from("Acid"),
+                    becomes: Particle::from("Steam"),
+                    chance: 1.0,
+                    radius: 1.0,
+                    consumes: Consumes::Source,
                 },
             ],
         },
@@ -327,6 +343,24 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         ParticleResistor(0.75),
         Speed::new(0, 3),
         Corrosive::new(0.01, Duration::from_millis(100)),
+        ContactReaction {
+            rules: vec![
+                ContactRule {
+                    target: Particle::from("Water"),
+                    becomes: Particle::from("Steam"),
+                    chance: 1.0,
+                    radius: 1.0,
+                    consumes: Consumes::Target,
+                },
+                ContactRule {
+                    target: Particle::from("Slime"),
+                    becomes: Particle::from("Congealed Slime"),
+                    chance: 1.0,
+                    radius: 1.0,
+                    consumes: Consumes::Target,
+                },
+            ],
+        },
     ));
 
     commands.spawn((
@@ -341,6 +375,30 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         Momentum(IVec2::ZERO),
         liquid_movement(2),
         ParticleResistor(0.6),
+        Speed::new(0, 2),
+        ContactReaction {
+            rules: vec![ContactRule {
+                target: Particle::from("Acid"),
+                becomes: Particle::from("Congealed Slime"),
+                chance: 1.0,
+                radius: 1.0,
+                consumes: Consumes::Source,
+            }],
+        },
+    ));
+
+    commands.spawn((
+        ParticleType::from("Congealed Slime"),
+        ParticleCategory("Liquid".into()),
+        palette(vec![
+            Color::srgba(0.50980395, 0.59607846, 0.20392157, 0.5019608),
+            Color::srgba(0.56078434, 0.654902, 0.22352941, 0.5019608),
+        ]),
+        LiquidEffect,
+        Density(850),
+        Momentum(IVec2::ZERO),
+        liquid_movement(1),
+        ParticleResistor(0.8),
         Speed::new(0, 2),
     ));
 
@@ -361,6 +419,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         liquid_movement(2),
         ParticleResistor(0.5),
         Speed::new(0, 2),
+        Corrodible,
     ));
 
     commands.spawn((
@@ -377,6 +436,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         liquid_movement(6),
         ParticleResistor(0.5),
         Speed::new(0, 3),
+        Corrodible,
     ));
 
     commands.spawn((
@@ -388,6 +448,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         liquid_movement(6),
         ParticleResistor(0.4),
         Speed::new(0, 3),
+        Corrodible,
     ));
 
     commands.spawn((
@@ -413,6 +474,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             despawn_on_extinguish: false,
             ignites_on_spawn: false,
         },
+        Corrodible,
     ));
 
     commands.spawn((
@@ -426,6 +488,15 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         ParticleResistor(0.7),
         Speed::new(0, 2),
         Fire { radius: 1.0 },
+        ContactReaction {
+            rules: vec![ContactRule {
+                target: Particle::from("Acid"),
+                becomes: Particle::from("Flammable Gas"),
+                chance: 1.0,
+                radius: 1.0,
+                consumes: Consumes::Target,
+            }],
+        },
     ));
 
     // ── Gases ──
@@ -455,6 +526,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             despawn_on_extinguish: false,
             ignites_on_spawn: false,
         },
+        Corrodible,
     ));
 
     commands.spawn((
