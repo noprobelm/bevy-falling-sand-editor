@@ -1659,22 +1659,12 @@ fn show_corrosion(
         }
 
         let tick_rate_ms = corrosive.tick_timer.duration().as_millis() as u64;
-        let new_tick_rate = add_label_with_drag_value(
-            ui,
-            0,
-            "    Tick Rate (ms)",
-            tick_rate_ms,
-            0..=u64::MAX,
-            1.0,
-        );
+        let new_tick_rate =
+            add_label_with_drag_value(ui, 0, "    Tick Rate (ms)", tick_rate_ms, 0..=u64::MAX, 1.0);
         if new_tick_rate != tick_rate_ms {
             let duration = Duration::from_millis(new_tick_rate);
-            corrosive
-                .tick_timer
-                .set_duration(duration);
-            corrosive_state
-                .tick_timer
-                .set_duration(duration);
+            corrosive.tick_timer.set_duration(duration);
+            corrosive_state.tick_timer.set_duration(duration);
         }
     }
 }
