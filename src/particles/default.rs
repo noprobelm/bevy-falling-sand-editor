@@ -91,7 +91,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             tick_rate: Duration::from_millis(100),
             chance_despawn_per_tick: 0.01,
             reaction: Some(BurnProduct {
-                produces: Particle::from("Water"),
+                produces: ParticleType::new("Water"),
                 chance_to_produce: 0.2,
             }),
             chance_to_ignite: 0.0,
@@ -113,7 +113,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             tick_rate: Duration::from_millis(100),
             chance_despawn_per_tick: 0.015,
             reaction: Some(BurnProduct {
-                produces: Particle::from("Smoke"),
+                produces: ParticleType::new("Smoke"),
                 chance_to_produce: 0.035,
             }),
             chance_to_ignite: 0.2,
@@ -135,7 +135,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             tick_rate: Duration::from_millis(100),
             chance_despawn_per_tick: 0.5,
             reaction: Some(BurnProduct {
-                produces: Particle::from("FIRE"),
+                produces: ParticleType::new("FIRE"),
                 chance_to_produce: 1.0,
             }),
             chance_to_ignite: 0.36,
@@ -304,22 +304,22 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         ContactReaction {
             rules: vec![
                 ContactRule {
-                    target: Particle::from("Slime"),
-                    becomes: Particle::from("Water"),
+                    target: ParticleType::new("Slime"),
+                    becomes: ParticleType::new("Water"),
                     chance: 0.005,
                     radius: 1.0,
                     consumes: Consumes::Target,
                 },
                 ContactRule {
-                    target: Particle::from("Lava"),
-                    becomes: Particle::from("Obsidian"),
+                    target: ParticleType::new("Lava"),
+                    becomes: ParticleType::new("Obsidian"),
                     chance: 0.45,
                     radius: 1.0,
                     consumes: Consumes::Source,
                 },
                 ContactRule {
-                    target: Particle::from("Acid"),
-                    becomes: Particle::from("Steam"),
+                    target: ParticleType::new("Acid"),
+                    becomes: ParticleType::new("Steam"),
                     chance: 1.0,
                     radius: 1.0,
                     consumes: Consumes::Source,
@@ -346,15 +346,15 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         ContactReaction {
             rules: vec![
                 ContactRule {
-                    target: Particle::from("Water"),
-                    becomes: Particle::from("Steam"),
+                    target: ParticleType::new("Water"),
+                    becomes: ParticleType::new("Steam"),
                     chance: 1.0,
                     radius: 1.0,
                     consumes: Consumes::Target,
                 },
                 ContactRule {
-                    target: Particle::from("Slime"),
-                    becomes: Particle::from("Congealed Slime"),
+                    target: ParticleType::new("Slime"),
+                    becomes: ParticleType::new("Congealed Slime"),
                     chance: 1.0,
                     radius: 1.0,
                     consumes: Consumes::Target,
@@ -378,8 +378,8 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         Speed::new(0, 2),
         ContactReaction {
             rules: vec![ContactRule {
-                target: Particle::from("Acid"),
-                becomes: Particle::from("Congealed Slime"),
+                target: ParticleType::new("Acid"),
+                becomes: ParticleType::new("Congealed Slime"),
                 chance: 1.0,
                 radius: 1.0,
                 consumes: Consumes::Source,
@@ -465,7 +465,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             tick_rate: Duration::from_millis(100),
             chance_despawn_per_tick: 0.1,
             reaction: Some(BurnProduct {
-                produces: Particle::from("Smoke"),
+                produces: ParticleType::new("Smoke"),
                 chance_to_produce: 0.035,
             }),
             chance_to_ignite: 0.2,
@@ -490,8 +490,8 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         Fire { radius: 1.0 },
         ContactReaction {
             rules: vec![ContactRule {
-                target: Particle::from("Acid"),
-                becomes: Particle::from("Flammable Gas"),
+                target: ParticleType::new("Acid"),
+                becomes: ParticleType::new("Flammable Gas"),
                 chance: 1.0,
                 radius: 1.0,
                 consumes: Consumes::Target,
@@ -517,7 +517,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             tick_rate: Duration::from_millis(100),
             chance_despawn_per_tick: 1.0,
             reaction: Some(BurnProduct {
-                produces: Particle::from("Water"),
+                produces: ParticleType::new("Water"),
                 chance_to_produce: 1.0,
             }),
             chance_to_ignite: 0.0,

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use bevy::prelude::*;
-use bevy_falling_sand::core::{Particle, SpawnParticleSignal};
+use bevy_falling_sand::core::{ParticleType, SpawnParticleSignal};
 use bevy_turborand::{GlobalRng, TurboRand};
 
 #[derive(Event, Clone, PartialEq, Debug)]
@@ -257,8 +257,8 @@ pub fn spawn_barnsley(
         ev.num_iterations,
     );
 
-    let wood = Particle::new("Wood Wall");
-    let grass = Particle::new("Grass Wall");
+    let wood = ParticleType::new("Wood Wall");
+    let grass = ParticleType::new("Grass Wall");
 
     for point in &fern {
         let particle = match point.element {

@@ -3,7 +3,9 @@ mod default;
 mod setup;
 
 use bevy::prelude::*;
-use bevy_falling_sand::core::particle::{Particle, ParticleMap, ParticleSyncExt};
+use bevy_falling_sand::core::particle::{
+    AttachedToParticleType, Particle, ParticleMap, ParticleSyncExt, ParticleType,
+};
 use serde::{Deserialize, Serialize};
 
 pub use algs::*;
@@ -32,24 +34,27 @@ impl Plugin for ParticlesPlugin {
 
 #[derive(Default, Resource, Clone, Debug)]
 pub struct HoveredParticle {
-    pub particle: Option<Particle>,
+    pub particle: Option<ParticleType>,
 }
 
 fn update_hovered_particle(
     cursor_position: Res<Cursor>,
     map: Res<ParticleMap>,
-    particle_query: Query<&Particle>,
+    particle_query: Query<&AttachedToParticleType, With<Particle>>,
+    type_query: Query<&ParticleType>,
     mut hovered_particle: ResMut<HoveredParticle>,
 ) -> Result {
     let position = IVec2::new(
         cursor_position.current.x.floor() as i32,
         cursor_position.current.y.floor() as i32,
     );
-    if let Ok(Some(entity)) = map.get_copied(position) {
-        let particle = particle_query.get(entity)?;
-        hovered_particle.particle = Some(particle.clone());
+    if let Ok(Some(entity)) = map.get_copied(position)
+        && let Ok(attached) = particle_query.get(entity)
+        && let Ok(particle_type) = type_query.get(attached.0)
+    {
+        hovered_particle.particle = Some(particle_type.clone());
     } else {
-        hovered_particle.particle = None
+        hovered_particle.particle = None;
     }
     Ok(())
 }
