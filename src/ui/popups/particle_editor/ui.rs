@@ -180,7 +180,7 @@ fn save_particle_name(
         .insert(ParticleType::from_string(new_name.clone()));
 
     if synchronize_brush_state.get() == &SynchronizeBrushState::Enabled {
-        editor_params.brush.0 = Particle::from(new_name);
+        editor_params.brush.0 = ParticleType::from(new_name);
     }
 }
 
@@ -220,7 +220,7 @@ fn spawn_new_particle_from(
         .insert_resource(SelectedParticle(new_entity));
 
     if synchronize_brush_state.get() == &SynchronizeBrushState::Enabled {
-        editor_params.brush.0 = Particle::from(new_name);
+        editor_params.brush.0 = ParticleType::from(new_name);
     }
 }
 
@@ -402,7 +402,7 @@ fn show_category_labels(
             .commands
             .insert_resource(SelectedParticle(*entity));
         if synchronize_brush_selection.get() == &SynchronizeBrushState::Enabled {
-            editor_params.brush.0 = Particle::from(label);
+            editor_params.brush.0 = ParticleType::from(label);
         }
     }
 }
@@ -894,7 +894,7 @@ fn show_chance_mutation(
     }
     if let Some(mut mutation) = chance_mutation {
         ui.label("    Target:");
-        let current = mutation.target.to_string();
+        let current = mutation.target.name.to_string();
         if let Some(new_target) = particle_combo(
             ui,
             format!("chance_mutation_target_{entity:?}"),
@@ -1427,9 +1427,9 @@ fn show_burns_reaction(
             &produces_name,
             particle_registry,
         ) {
-            reaction.produces = Particle::from(new_name.clone());
+            reaction.produces = ParticleType::from(new_name.clone());
             if let Some(ref mut state_reaction) = burns_state.reaction {
-                state_reaction.produces = Particle::from(new_name);
+                state_reaction.produces = ParticleType::from(new_name);
             }
         }
         ui.end_row();
@@ -1498,8 +1498,8 @@ fn show_contact_rules(
     ui.label("    Rules");
     if ui.button("Add Rule").clicked() {
         let rule = ContactRule {
-            target: Particle::default(),
-            becomes: Particle::default(),
+            target: ParticleType::default(),
+            becomes: ParticleType::default(),
             chance: 0.1,
             radius: 1.0,
             consumes: Consumes::Source,
@@ -1531,8 +1531,8 @@ fn show_contact_rules(
             &target_name,
             particle_registry,
         ) {
-            rule.target = Particle::from(new_name.clone());
-            contact_reaction_state.rules[i].target = Particle::from(new_name);
+            rule.target = ParticleType::from(new_name.clone());
+            contact_reaction_state.rules[i].target = ParticleType::from(new_name);
         }
         ui.end_row();
 
@@ -1544,8 +1544,8 @@ fn show_contact_rules(
             &becomes_name,
             particle_registry,
         ) {
-            rule.becomes = Particle::from(new_name.clone());
-            contact_reaction_state.rules[i].becomes = Particle::from(new_name);
+            rule.becomes = ParticleType::from(new_name.clone());
+            contact_reaction_state.rules[i].becomes = ParticleType::from(new_name);
         }
         ui.end_row();
 

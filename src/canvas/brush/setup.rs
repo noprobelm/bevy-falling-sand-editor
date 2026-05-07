@@ -90,16 +90,15 @@ fn insert_selected_particle(
             .expect("No particle types found in the world")
     };
 
-    let particle = Particle::from(
-        particle_types
-            .get(pt_entity)
-            .expect("Failed to find particle type in query")
-            .clone(),
-    );
+    let particle_type = particle_types
+        .get(pt_entity)
+        .expect("Failed to find particle type in query")
+        .clone();
 
-    commands
-        .entity(brush.entity())
-        .insert((SelectedParticle(particle), SelectedParticleType(pt_entity)));
+    commands.entity(brush.entity()).insert((
+        SelectedParticle(particle_type),
+        SelectedParticleType(pt_entity),
+    ));
 }
 
 fn load_settings(

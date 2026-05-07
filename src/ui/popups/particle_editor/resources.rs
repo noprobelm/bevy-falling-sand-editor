@@ -148,8 +148,7 @@ impl Default for ParticleData {
         let cached_movement = CachedMovementState::default();
         let timed_lifetime = TimedLifetime::new(Duration::from_millis(10000));
         let chance_lifetime = ChanceLifetime::new(0.01, Duration::from_millis(100));
-        let chance_mutation =
-            ChanceMutation::from_string(String::new(), 0.01, Duration::from_millis(100));
+        let chance_mutation = ChanceMutation::new(String::new(), 0.01, Duration::from_millis(100));
         let static_rigid_body = StaticRigidBodyParticle;
         let burns = Flammable::new(
             Duration::from_millis(1000),
