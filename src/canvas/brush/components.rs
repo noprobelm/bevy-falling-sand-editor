@@ -41,6 +41,6 @@ pub struct BrushColor(pub Color);
 #[derive(Component, Clone, Default, PartialEq, Debug, Reflect, Serialize, Deserialize)]
 pub struct SelectedParticle(pub ParticleType);
 
-/// Tracks which [`ParticleType`](bevy_falling_sand::prelude::ParticleType) entity the brush's [`SelectedParticle`] corresponds to.
+/// Tracks which [`ParticleType`] entity the brush's [`SelectedParticle`] corresponds to.
 #[derive(Component, Copy, Clone, PartialEq, Debug, Reflect)]
 pub struct SelectedParticleType(pub Entity);
