@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_falling_sand::prelude::PersistChunksSignal;
 
-use crate::config::{PrepareSaveSettingsEvent, PrepareSaveWorldConfigEvent};
+use crate::save::SaveApplicationEvent;
 
 pub struct ExitPlugin;
 
@@ -21,8 +21,7 @@ struct PendingExit;
 pub struct ExitApplicationEvent;
 
 fn on_exit_application(_trigger: On<ExitApplicationEvent>, mut commands: Commands) {
-    commands.trigger(PrepareSaveWorldConfigEvent);
-    commands.trigger(PrepareSaveSettingsEvent);
+    commands.trigger(SaveApplicationEvent);
 
     commands.write_message(PersistChunksSignal);
 

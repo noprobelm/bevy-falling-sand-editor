@@ -13,6 +13,7 @@ mod frames;
 mod game_of_life;
 mod particles;
 mod record;
+mod save;
 mod setup;
 mod ui;
 
@@ -31,6 +32,7 @@ use exit::*;
 use frames::*;
 #[cfg(feature = "dev")]
 use record::*;
+use save::*;
 
 use bevy::{log::LogPlugin, prelude::*, window::WindowMode};
 
@@ -76,6 +78,7 @@ fn main() {
             #[cfg(feature = "dev")]
             RecordPlugin,
             DebugPlugin,
+            SavePlugin,
         ))
         .add_plugins((CanvasPlugin, GameOfLifePlugin, FramesPlugin))
         .insert_gizmo_config(
