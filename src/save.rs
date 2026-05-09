@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 
 use crate::config::{PrepareSaveSettingsEvent, PrepareSaveWorldConfigEvent};
-use bevy_falling_sand::prelude::PersistChunksSignal;
 
 pub struct SavePlugin;
 
