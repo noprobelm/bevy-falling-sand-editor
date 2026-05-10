@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_falling_sand::prelude::PersistChunksSignal;
 
 use crate::save::SaveApplicationEvent;
 
@@ -22,8 +21,6 @@ pub struct ExitApplicationEvent;
 
 fn on_exit_application(_trigger: On<ExitApplicationEvent>, mut commands: Commands) {
     commands.trigger(SaveApplicationEvent);
-
-    commands.write_message(PersistChunksSignal);
 
     commands.insert_resource(PendingExit);
 }
