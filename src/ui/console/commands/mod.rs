@@ -5,6 +5,7 @@ mod exit;
 mod help;
 mod helpers;
 mod particles;
+mod save;
 pub(crate) mod scene;
 mod select;
 
@@ -17,6 +18,7 @@ pub use exit::*;
 pub use help::*;
 use helpers::*;
 pub use particles::*;
+pub use save::*;
 pub use scene::*;
 pub use select::*;
 
