@@ -4,6 +4,7 @@
 mod camera;
 mod canvas;
 mod chunk_effects;
+mod composite_body;
 mod config;
 mod console_command;
 mod cursor;
@@ -19,6 +20,7 @@ mod ui;
 use avian2d::prelude::PhysicsGizmos;
 use bevy_falling_sand::prelude::{FallingSandPersistencePlugin, FallingSandPlugin};
 use chunk_effects::ChunkEffectsPlugin;
+use composite_body::CompositeBodyDemoPlugin;
 use game_of_life::GameOfLifePlugin;
 
 use camera::CameraPlugin;
@@ -77,7 +79,13 @@ fn main() {
             RecordPlugin,
             DebugPlugin,
         ))
-        .add_plugins((CanvasPlugin, GameOfLifePlugin, FramesPlugin))
+        .add_plugins((
+            CanvasPlugin,
+            GameOfLifePlugin,
+            FramesPlugin,
+            CompositeBodyDemoPlugin,
+            //CompositeFirePlugin,
+        ))
         .insert_gizmo_config(
             PhysicsGizmos {
                 collider_color: None,
