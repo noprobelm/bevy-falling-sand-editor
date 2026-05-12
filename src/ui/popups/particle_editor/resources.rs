@@ -16,7 +16,11 @@ impl Plugin for ResourcesPlugin {
             .add_systems(
                 EguiPrimaryContextPass,
                 (
-                    synchronize_editor_registry.run_if(resource_changed::<ParticleTypeRegistry>),
+                    (
+                        synchronize_editor_registry,
+                        check_selected_particle_exists.run_if(resource_exists::<SelectedParticle>),
+                    )
+                        .run_if(resource_changed::<ParticleTypeRegistry>),
                     refresh_name_draft.run_if(condition_should_refresh_name_draft),
                 )
                     .chain()
@@ -397,6 +401,16 @@ fn condition_particle_movement_changed(
 pub struct NameDraft {
     pub entity: Option<Entity>,
     pub name: String,
+}
+
+fn check_selected_particle_exists(
+    mut commands: Commands,
+    selected_particle: ResMut<SelectedParticle>,
+    particle_types: Query<&ParticleType>,
+) {
+    if particle_types.get(selected_particle.0).is_err() {
+        commands.remove_resource::<SelectedParticle>();
+    }
 }
 
 fn condition_should_refresh_name_draft(
