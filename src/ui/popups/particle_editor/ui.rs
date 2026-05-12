@@ -110,11 +110,25 @@ fn show_top_options(
         };
     });
     ui.horizontal(|ui| {
-        let new_particle_clicked = ui
-            .add_enabled(selected_entity.is_some(), egui::Button::new("New Particle"))
-            .clicked();
-        if new_particle_clicked && let Some(entity) = selected_entity {
-            spawn_new_particle_from(entity, synchronize_brush_state, editor_params);
+        let new_particle_clicked = ui.button("New Particle").clicked();
+        if new_particle_clicked {
+            if let Some(entity) = selected_entity {
+                spawn_new_particle_from(entity, synchronize_brush_state, editor_params);
+            } else {
+                let entity = editor_params
+                    .commands
+                    .spawn((
+                        ParticleType::from_string(unique_new_particle_name(
+                            &editor_params.particle_registry,
+                        )),
+                        ParticleCategory(String::from("Other")),
+                        ColorProfile::default(),
+                    ))
+                    .id();
+                editor_params
+                    .commands
+                    .insert_resource(SelectedParticle(entity));
+            }
         }
 
         let remove_particle_clicked = ui
