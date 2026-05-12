@@ -14,14 +14,14 @@ impl Plugin for SetupPlugin {
             .init_resource::<EditorState>()
             .add_systems(
                 Update,
-                spawn_selected_particle
+                set_initial_selected_particle
                     .run_if(not(resource_exists::<SelectedParticle>))
                     .run_if(condition_particle_types_loaded),
             );
     }
 }
 
-fn spawn_selected_particle(mut commands: Commands, registry: Res<ParticleTypeRegistry>) {
+fn set_initial_selected_particle(mut commands: Commands, registry: Res<ParticleTypeRegistry>) {
     const DEFAULT_PARTICLE_NAME: &str = "Flammable Gas";
     let entity = registry
         .get(DEFAULT_PARTICLE_NAME)
