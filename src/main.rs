@@ -8,6 +8,7 @@ mod config;
 mod console_command;
 mod cursor;
 mod debug;
+mod earthquake;
 mod exit;
 mod frames;
 mod game_of_life;
@@ -28,6 +29,7 @@ use config::*;
 use console_command::*;
 pub use cursor::*;
 use debug::*;
+use earthquake::*;
 use exit::*;
 use frames::*;
 #[cfg(feature = "dev")]
@@ -80,7 +82,7 @@ fn main() {
             DebugPlugin,
             SavePlugin,
         ))
-        .add_plugins((CanvasPlugin, GameOfLifePlugin, FramesPlugin))
+        .add_plugins((CanvasPlugin, GameOfLifePlugin, FramesPlugin, EarthquakePlugin))
         .insert_gizmo_config(
             PhysicsGizmos {
                 collider_color: None,

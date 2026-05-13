@@ -1,6 +1,7 @@
 mod brush;
 mod canvas;
 mod conway;
+mod earthquake;
 mod exit;
 mod help;
 mod helpers;
@@ -14,6 +15,7 @@ use bevy::prelude::*;
 pub use brush::*;
 pub use canvas::*;
 pub use conway::*;
+pub use earthquake::*;
 pub use exit::*;
 pub use help::*;
 use helpers::*;

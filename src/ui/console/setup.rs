@@ -9,8 +9,8 @@ use crate::{
     setup::SetupSystems,
     ui::{
         BrushConsoleCommand, CanvasCommand, CommandHistory, ConsoleInformationAreaState,
-        ConsolePromptState, ConwayConsoleCommand, ExitConsoleCommand, ParticlesConsoleCommand,
-        SaveCommand, SceneConsoleCommand, SelectCommand,
+        ConsolePromptState, ConwayConsoleCommand, EarthquakeConsoleCommand, ExitConsoleCommand,
+        ParticlesConsoleCommand, SaveCommand, SceneConsoleCommand, SelectCommand,
     },
 };
 
@@ -89,5 +89,6 @@ fn setup_console_command_registry(mut commands: Commands) {
     registry.register(CanvasCommand);
     registry.register(SelectCommand);
     registry.register(SaveCommand);
+    registry.register(EarthquakeConsoleCommand);
     commands.insert_resource(registry);
 }
