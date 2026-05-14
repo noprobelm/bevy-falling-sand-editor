@@ -11,7 +11,7 @@ edition = "2024"
 [dependencies]
 bevy = { version = "0.18.1" }
 rand = "0.9"
-bevy_falling_sand = { git = "https://github.com/noprobelm/bevy_falling_sand", branch = "main" }
+bevy_falling_sand = { path = "../bevy_falling_sand" }
 # Compile out low-severity logs to improve performance.
 # Remove these features if you want to profile your game with tracy.
 # (see <https://github.com/bevyengine/bevy/blob/main/docs/profiling.md#tracy-profiler>)
@@ -35,6 +35,7 @@ bevy_dev_tools = { version = "0.18.1", optional = true }
 bevy_turborand = "0.13.0"
 bevy_framepace = "0.21.0"
 fontdue = "0.9.3"
+voronoice = "0.2.0"
 
 [target.wasm32-unknown-unknown.dependencies]
 getrandom = { version = "0.3", features = ["wasm_js"] }

@@ -862,7 +862,6 @@ dependencies = [
 [[package]]
 name = "bevy_falling_sand"
 version = "0.7.0"
-source = "git+https://github.com/noprobelm/bevy_falling_sand?branch=main#69224b1961ed8e545e76eebc0680bccde7b1093b"
 dependencies = [
  "avian2d",
  "bevy",
@@ -1888,6 +1887,7 @@ dependencies = [
  "thiserror 2.0.17",
  "tracing",
  "trie-rs",
+ "voronoice",
 ]
 
 [[package]]
@@ -2424,6 +2424,15 @@ name = "data-encoding"
 version = "2.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2a2330da5de22e8a3cb63252ce2abb30116bf5265e89c0e01bc17015ce30a476"
+
+[[package]]
+name = "delaunator"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3e1ee323c1275374f7e612d3724d12707079fb6a2117349fe144def656f5a880"
+dependencies = [
+ "robust",
+]
 
 [[package]]
 name = "derive_more"
@@ -6103,6 +6112,15 @@ name = "void"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
+
+[[package]]
+name = "voronoice"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23acc5e2a7645f62ff9d7d11b46c15819fb1132fc87352a35bb4a9dee3b27d80"
+dependencies = [
+ "delaunator",
+]
 
 [[package]]
 name = "walkdir"
