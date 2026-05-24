@@ -1,0 +1,43 @@
+use crate::{
+    Cursor,
+    particles::HoveredParticle,
+    ui::{ShowBrushOverlay, ShowUi},
+};
+use bevy::prelude::*;
+use bevy_egui::{EguiContexts, EguiPrimaryContextPass, egui};
+pub(super) struct UiPlugin;
+
+impl Plugin for UiPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(
+            EguiPrimaryContextPass,
+            show.run_if(resource_exists::<ShowUi>)
+                .run_if(resource_exists::<ShowBrushOverlay>),
+            // show.run_if(action_just_pressed(BrushAction::ToggleOverlay)),
+        )
+        .init_resource::<ShowBrushOverlay>();
+    }
+}
+
+pub fn show(
+    mut contexts: EguiContexts,
+    hovered_particle: Res<HoveredParticle>,
+    cursor_position: Res<Cursor>,
+) -> Result {
+    let ctx = contexts.ctx_mut()?;
+
+    egui::Window::new("brush overlay")
+        .title_bar(false)
+        .resizable(false)
+        .constrain_to(ctx.available_rect())
+        .anchor(egui::Align2::RIGHT_TOP, [-10.0, 10.0])
+        .show(ctx, |ui| {
+            ui.label(format!("x: {}", cursor_position.current.x.to_string()));
+            ui.label(format!("y: {}", cursor_position.current.y.to_string()));
+            if let Some(particle) = hovered_particle.particle.clone() {
+                ui.label(particle.name);
+            }
+        });
+
+    Ok(())
+}

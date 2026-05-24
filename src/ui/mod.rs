@@ -40,6 +40,7 @@ impl Plugin for UiPlugin {
                 UiSystems::ActionPanel,
                 UiSystems::ParticleEditor,
                 UiSystems::Settings,
+                UiSystems::BrushOverlay,
             )
                 .chain(),
         )
@@ -56,4 +57,5 @@ pub enum UiSystems {
     Console,
     ParticleEditor,
     Settings,
+    BrushOverlay,
 }

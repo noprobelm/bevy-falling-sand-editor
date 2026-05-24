@@ -47,6 +47,7 @@ impl Plugin for SetupPlugin {
 pub struct BrushKeyBindings {
     pub draw: InputButton,
     pub toggle_brush_mode: InputButton,
+    pub toggle_brush_overlay: InputButton,
 }
 
 impl Default for BrushKeyBindings {
@@ -54,12 +55,14 @@ impl Default for BrushKeyBindings {
         Self {
             draw: MouseButton::Left.into(),
             toggle_brush_mode: MouseButton::Right.into(),
+            toggle_brush_overlay: KeyCode::KeyO.into(),
         }
     }
 }
 
 #[derive(Actionlike, PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
 pub enum BrushAction {
+    ToggleOverlay,
     ToggleMode,
     ToggleType,
     #[actionlike(Axis)]
@@ -112,7 +115,8 @@ fn load_settings(
     let mut input_map = InputMap::default().with_axis(BrushAction::ChangeSize, MouseScrollAxis::Y);
     keys.toggle_brush_mode
         .insert_into_input_map(&mut input_map, BrushAction::ToggleMode);
-
+    keys.toggle_brush_overlay
+        .insert_into_input_map(&mut input_map, BrushAction::ToggleOverlay);
     commands
         .entity(brush.entity())
         .insert((input_map, settings_config.brush.size));

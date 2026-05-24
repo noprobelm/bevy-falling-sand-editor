@@ -500,6 +500,15 @@ fn show_brush_keybinds(ui: &mut egui::Ui, settings_param: &mut SettingsParam) {
     ) {
         start_listening(settings_param, "brush.toggle_mode");
     }
+    if show_keybind_row(
+        ui,
+        "Toggle Brush Overlay",
+        "brush.toggle_overlay",
+        &keys.toggle_brush_overlay,
+        &settings_param.keybinds.listening,
+    ) {
+        start_listening(settings_param, "brush.toggle_overlay");
+    }
 }
 
 fn show_quick_actions_keybinds(ui: &mut egui::Ui, settings_param: &mut SettingsParam) {
@@ -630,6 +639,7 @@ pub fn listen_for_keybind(
         "camera.pan_right" => camera_keys.pan_camera_right = new_button,
         "brush.draw" => brush_keys.draw = new_button,
         "brush.toggle_mode" => brush_keys.toggle_brush_mode = new_button,
+        "brush.toggle_overlay" => brush_keys.toggle_brush_overlay = new_button,
         "quick_actions.toggle_ui" => ui_keys.quick_actions.toggle_ui = new_button,
         "quick_actions.toggle_map_overlay" => ui_keys.quick_actions.toggle_map_overlay = new_button,
         "quick_actions.toggle_dirty_chunks" => {
@@ -680,6 +690,12 @@ pub fn listen_for_keybind(
                 brush_keys
                     .draw
                     .insert_into_input_map(&mut map, CanvasAction::Draw);
+            }
+            if let Ok(mut map) = brush_input_map.single_mut() {
+                *map = InputMap::default();
+                brush_keys
+                    .toggle_brush_overlay
+                    .insert_into_input_map(&mut map, BrushAction::ToggleOverlay);
             }
         }
         id if id.starts_with("quick_actions.") => {
