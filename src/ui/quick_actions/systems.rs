@@ -8,7 +8,7 @@ use leafwing_input_manager::common_conditions::action_just_pressed;
 use crate::{
     brush::SelectedParticle,
     particles::HoveredParticle,
-    ui::{QuickAction, ShowUi, UiState},
+    ui::{QuickAction, ShowCursorOverlay, ShowUi, UiState},
 };
 
 pub(super) struct SystemsPlugin;
@@ -24,6 +24,8 @@ impl Plugin for SystemsPlugin {
             (
                 handle_toggle_ui.run_if(action_just_pressed(QuickAction::ToggleUi)),
                 handle_toggle_map.run_if(action_just_pressed(QuickAction::ToggleMapOverlay)),
+                handle_toggle_cursor_overlay
+                    .run_if(action_just_pressed(QuickAction::ToggleCursorInfoOverlay)),
                 handle_toggle_dirty_chunks
                     .run_if(action_just_pressed(QuickAction::ToggleDirtyChunksOverlay)),
                 handle_toggle_simulation_run
@@ -52,6 +54,13 @@ fn toggle_resource<T: Resource + Default>(commands: &mut Commands, resource: &Op
 
 fn handle_toggle_ui(mut commands: Commands, show_ui: Option<Res<ShowUi>>) {
     toggle_resource(&mut commands, &show_ui);
+}
+
+fn handle_toggle_cursor_overlay(
+    mut commands: Commands,
+    show_overlay: Option<Res<ShowCursorOverlay>>,
+) {
+    toggle_resource(&mut commands, &show_overlay);
 }
 
 fn handle_toggle_map(mut commands: Commands, debug_map: Option<Res<DebugParticleMap>>) {
