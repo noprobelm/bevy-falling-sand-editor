@@ -112,6 +112,7 @@ fn load_settings(
     let mut input_map = InputMap::default().with_axis(BrushAction::ChangeSize, MouseScrollAxis::Y);
     keys.toggle_brush_mode
         .insert_into_input_map(&mut input_map, BrushAction::ToggleMode);
+
     commands
         .entity(brush.entity())
         .insert((input_map, settings_config.brush.size));
