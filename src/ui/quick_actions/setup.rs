@@ -25,6 +25,7 @@ pub enum QuickAction {
     ToggleDirtyChunksOverlay,
     ToggleSimulationRun,
     ToggleSimulationStep,
+    ToggleCursorInfoOverlay,
     SampleHoveredParticle,
 }
 
@@ -35,6 +36,7 @@ pub struct QuickActionsKeyBindings {
     pub toggle_dirty_chunks_overlay: InputButton,
     pub toggle_simulation_run: InputButton,
     pub toggle_simulation_step: InputButton,
+    pub toggle_cursor_info_overlay: InputButton,
     pub sample_hovered_particle: InputButton,
 }
 
@@ -46,6 +48,7 @@ impl Default for QuickActionsKeyBindings {
             toggle_dirty_chunks_overlay: KeyCode::F2.into(),
             toggle_simulation_run: KeyCode::Space.into(),
             toggle_simulation_step: KeyCode::Enter.into(),
+            toggle_cursor_info_overlay: KeyCode::KeyO.into(),
             sample_hovered_particle: MouseButton::Middle.into(),
         }
     }
@@ -64,6 +67,8 @@ fn load_settings(mut commands: Commands, settings_config: Res<Persistent<Setting
         .insert_into_input_map(&mut input_map, QuickAction::ToggleSimulationRun);
     keys.toggle_simulation_step
         .insert_into_input_map(&mut input_map, QuickAction::ToggleSimulationStep);
+    keys.toggle_cursor_info_overlay
+        .insert_into_input_map(&mut input_map, QuickAction::ToggleCursorInfoOverlay);
     keys.sample_hovered_particle
         .insert_into_input_map(&mut input_map, QuickAction::SampleHoveredParticle);
     commands.spawn(input_map);
