@@ -31,8 +31,12 @@ pub fn show(
         .constrain_to(ctx.available_rect())
         .anchor(egui::Align2::RIGHT_TOP, [-10.0, 10.0])
         .show(ctx, |ui| {
-            ui.label(format!("x: {}", cursor_position.current.x));
-            ui.label(format!("y: {}", cursor_position.current.y));
+            ui.label(
+                egui::RichText::new(format!("x: {:8.3}", cursor_position.current.x)).monospace(),
+            );
+            ui.label(
+                egui::RichText::new(format!("y: {:8.3}", cursor_position.current.y)).monospace(),
+            );
             if let Some(particle) = hovered_particle.particle.clone() {
                 ui.label(particle.name);
             }
