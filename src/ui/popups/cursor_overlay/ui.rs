@@ -1,7 +1,7 @@
 use crate::{
     Cursor,
     particles::HoveredParticle,
-    ui::{ShowBrushOverlay, ShowUi},
+    ui::{ShowCursorOverlay, ShowUi},
 };
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, EguiPrimaryContextPass, egui};
@@ -12,9 +12,9 @@ impl Plugin for UiPlugin {
         app.add_systems(
             EguiPrimaryContextPass,
             show.run_if(resource_exists::<ShowUi>)
-                .run_if(resource_exists::<ShowBrushOverlay>),
+                .run_if(resource_exists::<ShowCursorOverlay>),
         )
-        .init_resource::<ShowBrushOverlay>();
+        .init_resource::<ShowCursorOverlay>();
     }
 }
 
