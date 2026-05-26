@@ -1,12 +1,11 @@
 use avian2d::prelude::*;
 use bevy::platform::collections::{HashMap, HashSet};
 use bevy::prelude::*;
+use bevy_falling_sand::prelude::ParticleCollider;
+use bevy_falling_sand::utils::connected_components;
 use bevy_falling_sand::{
     ParticleMap,
-    prelude::{
-        DespawnParticleSignal, ParticleColor, StaticRigidBodyParticle, connected_components,
-        perimeter_positions,
-    },
+    prelude::{DespawnParticleSignal, ParticleColor, StaticRigidBodyParticle},
 };
 use bevy_turborand::{GlobalRng, TurboRand};
 use voronoice::{BoundingBox, Point, VoronoiBuilder};
@@ -24,15 +23,12 @@ impl Plugin for EarthquakePlugin {
 #[derive(GizmoConfigGroup, Copy, Clone, Default, Debug, Reflect)]
 pub(super) struct EarthquakeGizmos;
 
+const EARTHQUAKE_RIGID_BODY_RENDER_Z: f32 = 1.0;
+
 #[derive(Event)]
 pub struct Earthquake {
     pub center: Vec2,
     pub radius: f32,
-}
-
-pub struct EarthquakeShape {
-    pub cells: Vec<(IVec2, Entity)>,
-    pub edges: Vec<(IVec2, Entity)>,
 }
 
 #[derive(Component)]
@@ -60,20 +56,7 @@ fn on_earthquake(
             }
         });
 
-    let shapes: Vec<EarthquakeShape> = connected_components(by_position.keys().copied())
-        .into_iter()
-        .map(|component| {
-            let edges = perimeter_positions(&component)
-                .into_iter()
-                .map(|pos| (pos, by_position[&pos]))
-                .collect();
-            let cells = component
-                .into_iter()
-                .map(|pos| (pos, by_position[&pos]))
-                .collect();
-            EarthquakeShape { cells, edges }
-        })
-        .collect();
+    let shape_count = connected_components(by_position.keys().copied()).len();
 
     let particle_positions: Vec<IVec2> = by_position.keys().copied().collect();
     let cells = generate_voronoi_cells(
@@ -99,11 +82,11 @@ fn on_earthquake(
 
     // JAB TODO: Despawn this entity after duration using `DelayedCommands` once Bevy releases it.
 
-    info!(
+    debug!(
         "earthquake at {:?} r={}: {} shapes, {} cells, {} fracture edges",
         trigger.center,
         trigger.radius,
-        shapes.len(),
+        shape_count,
         cells.len(),
         fracture_edges.len(),
     );
@@ -222,9 +205,11 @@ fn spawn_fracture_body(
 
     commands
         .spawn((
-            Transform::from_xyz(centroid.x, centroid.y, 0.0),
+            Transform::from_xyz(centroid.x, centroid.y, EARTHQUAKE_RIGID_BODY_RENDER_Z),
+            Visibility::default(),
             RigidBody::Dynamic,
             collider,
+            ParticleCollider,
         ))
         .with_children(|p| {
             for (grid_pos, world) in &particle_world {
