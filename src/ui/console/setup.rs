@@ -5,16 +5,19 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     config::{ConfigPath, InputButton, SettingsConfig},
-    console_command::ConsoleCommandRegistry,
-    setup::SetupSystems,
-    ui::{
-        BrushConsoleCommand, CanvasCommand, CommandHistory, ConsoleInformationAreaState,
-        ConsolePromptState, ConwayConsoleCommand, ExitConsoleCommand, ParticlesConsoleCommand,
-        SaveCommand, SceneConsoleCommand, SelectCommand,
+    console_command::{
+        ConsoleCommandRegistry,
+        commands::{
+            BrushConsoleCommand, CanvasCommand, ConwayConsoleCommand, ExitConsoleCommand,
+            HelpConsoleCommand, ParticlesConsoleCommand, SaveCommand, SceneConsoleCommand,
+            SelectCommand,
+        },
     },
+    setup::SetupSystems,
+    ui::{CommandHistory, ConsoleInformationAreaState, ConsolePromptState},
 };
 
-use super::{ConsoleCache, HelpConsoleCommand};
+use super::ConsoleCache;
 
 pub(super) struct SetupPlugin;
 
