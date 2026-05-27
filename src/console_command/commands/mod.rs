@@ -8,6 +8,7 @@ mod particles;
 mod save;
 pub(crate) mod scene;
 mod select;
+mod setup;
 
 use bevy::prelude::*;
 
@@ -21,6 +22,7 @@ pub use particles::*;
 pub use save::*;
 pub use scene::*;
 pub use select::*;
+use setup::*;
 
 pub struct CommandsPlugin;
 
