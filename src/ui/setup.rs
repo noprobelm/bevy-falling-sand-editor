@@ -24,13 +24,13 @@ pub struct UiKeyBindings {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GeneralKeyBindings {
-    pub hold_canvas_mode_edit: InputButton,
+    pub resize_tool: InputButton,
 }
 
 impl Default for GeneralKeyBindings {
     fn default() -> Self {
         Self {
-            hold_canvas_mode_edit: KeyCode::AltLeft.into(),
+            resize_tool: KeyCode::AltLeft.into(),
         }
     }
 }

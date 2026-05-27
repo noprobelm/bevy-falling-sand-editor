@@ -7,8 +7,8 @@ use leafwing_input_manager::{
 
 use crate::{
     Cursor,
-    canvas::{
-        CanvasAction,
+    tools::{
+        ToolAction,
         select::{
             SelectAction,
             gizmos::SelectGizmos,
@@ -16,7 +16,7 @@ use crate::{
             states::{SelectModeState, SelectState},
         },
     },
-    ui::CanvasState,
+    ui::SelectedTool,
 };
 
 use super::resources::SelectedRegion;
@@ -33,26 +33,26 @@ impl Plugin for SystemsPlugin {
             Update,
             (
                 handle_select_action_pressed
-                    .run_if(action_just_pressed(CanvasAction::Draw))
+                    .run_if(action_just_pressed(ToolAction::Primary))
                     .run_if(in_state(SelectState::Idle)),
                 (
-                    update_selected_region.run_if(action_pressed(CanvasAction::Draw)),
-                    commit_selected_region.run_if(action_just_released(CanvasAction::Draw)),
+                    update_selected_region.run_if(action_pressed(ToolAction::Primary)),
+                    commit_selected_region.run_if(action_just_released(ToolAction::Primary)),
                 )
                     .chain()
                     .run_if(in_state(SelectState::ExpandSelection)),
                 (
-                    update_drag_overlays.run_if(action_pressed(CanvasAction::Draw)),
-                    finish_select_action.run_if(action_just_released(CanvasAction::Draw)),
+                    update_drag_overlays.run_if(action_pressed(ToolAction::Primary)),
+                    finish_select_action.run_if(action_just_released(ToolAction::Primary)),
                 )
                     .chain()
                     .run_if(in_state(SelectState::DragParticles)),
                 sync_overlay_positions
                     .run_if(not(in_state(SelectState::DragParticles)))
-                    .run_if(in_state(CanvasState::Select)),
+                    .run_if(in_state(SelectedTool::Select)),
             ),
         )
-        .add_systems(OnExit(CanvasState::Select), cleanup_drag_state);
+        .add_systems(OnExit(SelectedTool::Select), cleanup_drag_state);
     }
 }
 

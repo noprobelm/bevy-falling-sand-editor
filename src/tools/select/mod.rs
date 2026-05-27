@@ -11,9 +11,9 @@ use setup::*;
 use states::*;
 use systems::*;
 
-pub struct SelectPlugin;
+pub struct SelectToolPlugin;
 
-impl Plugin for SelectPlugin {
+impl Plugin for SelectToolPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             ResourcesPlugin,

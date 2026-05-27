@@ -6,8 +6,8 @@ use leafwing_input_manager::{common_conditions::action_pressed, prelude::ActionS
 
 use crate::{
     Cursor,
-    canvas::{
-        CanvasAction,
+    tools::{
+        ToolAction,
         brush::{
             BrushAction, BrushModeSpawnState, BrushSpawnState, BrushState, BrushTypeState,
             components::{BrushSize, SelectedParticle, SelectedParticleType},
@@ -31,11 +31,11 @@ impl Plugin for SystemsPlugin {
             Update,
             (
                 brush_action_spawn_particles
-                    .run_if(action_pressed(CanvasAction::Draw))
+                    .run_if(action_pressed(ToolAction::Primary))
                     .run_if(in_state(BrushState::Draw))
                     .run_if(in_state(BrushModeSpawnState::Particles)),
                 brush_action_despawn_particles
-                    .run_if(action_pressed(CanvasAction::Draw))
+                    .run_if(action_pressed(ToolAction::Primary))
                     .run_if(in_state(BrushState::Draw))
                     .run_if(in_state(BrushSpawnState::Despawn)),
             ),
@@ -126,7 +126,7 @@ fn brush_action_despawn_particles(
 pub mod alg {
     use bevy::prelude::*;
 
-    use crate::canvas::brush::BrushTypeState;
+    use crate::tools::brush::BrushTypeState;
 
     pub fn get_positions(
         p1: Vec2,
