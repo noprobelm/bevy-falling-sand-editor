@@ -515,6 +515,15 @@ fn show_quick_actions_keybinds(ui: &mut egui::Ui, settings_param: &mut SettingsP
     }
     if show_keybind_row(
         ui,
+        "Toggle Brush Overlay",
+        "brush.toggle_overlay",
+        &keys.toggle_cursor_info_overlay,
+        &settings_param.keybinds.listening,
+    ) {
+        start_listening(settings_param, "brush.toggle_overlay");
+    }
+    if show_keybind_row(
+        ui,
         "Toggle Map Overlay",
         "quick_actions.toggle_map_overlay",
         &keys.toggle_map_overlay,
@@ -638,6 +647,9 @@ pub fn listen_for_keybind(
         "quick_actions.toggle_simulation_run" => {
             ui_keys.quick_actions.toggle_simulation_run = new_button
         }
+        "quick_actions.toggle_cursor_info_overlay" => {
+            ui_keys.quick_actions.toggle_cursor_info_overlay = new_button
+        }
         "quick_actions.toggle_simulation_step" => {
             ui_keys.quick_actions.toggle_simulation_step = new_button
         }
@@ -688,6 +700,8 @@ pub fn listen_for_keybind(
                 let qa = &ui_keys.quick_actions;
                 qa.toggle_ui
                     .insert_into_input_map(&mut map, QuickAction::ToggleUi);
+                qa.toggle_cursor_info_overlay
+                    .insert_into_input_map(&mut map, QuickAction::ToggleCursorInfoOverlay);
                 qa.toggle_map_overlay
                     .insert_into_input_map(&mut map, QuickAction::ToggleMapOverlay);
                 qa.toggle_dirty_chunks_overlay

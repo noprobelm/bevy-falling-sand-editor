@@ -40,6 +40,7 @@ fn show(
         .resizable(false)
         .min_width(WIDGET_WIDTH)
         .max_width(WIDGET_WIDTH)
+        .anchor(egui::Align2::LEFT_TOP, [10.0, 10.0])
         .constrain_to(ctx.available_rect())
         .show(ctx, |ui| {
             ui.style_mut()
