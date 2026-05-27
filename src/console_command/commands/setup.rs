@@ -1,11 +1,11 @@
+use crate::console_command::ConsoleCommandRegistry;
+use crate::console_command::commands::*;
+
 pub(super) struct SetupPlugin;
 
 impl Plugin for SetupPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(InputManagerPlugin::<ConsoleAction>::default())
-            .init_resource::<ConsoleCache>()
-            .init_resource::<ConsoleInformationAreaState>()
-            .init_resource::<ConsolePromptState>()
+        app.add_plugins(HelpConsoleCommandPlugin)
             .add_systems(Startup, setup_console_command_registry);
     }
 }
