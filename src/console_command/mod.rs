@@ -1,6 +1,8 @@
 use bevy::{platform::collections::HashMap, prelude::*};
 use shlex::Shlex;
 
+pub mod commands;
+
 pub struct ConsoleCommandPlugin;
 
 impl Plugin for ConsoleCommandPlugin {
