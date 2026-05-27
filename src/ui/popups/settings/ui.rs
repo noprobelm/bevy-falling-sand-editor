@@ -6,7 +6,7 @@ use leafwing_input_manager::prelude::{InputMap, MouseScrollAxis};
 
 use super::{KeybindsListeningState, ListeningForKeybind};
 use crate::{
-    CanvasAction, CanvasStateActions,
+    ToolAction, ToolStateActions,
     brush::{BrushAction, BrushKeyBindings, BrushSize, BrushSpawnState, BrushTypeState},
     camera::{CameraAction, CameraKeyBindings},
     config::{AvianDebugConfig, InputButton, OptionalColor},
@@ -586,12 +586,12 @@ fn show_general_keybinds(ui: &mut egui::Ui, settings_param: &mut SettingsParam) 
     let keys = settings_param.keybinds.ui_keys.general.clone();
     if show_keybind_row(
         ui,
-        "Hold Canvas Edit",
-        "general.hold_canvas_mode_edit",
-        &keys.hold_canvas_mode_edit,
+        "Resize Tool",
+        "general.resize_tool",
+        &keys.resize_tool,
         &settings_param.keybinds.listening,
     ) {
-        start_listening(settings_param, "general.hold_canvas_mode_edit");
+        start_listening(settings_param, "general.resize_tool");
     }
 }
 
@@ -608,8 +608,8 @@ pub fn listen_for_keybind(
     mut brush_input_map: Query<&mut InputMap<BrushAction>>,
     mut quick_action_input_map: Query<&mut InputMap<QuickAction>>,
     mut console_input_map: Query<&mut InputMap<ConsoleAction>>,
-    mut canvas_action_input_map: Query<&mut InputMap<CanvasAction>>,
-    mut canvas_input_map: Query<&mut InputMap<CanvasStateActions>>,
+    mut tool_action_input_map: Query<&mut InputMap<ToolAction>>,
+    mut tool_state_action_input_map: Query<&mut InputMap<ToolStateActions>>,
 ) {
     // Check for Escape to cancel
     if key_input.just_pressed(KeyCode::Escape) {
@@ -657,7 +657,7 @@ pub fn listen_for_keybind(
             ui_keys.quick_actions.sample_hovered_particle = new_button
         }
         "console.toggle_information_area" => ui_keys.console.toggle_information_area = new_button,
-        "general.hold_canvas_mode_edit" => ui_keys.general.hold_canvas_mode_edit = new_button,
+        "general.resize_tool" => ui_keys.general.resize_tool = new_button,
         _ => {}
     }
 
@@ -687,11 +687,11 @@ pub fn listen_for_keybind(
                     .toggle_brush_mode
                     .insert_into_input_map(&mut map, BrushAction::ToggleMode);
             }
-            if let Ok(mut map) = canvas_action_input_map.single_mut() {
+            if let Ok(mut map) = tool_action_input_map.single_mut() {
                 *map = InputMap::default();
                 brush_keys
                     .draw
-                    .insert_into_input_map(&mut map, CanvasAction::Draw);
+                    .insert_into_input_map(&mut map, ToolAction::Primary);
             }
         }
         id if id.starts_with("quick_actions.") => {
@@ -725,12 +725,12 @@ pub fn listen_for_keybind(
             }
         }
         id if id.starts_with("general.") => {
-            if let Ok(mut map) = canvas_input_map.single_mut() {
+            if let Ok(mut map) = tool_state_action_input_map.single_mut() {
                 *map = InputMap::default();
                 ui_keys
                     .general
-                    .hold_canvas_mode_edit
-                    .insert_into_input_map(&mut map, CanvasStateActions::Modify);
+                    .resize_tool
+                    .insert_into_input_map(&mut map, ToolStateActions::Resize);
             }
         }
         _ => {}
