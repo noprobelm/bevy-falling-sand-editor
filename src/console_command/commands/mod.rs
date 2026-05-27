@@ -8,6 +8,7 @@ mod particles;
 mod save;
 pub(crate) mod scene;
 mod select;
+mod setup;
 
 use bevy::prelude::*;
 
@@ -21,12 +22,13 @@ pub use particles::*;
 pub use save::*;
 pub use scene::*;
 pub use select::*;
+use setup::SetupPlugin;
 
 pub struct CommandsPlugin;
 
 impl Plugin for CommandsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(HelpConsoleCommandPlugin)
+        app.add_plugins(SetupPlugin)
             .add_systems(Startup, scene::load_scene_assets);
     }
 }

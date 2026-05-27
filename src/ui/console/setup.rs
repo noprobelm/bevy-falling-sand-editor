@@ -5,14 +5,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     config::{ConfigPath, InputButton, SettingsConfig},
-    console_command::{
-        ConsoleCommandRegistry,
-        commands::{
-            BrushConsoleCommand, CanvasCommand, ConwayConsoleCommand, ExitConsoleCommand,
-            HelpConsoleCommand, ParticlesConsoleCommand, SaveCommand, SceneConsoleCommand,
-            SelectCommand,
-        },
-    },
     setup::SetupSystems,
     ui::{CommandHistory, ConsoleInformationAreaState, ConsolePromptState},
 };
@@ -29,12 +21,7 @@ impl Plugin for SetupPlugin {
             .init_resource::<ConsolePromptState>()
             .add_systems(
                 Startup,
-                (
-                    load_settings,
-                    setup_console_command_registry,
-                    load_command_history,
-                )
-                    .in_set(SetupSystems::Ui),
+                (load_settings, load_command_history).in_set(SetupSystems::Ui),
             );
     }
 }
@@ -79,18 +66,4 @@ fn load_settings(mut commands: Commands, settings_config: Res<Persistent<Setting
 
 fn load_command_history(mut commands: Commands, config_path: Res<ConfigPath>) {
     commands.insert_resource(CommandHistory::load(&config_path.0));
-}
-
-fn setup_console_command_registry(mut commands: Commands) {
-    let mut registry = ConsoleCommandRegistry::default();
-    registry.register(HelpConsoleCommand);
-    registry.register(ExitConsoleCommand);
-    registry.register(ParticlesConsoleCommand);
-    registry.register(BrushConsoleCommand);
-    registry.register(ConwayConsoleCommand);
-    registry.register(SceneConsoleCommand);
-    registry.register(CanvasCommand);
-    registry.register(SelectCommand);
-    registry.register(SaveCommand);
-    commands.insert_resource(registry);
 }
