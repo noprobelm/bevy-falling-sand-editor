@@ -17,3 +17,6 @@ impl Plugin for ParticleEditorPlugin {
         app.add_plugins((UiPlugin, ResourcesPlugin, StatesPlugin, SetupPlugin));
     }
 }
+
+#[derive(Event)]
+pub struct UiToggleParticleEditorSignal;

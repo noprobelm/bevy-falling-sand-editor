@@ -18,6 +18,9 @@ pub use quick_actions::*;
 pub use setup::*;
 pub use states::*;
 
+#[derive(Event)]
+pub struct UiToggleSignal;
+
 pub(super) struct UiPlugin;
 
 impl Plugin for UiPlugin {
@@ -44,7 +47,8 @@ impl Plugin for UiPlugin {
             )
                 .chain(),
         )
-        .init_resource::<ShowUi>();
+        .init_resource::<ShowUi>()
+        .add_observer(on_ui_toggle);
     }
 }
 
@@ -58,4 +62,16 @@ pub enum UiSystems {
     ParticleEditor,
     Settings,
     CursorInfoOverlay,
+}
+
+fn on_ui_toggle(
+    _trigger: On<UiToggleSignal>,
+    mut commands: Commands,
+    enabled: Option<Res<ShowUi>>,
+) {
+    if enabled.is_some() {
+        commands.remove_resource::<ShowUi>();
+    } else {
+        commands.insert_resource(ShowUi);
+    }
 }

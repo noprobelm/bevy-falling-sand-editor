@@ -12,8 +12,8 @@ use crate::{
     config::{AvianDebugConfig, InputButton, OptionalColor},
     ui::{
         ConsoleAction, QuickAction, SettingsApplicationState, SettingsCategory, ShowUi,
-        UiKeyBindings, UiSystems, add_label_with_drag_value, add_label_with_toggle_switch,
-        add_major_grid_separator,
+        UiKeyBindings, UiSystems, UiToggleSettingsSignal, add_label_with_drag_value,
+        add_label_with_toggle_switch, add_major_grid_separator,
     },
 };
 
@@ -70,8 +70,21 @@ impl Plugin for UiPlugin {
             show.run_if(resource_exists::<ShowUi>)
                 .run_if(in_state(SettingsApplicationState::Open))
                 .in_set(UiSystems::Settings),
-        );
+        )
+        .add_observer(on_toggle_settings);
     }
+}
+
+fn on_toggle_settings(
+    _trigger: On<UiToggleSettingsSignal>,
+    current_settings_app_state: Res<State<SettingsApplicationState>>,
+    mut next_settings_app_state: ResMut<NextState<SettingsApplicationState>>,
+) {
+    let next = match current_settings_app_state.get() {
+        SettingsApplicationState::Open => SettingsApplicationState::Closed,
+        SettingsApplicationState::Closed => SettingsApplicationState::Open,
+    };
+    next_settings_app_state.set(next);
 }
 
 fn show(mut contexts: EguiContexts, mut settings_param: SettingsParam) -> Result {

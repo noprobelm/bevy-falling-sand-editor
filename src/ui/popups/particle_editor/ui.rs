@@ -27,8 +27,17 @@ impl Plugin for UiPlugin {
                     .run_if(resource_exists::<ShowUi>)
                     .run_if(in_state(PopupState::<LoadParticlesWindowState>::Open)),
             ),
-        );
+        )
+        .add_observer(on_toggle_particle_editor);
     }
+}
+
+fn on_toggle_particle_editor(
+    _trigger: On<UiToggleParticleEditorSignal>,
+    current_partical_editor_state: Res<State<PopupState<ParticleEditorWindowState>>>,
+    mut next_partical_editor_state: ResMut<NextState<PopupState<ParticleEditorWindowState>>>,
+) {
+    next_partical_editor_state.set(current_partical_editor_state.get_next());
 }
 
 /// System param to fetch particle types by material type.

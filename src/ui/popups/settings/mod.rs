@@ -18,3 +18,6 @@ impl Plugin for SettingsPlugin {
         );
     }
 }
+
+#[derive(Event)]
+pub struct UiToggleSettingsSignal;

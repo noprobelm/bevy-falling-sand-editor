@@ -1,7 +1,7 @@
 use crate::{
     Cursor,
     particles::HoveredParticle,
-    ui::{ShowCursorOverlay, ShowUi},
+    ui::{ShowCursorOverlay, ShowUi, UiToggleCursorOverlaySignal},
 };
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, EguiPrimaryContextPass, egui};
@@ -14,7 +14,20 @@ impl Plugin for UiPlugin {
             show.run_if(resource_exists::<ShowUi>)
                 .run_if(resource_exists::<ShowCursorOverlay>),
         )
-        .init_resource::<ShowCursorOverlay>();
+        .init_resource::<ShowCursorOverlay>()
+        .add_observer(on_toggle_cursor_overlay);
+    }
+}
+
+fn on_toggle_cursor_overlay(
+    _trigger: On<UiToggleCursorOverlaySignal>,
+    mut commands: Commands,
+    enabled: Option<Res<ShowCursorOverlay>>,
+) {
+    if enabled.is_some() {
+        commands.remove_resource::<ShowCursorOverlay>();
+    } else {
+        commands.insert_resource(ShowCursorOverlay);
     }
 }
 

@@ -13,3 +13,6 @@ impl Plugin for CursorOverlayPlugin {
 
 #[derive(Resource, Default)]
 pub struct ShowCursorOverlay;
+
+#[derive(Event)]
+pub struct UiToggleCursorOverlaySignal;
