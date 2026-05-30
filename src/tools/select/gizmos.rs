@@ -1,10 +1,7 @@
 use bevy::prelude::*;
 use leafwing_input_manager::common_conditions::action_pressed;
 
-use crate::{
-    tools::{ToolAction, select::SelectedRegion},
-    ui::SelectedTool,
-};
+use crate::tools::{SelectedTool, ToolAction, select::SelectedRegion};
 
 pub(super) struct GizmosPlugin;
 

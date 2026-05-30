@@ -1,6 +1,6 @@
 use crate::{
     console_command::ConsoleCommand,
-    ui::{SelectedTool, SetSelectedToolEvent},
+    tools::{SelectedTool, SetSelectedToolEvent},
 };
 use bevy::prelude::*;
 

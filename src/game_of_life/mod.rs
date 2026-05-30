@@ -3,18 +3,12 @@ mod render;
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat, TextureUsages};
 use bevy_falling_sand::prelude::*;
-use bevy_falling_sand::render::pipeline::textures::WorldTextureOrigin;
-use leafwing_input_manager::common_conditions::action_pressed;
-
-use crate::Cursor;
-use crate::ToolAction;
-use crate::brush::{BrushModeSpawnState, BrushSize, BrushState, BrushTypeState};
 
 const SHADER_ASSET_PATH: &str = "shaders/game_of_life.wgsl";
 
 /// Triggered to toggle the Conway simulation on or off.
 #[derive(Event)]
-pub struct GolToggleSignal;
+pub struct GolToggleEvent;
 
 /// When present, the Conway simulation is allowed to set up and run.
 #[derive(Resource)]
@@ -33,14 +27,6 @@ impl Plugin for GameOfLifePlugin {
                         .and(resource_exists::<WorldColorTexture>)
                         .and(not(resource_exists::<GolTextures>)),
                 ),
-            )
-            .add_systems(
-                Update,
-                gol_spawn_input
-                    .run_if(resource_exists::<GolTextures>)
-                    .run_if(action_pressed(ToolAction::Primary))
-                    .run_if(in_state(BrushState::Draw))
-                    .run_if(in_state(BrushModeSpawnState::Conway)),
             )
             .add_systems(
                 PreUpdate,
@@ -132,32 +118,6 @@ fn setup_gol_textures(
     commands.insert_resource(GolOverlayEntity(entity));
 }
 
-fn gol_spawn_input(
-    cursor: Res<Cursor>,
-    map: Res<ParticleMap>,
-    tex_origin: Res<WorldTextureOrigin>,
-    brush: Single<&BrushSize>,
-    brush_type: Res<State<BrushTypeState>>,
-    mut spawn_buf: ResMut<GolSpawnBuffer>,
-) {
-    let w = map.width() as i32;
-    let h = map.height() as i32;
-
-    let positions = crate::brush::systems::alg::get_positions(
-        cursor.current,
-        cursor.previous,
-        cursor.previous_previous,
-        brush.0 as f32,
-        &brush_type,
-    );
-
-    for pos in &positions {
-        let tx = (pos.x - tex_origin.0.x).rem_euclid(w) as u32;
-        let ty = (tex_origin.0.y + h - 1 - pos.y).rem_euclid(h) as u32;
-        spawn_buf.positions.push(tx | (ty << 16));
-    }
-}
-
 fn clear_gol_spawn_buffer(mut spawn_buf: ResMut<GolSpawnBuffer>) {
     spawn_buf.positions.clear();
 }
@@ -184,7 +144,7 @@ fn flip_gol_buffers(
 }
 
 fn on_gol_toggle(
-    _trigger: On<GolToggleSignal>,
+    _trigger: On<GolToggleEvent>,
     mut commands: Commands,
     enabled: Option<Res<GolEnabled>>,
     overlay: Option<Res<GolOverlayEntity>>,

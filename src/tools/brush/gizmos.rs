@@ -2,11 +2,13 @@ use bevy::prelude::*;
 
 use crate::{
     Cursor,
-    tools::brush::{
-        components::{Brush, BrushColor, BrushSize},
-        states::BrushTypeState,
+    tools::{
+        SelectedTool,
+        brush::{
+            components::{Brush, BrushColor, BrushSize},
+            states::BrushTypeState,
+        },
     },
-    ui::SelectedTool,
 };
 
 pub struct GizmosPlugin;

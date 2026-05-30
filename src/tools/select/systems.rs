@@ -8,7 +8,7 @@ use leafwing_input_manager::{
 use crate::{
     Cursor,
     tools::{
-        ToolAction,
+        SelectedTool, ToolAction,
         select::{
             SelectAction,
             gizmos::SelectGizmos,
@@ -16,7 +16,6 @@ use crate::{
             states::{SelectModeState, SelectState},
         },
     },
-    ui::SelectedTool,
 };
 
 use super::resources::SelectedRegion;
