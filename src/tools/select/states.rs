@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::ui::SelectedTool;
+use crate::tools::SelectedTool;
 
 pub(super) struct StatesPlugin;
 
