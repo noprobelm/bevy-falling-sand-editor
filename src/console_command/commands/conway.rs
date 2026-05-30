@@ -1,5 +1,5 @@
 use crate::console_command::ConsoleCommand;
-use crate::game_of_life::GolToggleSignal;
+use crate::game_of_life::GolToggleEvent;
 use bevy::prelude::*;
 
 #[derive(Default)]
@@ -32,6 +32,6 @@ impl ConsoleCommand for ConwayToggleConsoleCommand {
     }
 
     fn run(&self, _args: &[String], commands: &mut Commands) {
-        commands.trigger(GolToggleSignal);
+        commands.trigger(GolToggleEvent);
     }
 }

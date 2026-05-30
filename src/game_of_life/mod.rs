@@ -14,7 +14,7 @@ const SHADER_ASSET_PATH: &str = "shaders/game_of_life.wgsl";
 
 /// Triggered to toggle the Conway simulation on or off.
 #[derive(Event)]
-pub struct GolToggleSignal;
+pub struct GolToggleEvent;
 
 /// When present, the Conway simulation is allowed to set up and run.
 #[derive(Resource)]
@@ -184,7 +184,7 @@ fn flip_gol_buffers(
 }
 
 fn on_gol_toggle(
-    _trigger: On<GolToggleSignal>,
+    _trigger: On<GolToggleEvent>,
     mut commands: Commands,
     enabled: Option<Res<GolEnabled>>,
     overlay: Option<Res<GolOverlayEntity>>,
