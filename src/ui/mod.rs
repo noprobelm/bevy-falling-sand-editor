@@ -57,5 +57,6 @@ pub enum UiSystems {
     Console,
     ParticleEditor,
     Settings,
+    ToolOptions,
     CursorInfoOverlay,
 }
