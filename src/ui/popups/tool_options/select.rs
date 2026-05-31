@@ -16,17 +16,6 @@ pub fn show_select_settings(ui: &mut egui::Ui, mut select_options: SelectOptions
                             .selectable_label(
                                 matches!(
                                     select_options.current_mode_state.get(),
-                                    SelectModeState::Drag
-                                ),
-                                "Drag",
-                            )
-                            .clicked()
-                        {
-                            select_options.next_mode_state.set(SelectModeState::Drag);
-                        } else if ui
-                            .selectable_label(
-                                matches!(
-                                    select_options.current_mode_state.get(),
                                     SelectModeState::Throw
                                 ),
                                 "Throw",
@@ -34,6 +23,17 @@ pub fn show_select_settings(ui: &mut egui::Ui, mut select_options: SelectOptions
                             .clicked()
                         {
                             select_options.next_mode_state.set(SelectModeState::Throw);
+                        } else if ui
+                            .selectable_label(
+                                matches!(
+                                    select_options.current_mode_state.get(),
+                                    SelectModeState::Drag
+                                ),
+                                "Drag",
+                            )
+                            .clicked()
+                        {
+                            select_options.next_mode_state.set(SelectModeState::Drag);
                         }
                     });
             });
