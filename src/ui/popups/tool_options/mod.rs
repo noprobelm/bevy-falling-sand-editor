@@ -1,8 +1,10 @@
 mod brush;
+mod select;
 mod states;
 mod ui;
 
 pub use brush::*;
+pub use select::*;
 pub use states::*;
 use ui::*;
 

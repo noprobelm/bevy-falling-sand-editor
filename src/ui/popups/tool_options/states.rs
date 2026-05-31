@@ -1,6 +1,6 @@
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 
-use crate::ui::PopupState;
+use crate::ui::{PopupState, UiState};
 
 pub(super) struct StatesPlugin;
 
@@ -9,7 +9,9 @@ impl Plugin for StatesPlugin {
         app.init_state::<PopupState<ToolOptionsWindowState>>()
             .add_systems(
                 Update,
-                toggle_tool_options.run_if(input_just_pressed(KeyCode::KeyT)),
+                toggle_tool_options
+                    .run_if(input_just_pressed(KeyCode::KeyT))
+                    .run_if(in_state(UiState::Canvas)),
             );
     }
 }

@@ -10,9 +10,10 @@ use crate::{
     brush::{BrushAction, BrushKeyBindings},
     camera::{CameraAction, CameraKeyBindings},
     config::{AvianDebugConfig, InputButton, OptionalColor},
+    tools::brush::BrushOptions,
     ui::{
-        BrushSettingsParam, ConsoleAction, QuickAction, SettingsApplicationState, SettingsCategory,
-        ShowUi, UiKeyBindings, UiSystems, add_label_with_toggle_switch, add_major_grid_separator,
+        ConsoleAction, QuickAction, SettingsApplicationState, SettingsCategory, ShowUi,
+        UiKeyBindings, UiSystems, add_label_with_toggle_switch, add_major_grid_separator,
         show_brush_settings,
     },
 };
@@ -23,7 +24,7 @@ struct SettingsParam<'w, 's> {
     pub commands: Commands<'w, 's>,
     pub current_settings_category: ResMut<'w, State<SettingsCategory>>,
     pub next_settings_category: ResMut<'w, NextState<SettingsCategory>>,
-    pub brush: BrushSettingsParam<'w, 's>,
+    pub brush: BrushOptions<'w, 's>,
     pub debug_falling_sand: BevyFallingSandDebugSettingsParam<'w>,
     pub avian: AvianDebugSettingsParam<'w>,
     pub keybinds: KeybindsSettingsParam<'w>,

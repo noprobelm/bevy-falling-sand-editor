@@ -4,6 +4,8 @@ use bevy::{
 };
 use bevy_egui::{EguiContexts, EguiPrimaryContextPass};
 
+use crate::tools::{PreviousSelectedTool, SelectedTool};
+
 pub struct UiStatePlugin;
 
 impl Plugin for UiStatePlugin {
