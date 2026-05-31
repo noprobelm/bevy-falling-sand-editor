@@ -1,13 +1,16 @@
 use bevy::prelude::*;
-use bevy_falling_sand::core::{
-    DespawnParticleSignal, ParticleType, ParticleTypeRegistry, SpawnParticleSignal,
+use bevy_falling_sand::{
+    ParticleMap,
+    core::{DespawnParticleSignal, ParticleType, ParticleTypeRegistry, SpawnParticleSignal},
+    render::textures::WorldTextureOrigin,
 };
 use leafwing_input_manager::{common_conditions::action_pressed, prelude::ActionState};
 
 use crate::{
     Cursor,
-    canvas::{
-        CanvasAction,
+    game_of_life::{GolSpawnBuffer, GolTextures},
+    tools::{
+        ToolAction,
         brush::{
             BrushAction, BrushModeSpawnState, BrushSpawnState, BrushState, BrushTypeState,
             components::{BrushSize, SelectedParticle, SelectedParticleType},
@@ -31,13 +34,18 @@ impl Plugin for SystemsPlugin {
             Update,
             (
                 brush_action_spawn_particles
-                    .run_if(action_pressed(CanvasAction::Draw))
+                    .run_if(action_pressed(ToolAction::Primary))
                     .run_if(in_state(BrushState::Draw))
                     .run_if(in_state(BrushModeSpawnState::Particles)),
                 brush_action_despawn_particles
-                    .run_if(action_pressed(CanvasAction::Draw))
+                    .run_if(action_pressed(ToolAction::Primary))
                     .run_if(in_state(BrushState::Draw))
                     .run_if(in_state(BrushSpawnState::Despawn)),
+                brush_action_spawn_conway
+                    .run_if(resource_exists::<GolTextures>)
+                    .run_if(action_pressed(ToolAction::Primary))
+                    .run_if(in_state(BrushState::Draw))
+                    .run_if(in_state(BrushModeSpawnState::Conway)),
             ),
         );
     }
@@ -123,10 +131,36 @@ fn brush_action_despawn_particles(
     });
 }
 
+fn brush_action_spawn_conway(
+    cursor: Res<Cursor>,
+    map: Res<ParticleMap>,
+    tex_origin: Res<WorldTextureOrigin>,
+    brush: Single<&BrushSize>,
+    brush_type: Res<State<BrushTypeState>>,
+    mut spawn_buf: ResMut<GolSpawnBuffer>,
+) {
+    let w = map.width() as i32;
+    let h = map.height() as i32;
+
+    let positions = crate::brush::systems::alg::get_positions(
+        cursor.current,
+        cursor.previous,
+        cursor.previous_previous,
+        brush.0 as f32,
+        &brush_type,
+    );
+
+    for pos in &positions {
+        let tx = (pos.x - tex_origin.0.x).rem_euclid(w) as u32;
+        let ty = (tex_origin.0.y + h - 1 - pos.y).rem_euclid(h) as u32;
+        spawn_buf.positions.push(tx | (ty << 16));
+    }
+}
+
 pub mod alg {
     use bevy::prelude::*;
 
-    use crate::canvas::brush::BrushTypeState;
+    use crate::tools::brush::BrushTypeState;
 
     pub fn get_positions(
         p1: Vec2,

@@ -9,13 +9,13 @@ use leafwing_input_manager::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    canvas::brush::{
+    config::{InputButton, SettingsConfig},
+    setup::SetupSystems,
+    tools::brush::{
         BrushSpawnState, BrushTypeState,
         components::{Brush, BrushColor, BrushSize, SelectedParticle, SelectedParticleType},
         gizmos::BrushGizmos,
     },
-    config::{InputButton, SettingsConfig},
-    setup::SetupSystems,
 };
 
 pub(super) struct SetupPlugin;
@@ -34,7 +34,7 @@ impl Plugin for SetupPlugin {
                 Startup,
                 (spawn_brush, load_settings)
                     .chain()
-                    .in_set(SetupSystems::Canvas),
+                    .in_set(SetupSystems::Tools),
             )
             .add_systems(
                 Update,

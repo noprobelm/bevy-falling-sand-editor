@@ -1,5 +1,4 @@
 mod brush;
-mod canvas;
 mod conway;
 mod earthquake;
 mod exit;
@@ -10,11 +9,11 @@ mod save;
 pub(crate) mod scene;
 mod select;
 mod setup;
+mod tools;
 
 use bevy::prelude::*;
 
 pub use brush::*;
-pub use canvas::*;
 pub use conway::*;
 pub use earthquake::*;
 pub use exit::*;
@@ -25,6 +24,7 @@ pub use save::*;
 pub use scene::*;
 pub use select::*;
 use setup::SetupPlugin;
+pub use tools::*;
 
 pub struct CommandsPlugin;
 

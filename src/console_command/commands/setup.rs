@@ -18,7 +18,7 @@ fn setup_console_command_registry(mut commands: Commands) {
     registry.register(BrushConsoleCommand);
     registry.register(ConwayConsoleCommand);
     registry.register(SceneConsoleCommand);
-    registry.register(CanvasCommand);
+    registry.register(ToolCommand);
     registry.register(SelectCommand);
     registry.register(SaveCommand);
     commands.insert_resource(registry);

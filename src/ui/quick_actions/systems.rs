@@ -15,10 +15,7 @@ pub(super) struct SystemsPlugin;
 
 impl Plugin for SystemsPlugin {
     fn build(&self, app: &mut App) {
-        app.configure_sets(
-            Update,
-            CanvasQuickActionSystems.run_if(in_state(UiState::Canvas)),
-        );
+        app.configure_sets(Update, QuickActionSystems.run_if(in_state(UiState::Canvas)));
         app.add_systems(
             Update,
             (
@@ -35,14 +32,14 @@ impl Plugin for SystemsPlugin {
                 sample_hovered_particle
                     .run_if(action_just_pressed(QuickAction::SampleHoveredParticle)),
             )
-                .in_set(CanvasQuickActionSystems),
+                .in_set(QuickActionSystems),
         );
     }
 }
 
 /// System set for application initialization systems.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct CanvasQuickActionSystems;
+pub struct QuickActionSystems;
 
 fn toggle_resource<T: Resource + Default>(commands: &mut Commands, resource: &Option<Res<T>>) {
     if resource.is_some() {

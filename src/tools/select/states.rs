@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::ui::CanvasState;
+use crate::tools::SelectedTool;
 
 pub(super) struct StatesPlugin;
 
@@ -59,7 +59,7 @@ pub enum SelectModeState {
     Serialize,
     Deserialize,
 )]
-#[source(CanvasState = CanvasState::Select)]
+#[source(SelectedTool = SelectedTool::Select)]
 pub enum SelectState {
     #[default]
     Idle,

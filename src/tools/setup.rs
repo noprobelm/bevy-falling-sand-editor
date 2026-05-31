@@ -9,21 +9,21 @@ pub(super) struct SetupPlugin;
 impl Plugin for SetupPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
-            InputManagerPlugin::<CanvasAction>::default(),
-            InputManagerPlugin::<CanvasStateActions>::default(),
+            InputManagerPlugin::<ToolAction>::default(),
+            InputManagerPlugin::<ToolStateActions>::default(),
         ))
-        .add_systems(Startup, load_settings.in_set(SetupSystems::Canvas));
+        .add_systems(Startup, load_settings.in_set(SetupSystems::Tools));
     }
 }
 
 #[derive(Actionlike, PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
-pub enum CanvasAction {
-    Draw,
+pub enum ToolAction {
+    Primary,
 }
 
 #[derive(Actionlike, PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
-pub enum CanvasStateActions {
-    Modify,
+pub enum ToolStateActions {
+    Resize,
 }
 
 fn load_settings(mut commands: Commands, settings_config: Res<Persistent<SettingsConfig>>) {
@@ -32,7 +32,7 @@ fn load_settings(mut commands: Commands, settings_config: Res<Persistent<Setting
         .keys
         .brush
         .draw
-        .insert_into_input_map(&mut input_map, CanvasAction::Draw);
+        .insert_into_input_map(&mut input_map, ToolAction::Primary);
     commands.spawn(input_map);
 
     let mut input_map = InputMap::default();
@@ -40,8 +40,8 @@ fn load_settings(mut commands: Commands, settings_config: Res<Persistent<Setting
         .keys
         .ui
         .general
-        .hold_canvas_mode_edit
-        .insert_into_input_map(&mut input_map, CanvasStateActions::Modify);
+        .resize_tool
+        .insert_into_input_map(&mut input_map, ToolStateActions::Resize);
     commands.spawn(input_map);
     commands.insert_resource(settings_config.get().keys.ui.clone());
 }
