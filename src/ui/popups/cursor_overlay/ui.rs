@@ -50,9 +50,11 @@ pub fn show(
             ui.label(
                 egui::RichText::new(format!("y: {:8.3}", cursor_position.current.y)).monospace(),
             );
-            if let Some(particle) = hovered_particle.particle.clone() {
-                ui.label(particle.name);
-            }
+            let particle = hovered_particle
+                .particle
+                .clone()
+                .map_or_else(|| "".into(), |p| p.name);
+            ui.label(particle);
         });
 
     Ok(())

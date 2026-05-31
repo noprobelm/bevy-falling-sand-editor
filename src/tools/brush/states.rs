@@ -2,10 +2,7 @@ use bevy::prelude::*;
 use leafwing_input_manager::{common_conditions::action_just_pressed, prelude::ActionState};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    tools::{ToolStateActions, brush::BrushAction},
-    ui::SelectedTool,
-};
+use crate::tools::{SelectedTool, ToolStateActions, brush::BrushAction};
 
 pub struct StatesPlugin;
 

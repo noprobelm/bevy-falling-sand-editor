@@ -6,30 +6,15 @@ pub struct UiStatePlugin;
 impl Plugin for UiStatePlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<UiState>()
-            .add_sub_state::<SelectedTool>()
-            .init_resource::<PreviousSelectedTool>()
-            .add_observer(on_set_selected_tool)
-            .add_systems(OnEnter(UiState::Canvas), apply_pending_selected_tool)
             .add_systems(EguiPrimaryContextPass, handle_ui_state);
     }
 }
-
-#[derive(Resource, Default)]
-pub struct PreviousSelectedTool(pub SelectedTool);
 
 #[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
 pub enum UiState {
     #[default]
     Canvas,
     Menu,
-}
-
-#[derive(SubStates, Reflect, Default, Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[source(UiState = UiState::Canvas)]
-pub enum SelectedTool {
-    Select,
-    #[default]
-    Brush,
 }
 
 fn handle_ui_state(
@@ -59,24 +44,4 @@ fn handle_ui_state(
     }
 
     Ok(())
-}
-
-#[derive(Event)]
-pub struct SetSelectedToolEvent(pub SelectedTool);
-
-fn on_set_selected_tool(
-    trigger: On<SetSelectedToolEvent>,
-    mut pending: ResMut<PreviousSelectedTool>,
-    mut state: ResMut<NextState<SelectedTool>>,
-) {
-    let desired = trigger.event().0;
-    pending.0 = desired;
-    state.set(desired);
-}
-
-fn apply_pending_selected_tool(
-    pending: Res<PreviousSelectedTool>,
-    mut state: ResMut<NextState<SelectedTool>>,
-) {
-    state.set(pending.0);
 }

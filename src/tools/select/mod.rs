@@ -4,7 +4,7 @@ mod setup;
 pub mod states;
 mod systems;
 
-use bevy::prelude::*;
+use bevy::{ecs::system::SystemParam, prelude::*};
 use gizmos::*;
 use resources::*;
 use setup::*;
@@ -23,4 +23,10 @@ impl Plugin for SelectToolPlugin {
             GizmosPlugin,
         ));
     }
+}
+
+#[derive(SystemParam)]
+pub struct SelectOptions<'w> {
+    pub current_mode_state: Res<'w, State<SelectModeState>>,
+    pub next_mode_state: ResMut<'w, NextState<SelectModeState>>,
 }

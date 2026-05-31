@@ -1,13 +1,25 @@
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::{
+    prelude::*,
+    window::{CursorOptions, PrimaryWindow},
+};
 
-use super::camera::MainCamera;
+use crate::{
+    camera::MainCamera,
+    tools::{PreviousSelectedTool, SelectedTool},
+    ui::UiState,
+};
 
 pub(super) struct CursorPlugin;
 
 impl Plugin for CursorPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Cursor>()
-            .add_systems(Update, update_cursor_position);
+            .add_systems(Update, update_cursor_position)
+            .add_systems(
+                Update,
+                handle_cursor_visibility
+                    .run_if(state_changed::<UiState>.or(resource_changed::<PreviousSelectedTool>)),
+            );
     }
 }
 
@@ -42,4 +54,13 @@ pub fn update_cursor_position(
         coords.update(world_position);
     }
     Ok(())
+}
+
+fn handle_cursor_visibility(
+    ui_state: Res<State<UiState>>,
+    selected_tool: Res<PreviousSelectedTool>,
+    mut cursor_options: Single<&mut CursorOptions, With<PrimaryWindow>>,
+) {
+    cursor_options.visible =
+        matches!(ui_state.get(), UiState::Menu) || matches!(selected_tool.0, SelectedTool::Select);
 }
