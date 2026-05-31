@@ -1,4 +1,7 @@
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    window::{CursorOptions, PrimaryWindow},
+};
 use bevy_egui::{EguiContexts, EguiPrimaryContextPass};
 
 pub struct UiStatePlugin;
@@ -6,7 +9,9 @@ pub struct UiStatePlugin;
 impl Plugin for UiStatePlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<UiState>()
-            .add_systems(EguiPrimaryContextPass, handle_ui_state);
+            .add_systems(EguiPrimaryContextPass, handle_ui_state)
+            .add_systems(OnEnter(UiState::Menu), show_cursor)
+            .add_systems(OnEnter(UiState::Canvas), hide_cursor);
     }
 }
 
@@ -44,4 +49,12 @@ fn handle_ui_state(
     }
 
     Ok(())
+}
+
+fn show_cursor(mut cursor_options: Single<&mut CursorOptions, With<PrimaryWindow>>) {
+    cursor_options.visible = true;
+}
+
+fn hide_cursor(mut cursor_options: Single<&mut CursorOptions, With<PrimaryWindow>>) {
+    cursor_options.visible = false;
 }
