@@ -108,7 +108,7 @@ impl ConsoleCommand for RigidBodyDespawnStaticConsoleCommand {
 }
 
 #[derive(Event, Copy, Clone, Debug)]
-pub struct DespawnRigidBodiesSignal {
+struct DespawnRigidBodiesSignal {
     kind: RigidBodyDespawnKind,
 }
 
