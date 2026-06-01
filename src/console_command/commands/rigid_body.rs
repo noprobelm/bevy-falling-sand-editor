@@ -5,7 +5,8 @@ use bevy_falling_sand::prelude::{
     StaticRigidBodyParticleCollider,
 };
 
-use crate::console_command::ConsoleCommand;
+use super::parse_position;
+use crate::{console_command::ConsoleCommand, earthquake::RemoveFractureBodyCellAtWorldPosition};
 
 pub(super) struct RigidBodyConsoleCommandPlugin;
 
@@ -28,7 +29,32 @@ impl ConsoleCommand for RigidBodyConsoleCommand {
     }
 
     fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
-        vec![Box::new(RigidBodyDespawnConsoleCommand)]
+        vec![
+            Box::new(RigidBodyDespawnConsoleCommand),
+            Box::new(RigidBodyRemoveCellConsoleCommand),
+        ]
+    }
+}
+
+#[derive(Default)]
+pub struct RigidBodyRemoveCellConsoleCommand;
+
+impl ConsoleCommand for RigidBodyRemoveCellConsoleCommand {
+    fn name(&self) -> &'static str {
+        "remove_cell"
+    }
+
+    fn description(&self) -> &'static str {
+        "Remove one source cell from a particle collider rigid body"
+    }
+
+    fn run(&self, args: &[String], commands: &mut Commands) {
+        let Ok(position) = parse_position::<IVec2>(args) else {
+            error!("Usage: rigid_body remove_cell <x>,<y>");
+            return;
+        };
+
+        commands.trigger(RemoveFractureBodyCellAtWorldPosition { position });
     }
 }
 

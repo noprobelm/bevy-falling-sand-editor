@@ -8,6 +8,7 @@ use leafwing_input_manager::{common_conditions::action_pressed, prelude::ActionS
 
 use crate::{
     Cursor,
+    earthquake::RemoveFractureBodyCellsAtWorldPositions,
     game_of_life::{GolSpawnBuffer, GolTextures},
     tools::{
         ToolAction,
@@ -113,22 +114,27 @@ fn brush_action_spawn_particles(
 }
 
 fn brush_action_despawn_particles(
+    mut commands: Commands,
     mut msgw_despawn: MessageWriter<DespawnParticleSignal>,
     brush_size: Single<&BrushSize>,
     cursor: Res<Cursor>,
     brush_type: Res<State<BrushTypeState>>,
 ) {
-    alg::get_positions(
+    let positions = alg::get_positions(
         cursor.current,
         cursor.previous,
         cursor.previous_previous,
         brush_size.0 as f32,
         &brush_type,
-    )
-    .iter()
-    .for_each(|pos| {
+    );
+
+    for pos in &positions {
         msgw_despawn.write(DespawnParticleSignal::from_position(*pos));
-    });
+    }
+
+    if !positions.is_empty() {
+        commands.trigger(RemoveFractureBodyCellsAtWorldPositions { positions });
+    }
 }
 
 fn brush_action_spawn_conway(

@@ -15,6 +15,9 @@ pub(super) struct EarthquakePlugin;
 impl Plugin for EarthquakePlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(on_earthquake)
+            .add_observer(on_remove_fracture_body_cell_at_world_position)
+            .add_observer(on_remove_fracture_body_cells_at_world_positions)
+            .add_observer(on_remove_fracture_body_cells)
             .add_systems(Update, debug_earthquake)
             .init_gizmo_group::<EarthquakeGizmos>();
     }
@@ -24,6 +27,7 @@ impl Plugin for EarthquakePlugin {
 pub(super) struct EarthquakeGizmos;
 
 const EARTHQUAKE_RIGID_BODY_RENDER_Z: f32 = 1.0;
+const MIN_FRACTURE_BODY_CELLS: usize = 2;
 
 #[derive(Event)]
 pub struct Earthquake {
@@ -37,6 +41,28 @@ pub struct DebugEarthquake {
     radius: f32,
     fracture_edges: Vec<(Vec2, Vec2)>,
     timer: Timer,
+}
+
+#[derive(Component, Clone)]
+struct FractureBody {
+    cells: HashMap<IVec2, Color>,
+    source_centroid: Vec2,
+}
+
+#[derive(Event)]
+pub struct RemoveFractureBodyCells {
+    pub entity: Entity,
+    pub cells: Vec<IVec2>,
+}
+
+#[derive(Event)]
+pub(crate) struct RemoveFractureBodyCellAtWorldPosition {
+    pub position: IVec2,
+}
+
+#[derive(Event)]
+pub(crate) struct RemoveFractureBodyCellsAtWorldPositions {
+    pub positions: Vec<IVec2>,
 }
 
 fn on_earthquake(
@@ -207,8 +233,11 @@ fn erode_outer_perimeter_layers(cell: &HashSet<IVec2>, layers: usize) -> HashSet
     eroded
 }
 
-fn particle_world_positions(cell: &HashSet<IVec2>) -> Vec<(IVec2, Vec2)> {
-    cell.iter()
+fn particle_world_positions<'a, I>(cell: I) -> Vec<(IVec2, Vec2)>
+where
+    I: IntoIterator<Item = &'a IVec2>,
+{
+    cell.into_iter()
         .map(|&p| (p, Vec2::new(p.x as f32 + 0.5, p.y as f32 + 0.5)))
         .collect()
 }
@@ -260,32 +289,402 @@ fn spawn_fracture_body(
         return;
     }
 
-    let particle_world = particle_world_positions(&collider_cell);
-    let centroid = particle_centroid(&particle_world);
-    let collider = convex_particle_collider(&collider_cell, &particle_world, centroid);
+    let cell_colors: HashMap<IVec2, Color> = collider_cell
+        .iter()
+        .map(|grid_pos| {
+            let color = by_position
+                .get(grid_pos)
+                .and_then(|e| particle_colors.get(*e).ok())
+                .map_or(Color::WHITE, |pc| pc.0);
+            (*grid_pos, color)
+        })
+        .collect();
 
-    commands
-        .spawn((
-            Transform::from_xyz(centroid.x, centroid.y, EARTHQUAKE_RIGID_BODY_RENDER_Z),
-            Visibility::default(),
-            RigidBody::Dynamic,
-            collider,
-            ParticleCollider::from_grid_cells(collider_cell.iter().copied(), centroid)
-                .with_default_resting(),
-        ))
-        .with_children(|p| {
-            for (grid_pos, world) in &particle_world {
-                let color = by_position
-                    .get(grid_pos)
-                    .and_then(|e| particle_colors.get(*e).ok())
-                    .map_or(Color::WHITE, |pc| pc.0);
-                let local = *world - centroid;
-                p.spawn((
-                    Sprite::from_color(color, Vec2::ONE),
-                    Transform::from_xyz(local.x, local.y, 0.0),
-                ));
+    spawn_fracture_body_from_cells(commands, cell_colors, None);
+}
+
+fn spawn_fracture_body_from_cells(
+    commands: &mut Commands,
+    cell_colors: HashMap<IVec2, Color>,
+    transform: Option<Transform>,
+) -> Option<Entity> {
+    let built = build_fracture_body(&cell_colors)?;
+
+    Some(
+        commands
+            .spawn((
+                transform.unwrap_or_else(|| {
+                    Transform::from_xyz(
+                        built.source_centroid.x,
+                        built.source_centroid.y,
+                        EARTHQUAKE_RIGID_BODY_RENDER_Z,
+                    )
+                }),
+                Visibility::default(),
+                RigidBody::Dynamic,
+                built.collider,
+                built.particle_collider.with_default_resting(),
+                FractureBody {
+                    cells: cell_colors,
+                    source_centroid: built.source_centroid,
+                },
+            ))
+            .with_children(|p| {
+                spawn_fracture_body_sprites(p, built.source_centroid, &built.sprites);
+            })
+            .id(),
+    )
+}
+
+struct BuiltFractureBody {
+    source_centroid: Vec2,
+    collider: Collider,
+    particle_collider: ParticleCollider,
+    sprites: Vec<(Vec2, Color)>,
+}
+
+fn build_fracture_body(cell_colors: &HashMap<IVec2, Color>) -> Option<BuiltFractureBody> {
+    if cell_colors.len() < MIN_FRACTURE_BODY_CELLS {
+        return None;
+    }
+
+    let cells: HashSet<IVec2> = cell_colors.keys().copied().collect();
+    let particle_world = particle_world_positions(cells.iter());
+    let centroid = particle_centroid(&particle_world);
+    let collider = convex_particle_collider(&cells, &particle_world, centroid);
+    let sprites = particle_world
+        .iter()
+        .map(|(grid_pos, world)| {
+            let color = cell_colors.get(grid_pos).copied().unwrap_or(Color::WHITE);
+            (*world, color)
+        })
+        .collect();
+
+    Some(BuiltFractureBody {
+        source_centroid: centroid,
+        collider,
+        particle_collider: ParticleCollider::from_grid_cells(cells, centroid),
+        sprites,
+    })
+}
+
+fn spawn_fracture_body_sprites(
+    parent: &mut ChildSpawnerCommands,
+    centroid: Vec2,
+    sprites: &[(Vec2, Color)],
+) {
+    for (world, color) in sprites {
+        let local = *world - centroid;
+        parent.spawn((
+            Sprite::from_color(*color, Vec2::ONE),
+            Transform::from_xyz(local.x, local.y, 0.0),
+        ));
+    }
+}
+
+fn on_remove_fracture_body_cell_at_world_position(
+    trigger: On<RemoveFractureBodyCellAtWorldPosition>,
+    mut commands: Commands,
+) {
+    commands.trigger(RemoveFractureBodyCellsAtWorldPositions {
+        positions: vec![trigger.position],
+    });
+}
+
+fn on_remove_fracture_body_cells_at_world_positions(
+    trigger: On<RemoveFractureBodyCellsAtWorldPositions>,
+    mut commands: Commands,
+    bodies: Query<(Entity, &ParticleCollider, &GlobalTransform), With<FractureBody>>,
+) {
+    let mut cells_by_entity: HashMap<Entity, HashSet<IVec2>> = HashMap::default();
+
+    for position in &trigger.positions {
+        let world_point = position.as_vec2() + Vec2::splat(0.5);
+
+        for (entity, particle_collider, global_transform) in &bodies {
+            let cell = particle_collider.cell_at_world_point(world_point, global_transform);
+            if particle_collider.contains_cell(cell) {
+                cells_by_entity.entry(entity).or_default().insert(cell);
+                break;
             }
+        }
+    }
+
+    for (entity, cells) in cells_by_entity {
+        commands.trigger(RemoveFractureBodyCells {
+            entity,
+            cells: cells.into_iter().collect(),
         });
+    }
+}
+
+#[allow(clippy::too_many_arguments, clippy::type_complexity)]
+fn on_remove_fracture_body_cells(
+    trigger: On<RemoveFractureBodyCells>,
+    mut commands: Commands,
+    mut bodies: Query<(
+        Entity,
+        &mut FractureBody,
+        &mut Collider,
+        &mut ParticleCollider,
+        &mut Transform,
+        &GlobalTransform,
+        &RigidBody,
+        Option<&LinearVelocity>,
+        Option<&AngularVelocity>,
+    )>,
+    children: Query<&Children>,
+    chunk_index: Res<bevy_falling_sand::prelude::ChunkIndex>,
+    mut chunk_query: Query<&mut bevy_falling_sand::prelude::ChunkDirtyState>,
+) {
+    let Ok((
+        entity,
+        mut fracture_body,
+        mut collider,
+        mut particle_collider,
+        mut transform,
+        global_transform,
+        rigid_body,
+        linear_velocity,
+        angular_velocity,
+    )) = bodies.get_mut(trigger.entity)
+    else {
+        return;
+    };
+
+    let mut removed = Vec::new();
+    for cell in &trigger.cells {
+        if fracture_body.cells.remove(cell).is_some() {
+            removed.push(*cell);
+        }
+    }
+
+    if removed.is_empty() {
+        return;
+    }
+
+    for cell in &removed {
+        mark_fracture_cell_dirty(
+            *cell,
+            fracture_body.source_centroid,
+            global_transform,
+            &chunk_index,
+            &mut chunk_query,
+        );
+    }
+
+    if fracture_body.cells.is_empty() {
+        commands.entity(entity).despawn();
+        return;
+    }
+
+    let mut components: Vec<Vec<IVec2>> = connected_components(fracture_body.cells.keys().copied())
+        .into_iter()
+        .filter(|component| {
+            if component.len() < MIN_FRACTURE_BODY_CELLS {
+                mark_fracture_cells_dirty(
+                    component.iter().copied(),
+                    fracture_body.source_centroid,
+                    global_transform,
+                    &chunk_index,
+                    &mut chunk_query,
+                );
+                false
+            } else {
+                true
+            }
+        })
+        .collect();
+    components.sort_by_key(|component| std::cmp::Reverse(component.len()));
+
+    if components.is_empty() {
+        commands.entity(entity).despawn();
+        return;
+    }
+
+    if components.len() == 1 {
+        rebuild_fracture_body(
+            &mut commands,
+            entity,
+            &children,
+            &mut fracture_body,
+            &mut collider,
+            &mut particle_collider,
+            &mut transform,
+            &components[0],
+            &chunk_index,
+            &mut chunk_query,
+        );
+        return;
+    }
+
+    let original = fracture_body.clone();
+    let original_transform = *transform;
+    let original_global_transform = *global_transform;
+    let original_source_centroid = original.source_centroid;
+    let resting = particle_collider.resting;
+    let body_kind = *rigid_body;
+    let linear_velocity = linear_velocity.copied();
+    let angular_velocity = angular_velocity.copied();
+
+    let retained_cells = cell_colors_for_component(&original.cells, &components[0]);
+    fracture_body.cells = retained_cells;
+    rebuild_fracture_body(
+        &mut commands,
+        entity,
+        &children,
+        &mut fracture_body,
+        &mut collider,
+        &mut particle_collider,
+        &mut transform,
+        &components[0],
+        &chunk_index,
+        &mut chunk_query,
+    );
+
+    for component in components.iter().skip(1) {
+        let cell_colors = cell_colors_for_component(&original.cells, component);
+        let Some(built) = build_fracture_body(&cell_colors) else {
+            continue;
+        };
+
+        let split_transform = shifted_fracture_transform(
+            original_transform,
+            original_source_centroid,
+            built.source_centroid,
+        );
+
+        let split_entity = commands
+            .spawn((
+                split_transform,
+                Visibility::default(),
+                body_kind,
+                built.collider,
+                built.particle_collider.with_resting(resting),
+                FractureBody {
+                    cells: cell_colors,
+                    source_centroid: built.source_centroid,
+                },
+            ))
+            .with_children(|p| {
+                spawn_fracture_body_sprites(p, built.source_centroid, &built.sprites);
+            })
+            .id();
+
+        if let Some(linear_velocity) = linear_velocity {
+            commands.entity(split_entity).insert(linear_velocity);
+        }
+        if let Some(angular_velocity) = angular_velocity {
+            commands.entity(split_entity).insert(angular_velocity);
+        }
+
+        mark_fracture_cells_dirty(
+            component.iter().copied(),
+            original_source_centroid,
+            &original_global_transform,
+            &chunk_index,
+            &mut chunk_query,
+        );
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn rebuild_fracture_body(
+    commands: &mut Commands,
+    entity: Entity,
+    children: &Query<&Children>,
+    fracture_body: &mut FractureBody,
+    collider: &mut Collider,
+    particle_collider: &mut ParticleCollider,
+    transform: &mut Transform,
+    component: &[IVec2],
+    chunk_index: &bevy_falling_sand::prelude::ChunkIndex,
+    chunk_query: &mut Query<&mut bevy_falling_sand::prelude::ChunkDirtyState>,
+) {
+    let cell_colors = cell_colors_for_component(&fracture_body.cells, component);
+    let Some(built) = build_fracture_body(&cell_colors) else {
+        commands.entity(entity).despawn();
+        return;
+    };
+
+    let old_centroid = fracture_body.source_centroid;
+    fracture_body.cells = cell_colors;
+    fracture_body.source_centroid = built.source_centroid;
+    *collider = built.collider;
+    *particle_collider = built
+        .particle_collider
+        .with_resting(particle_collider.resting);
+    *transform = shifted_fracture_transform(*transform, old_centroid, built.source_centroid);
+
+    if let Ok(children) = children.get(entity) {
+        for child in children {
+            commands.entity(*child).despawn();
+        }
+    }
+
+    commands.entity(entity).with_children(|p| {
+        spawn_fracture_body_sprites(p, built.source_centroid, &built.sprites);
+    });
+
+    mark_fracture_cells_dirty(
+        component.iter().copied(),
+        built.source_centroid,
+        &GlobalTransform::from(*transform),
+        chunk_index,
+        chunk_query,
+    );
+}
+
+fn shifted_fracture_transform(
+    mut transform: Transform,
+    old_source_centroid: Vec2,
+    new_source_centroid: Vec2,
+) -> Transform {
+    let local_delta = new_source_centroid - old_source_centroid;
+    transform.translation += transform.rotation * local_delta.extend(0.0);
+    transform
+}
+
+fn cell_colors_for_component(
+    colors: &HashMap<IVec2, Color>,
+    component: &[IVec2],
+) -> HashMap<IVec2, Color> {
+    component
+        .iter()
+        .filter_map(|cell| colors.get(cell).copied().map(|color| (*cell, color)))
+        .collect()
+}
+
+fn mark_fracture_cells_dirty<I>(
+    cells: I,
+    source_centroid: Vec2,
+    transform: &GlobalTransform,
+    chunk_index: &bevy_falling_sand::prelude::ChunkIndex,
+    chunk_query: &mut Query<&mut bevy_falling_sand::prelude::ChunkDirtyState>,
+) where
+    I: IntoIterator<Item = IVec2>,
+{
+    for cell in cells {
+        mark_fracture_cell_dirty(cell, source_centroid, transform, chunk_index, chunk_query);
+    }
+}
+
+fn mark_fracture_cell_dirty(
+    cell: IVec2,
+    source_centroid: Vec2,
+    transform: &GlobalTransform,
+    chunk_index: &bevy_falling_sand::prelude::ChunkIndex,
+    chunk_query: &mut Query<&mut bevy_falling_sand::prelude::ChunkDirtyState>,
+) {
+    let local = cell.as_vec2() + Vec2::splat(0.5) - source_centroid;
+    let world = transform.transform_point(local.extend(0.0)).truncate();
+    let position = world.floor().as_ivec2();
+    let chunk_coord = chunk_index.world_to_chunk_coord(position);
+    if let Some(chunk_entity) = chunk_index.get(chunk_coord)
+        && let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity)
+    {
+        dirty_state.mark_dirty(position);
+    }
 }
 
 fn debug_earthquake(
