@@ -11,7 +11,7 @@ edition = "2024"
 [dependencies]
 bevy = { version = "0.18.1" }
 rand = "0.9"
-bevy_falling_sand = { path = "../bevy_falling_sand" }
+bevy_falling_sand = { git = "https://github.com/noprobelm/bevy_falling_sand", branch = "main" }
 # Compile out low-severity logs to improve performance.
 # Remove these features if you want to profile your game with tracy.
 # (see <https://github.com/bevyengine/bevy/blob/main/docs/profiling.md#tracy-profiler>)
