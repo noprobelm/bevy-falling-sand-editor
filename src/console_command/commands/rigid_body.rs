@@ -67,7 +67,7 @@ impl ConsoleCommand for RigidBodyDespawnAllConsoleCommand {
 
     fn run(&self, _args: &[String], commands: &mut Commands) {
         info!("Despawning all rigid bodies from the world");
-        commands.trigger(DespawnRigidBodiesSignal::all());
+        commands.trigger(DespawnRigidBodiesEvent::all());
     }
 }
 
@@ -85,7 +85,7 @@ impl ConsoleCommand for RigidBodyDespawnDynamicConsoleCommand {
 
     fn run(&self, _args: &[String], commands: &mut Commands) {
         info!("Despawning all dynamic rigid bodies from the world");
-        commands.trigger(DespawnRigidBodiesSignal::dynamic());
+        commands.trigger(DespawnRigidBodiesEvent::dynamic());
     }
 }
 
@@ -103,16 +103,16 @@ impl ConsoleCommand for RigidBodyDespawnStaticConsoleCommand {
 
     fn run(&self, _args: &[String], commands: &mut Commands) {
         info!("Despawning all static rigid bodies from the world");
-        commands.trigger(DespawnRigidBodiesSignal::static_bodies());
+        commands.trigger(DespawnRigidBodiesEvent::static_bodies());
     }
 }
 
 #[derive(Event, Copy, Clone, Debug)]
-struct DespawnRigidBodiesSignal {
+struct DespawnRigidBodiesEvent {
     kind: RigidBodyDespawnKind,
 }
 
-impl DespawnRigidBodiesSignal {
+impl DespawnRigidBodiesEvent {
     const fn all() -> Self {
         Self {
             kind: RigidBodyDespawnKind::All,
@@ -141,7 +141,7 @@ enum RigidBodyDespawnKind {
 
 #[allow(clippy::needless_pass_by_value)]
 fn on_despawn_rigid_bodies(
-    trigger: On<DespawnRigidBodiesSignal>,
+    trigger: On<DespawnRigidBodiesEvent>,
     mut commands: Commands,
     mut map: ResMut<ParticleMap>,
     chunk_index: Res<ChunkIndex>,
