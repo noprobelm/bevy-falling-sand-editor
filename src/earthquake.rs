@@ -180,6 +180,71 @@ fn cell_boundary_edges(cell: &HashSet<IVec2>) -> Vec<(Vec2, Vec2)> {
     edges
 }
 
+fn erode_outer_perimeter(cell: &HashSet<IVec2>) -> HashSet<IVec2> {
+    cell.iter()
+        .copied()
+        .filter(|p| {
+            [
+                IVec2::new(p.x, p.y + 1),
+                IVec2::new(p.x, p.y - 1),
+                IVec2::new(p.x + 1, p.y),
+                IVec2::new(p.x - 1, p.y),
+            ]
+            .into_iter()
+            .all(|neighbor| cell.contains(&neighbor))
+        })
+        .collect()
+}
+
+fn erode_outer_perimeter_layers(cell: &HashSet<IVec2>, layers: usize) -> HashSet<IVec2> {
+    let mut eroded = cell.clone();
+    for _ in 0..layers {
+        eroded = erode_outer_perimeter(&eroded);
+        if eroded.is_empty() {
+            break;
+        }
+    }
+    eroded
+}
+
+fn particle_world_positions(cell: &HashSet<IVec2>) -> Vec<(IVec2, Vec2)> {
+    cell.iter()
+        .map(|&p| (p, Vec2::new(p.x as f32 + 0.5, p.y as f32 + 0.5)))
+        .collect()
+}
+
+fn particle_centroid(particle_world: &[(IVec2, Vec2)]) -> Vec2 {
+    particle_world.iter().map(|(_, v)| *v).sum::<Vec2>() / particle_world.len() as f32
+}
+
+fn compound_particle_collider(particle_world: &[(IVec2, Vec2)], centroid: Vec2) -> Collider {
+    let shapes: Vec<(Vec2, f32, Collider)> = particle_world
+        .iter()
+        .map(|(_, world)| (*world - centroid, 0.0, Collider::rectangle(1.0, 1.0)))
+        .collect();
+    Collider::compound(shapes)
+}
+
+fn convex_particle_collider(
+    cell: &HashSet<IVec2>,
+    particle_world: &[(IVec2, Vec2)],
+    centroid: Vec2,
+) -> Collider {
+    let mesh = mesh_from_grid_cells(cell.iter().copied(), 0.0);
+    if mesh.vertices.is_empty() {
+        return compound_particle_collider(particle_world, centroid);
+    }
+
+    let vertices: Vec<Vec2> = mesh
+        .vertices
+        .into_iter()
+        .map(|vertex| vertex - centroid)
+        .collect();
+
+    Collider::convex_hull(vertices)
+        .unwrap_or_else(|| compound_particle_collider(particle_world, centroid))
+}
+
 fn spawn_fracture_body(
     commands: &mut Commands,
     particle_colors: &Query<&ParticleColor>,
@@ -190,28 +255,14 @@ fn spawn_fracture_body(
         return;
     }
 
-    let particle_world: Vec<(IVec2, Vec2)> = cell
-        .iter()
-        .map(|&p| (p, Vec2::new(p.x as f32 + 0.5, p.y as f32 + 0.5)))
-        .collect();
-    let centroid =
-        particle_world.iter().map(|(_, v)| *v).sum::<Vec2>() / particle_world.len() as f32;
+    let collider_cell = erode_outer_perimeter_layers(cell, 2);
+    if collider_cell.is_empty() {
+        return;
+    }
 
-    let mesh = mesh_from_grid_cells(cell.iter().copied(), 0.0);
-    let collider = if mesh.vertices.is_empty() || mesh.indices.is_empty() {
-        let shapes: Vec<(Vec2, f32, Collider)> = particle_world
-            .iter()
-            .map(|(_, world)| (*world - centroid, 0.0, Collider::rectangle(1.0, 1.0)))
-            .collect();
-        Collider::compound(shapes)
-    } else {
-        let vertices = mesh
-            .vertices
-            .into_iter()
-            .map(|vertex| vertex - centroid)
-            .collect();
-        Collider::trimesh(vertices, mesh.indices)
-    };
+    let particle_world = particle_world_positions(&collider_cell);
+    let centroid = particle_centroid(&particle_world);
+    let collider = convex_particle_collider(&collider_cell, &particle_world, centroid);
 
     commands
         .spawn((
@@ -219,7 +270,7 @@ fn spawn_fracture_body(
             Visibility::default(),
             RigidBody::Dynamic,
             collider,
-            ParticleCollider::from_grid_cells(cell.iter().copied(), centroid)
+            ParticleCollider::from_grid_cells(collider_cell.iter().copied(), centroid)
                 .with_default_resting(),
         ))
         .with_children(|p| {
