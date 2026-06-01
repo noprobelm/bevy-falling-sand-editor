@@ -219,7 +219,8 @@ fn spawn_fracture_body(
             Visibility::default(),
             RigidBody::Dynamic,
             collider,
-            ParticleCollider::from_grid_cells(cell.iter().copied(), centroid),
+            ParticleCollider::from_grid_cells(cell.iter().copied(), centroid)
+                .with_default_resting(),
         ))
         .with_children(|p| {
             for (grid_pos, world) in &particle_world {
