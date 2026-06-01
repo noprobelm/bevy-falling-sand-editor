@@ -2,11 +2,13 @@ use bevy::prelude::*;
 
 use crate::{
     Cursor,
-    canvas::brush::{
-        components::{Brush, BrushColor, BrushSize},
-        states::BrushTypeState,
+    tools::{
+        SelectedTool,
+        brush::{
+            components::{Brush, BrushColor, BrushSize},
+            states::BrushTypeState,
+        },
     },
-    ui::CanvasState,
 };
 
 pub struct GizmosPlugin;
@@ -15,7 +17,7 @@ impl Plugin for GizmosPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            update_brush_gizmos.run_if(in_state(CanvasState::Brush)),
+            update_brush_gizmos.run_if(in_state(SelectedTool::Brush)),
         );
     }
 }

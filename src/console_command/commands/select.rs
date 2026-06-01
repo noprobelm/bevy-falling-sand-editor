@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
 use crate::{
-    canvas::select::states::{SelectModeState, SetSelectModeEvent},
     console_command::ConsoleCommand,
+    tools::select::states::{SelectModeState, SetSelectModeEvent},
 };
 
 #[derive(Default)]

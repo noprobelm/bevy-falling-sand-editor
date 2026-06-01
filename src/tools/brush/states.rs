@@ -2,10 +2,7 @@ use bevy::prelude::*;
 use leafwing_input_manager::{common_conditions::action_just_pressed, prelude::ActionState};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    canvas::{CanvasStateActions, brush::BrushAction},
-    ui::CanvasState,
-};
+use crate::tools::{SelectedTool, ToolStateActions, brush::BrushAction};
 
 pub struct StatesPlugin;
 
@@ -18,7 +15,7 @@ impl Plugin for StatesPlugin {
             .add_systems(
                 Update,
                 (
-                    handle_brush_state.run_if(in_state(CanvasState::Brush)),
+                    handle_brush_state.run_if(in_state(SelectedTool::Brush)),
                     handle_brush_mode_state.run_if(action_just_pressed(BrushAction::ToggleMode)),
                 ),
             );
@@ -40,7 +37,7 @@ impl Plugin for StatesPlugin {
     Serialize,
     Deserialize,
 )]
-#[source(CanvasState = CanvasState::Brush)]
+#[source(SelectedTool = SelectedTool::Brush)]
 pub enum BrushState {
     #[default]
     Draw,
@@ -113,13 +110,13 @@ pub enum BrushModeSpawnState {
 }
 
 fn handle_brush_state(
-    actions: Single<&ActionState<CanvasStateActions>>,
+    actions: Single<&ActionState<ToolStateActions>>,
     mut state: ResMut<NextState<BrushState>>,
 ) -> Result {
-    if actions.just_pressed(&CanvasStateActions::Modify) {
+    if actions.just_pressed(&ToolStateActions::Resize) {
         state.set(BrushState::Edit);
     }
-    if actions.just_released(&CanvasStateActions::Modify) {
+    if actions.just_released(&ToolStateActions::Resize) {
         state.set(BrushState::Draw);
     }
 

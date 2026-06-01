@@ -2,7 +2,6 @@
 #![warn(nonstandard_style, rustdoc::broken_intra_doc_links)]
 
 mod camera;
-mod canvas;
 mod chunk_effects;
 mod config;
 mod console_command;
@@ -16,6 +15,7 @@ mod particles;
 mod record;
 mod save;
 mod setup;
+mod tools;
 mod ui;
 
 use avian2d::prelude::PhysicsGizmos;
@@ -24,7 +24,6 @@ use chunk_effects::ChunkEffectsPlugin;
 use game_of_life::GameOfLifePlugin;
 
 use camera::CameraPlugin;
-use canvas::*;
 use config::*;
 use console_command::*;
 pub use cursor::*;
@@ -35,6 +34,7 @@ use frames::*;
 #[cfg(feature = "dev")]
 use record::*;
 use save::*;
+use tools::*;
 
 use bevy::{log::LogPlugin, prelude::*, window::WindowMode};
 
@@ -82,7 +82,7 @@ fn main() {
             DebugPlugin,
             SavePlugin,
         ))
-        .add_plugins((CanvasPlugin, GameOfLifePlugin, FramesPlugin, EarthquakePlugin))
+        .add_plugins((ToolsPlugin, GameOfLifePlugin, FramesPlugin, EarthquakePlugin))
         .insert_gizmo_config(
             PhysicsGizmos {
                 collider_color: None,

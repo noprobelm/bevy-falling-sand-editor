@@ -1,10 +1,7 @@
 use bevy::prelude::*;
 use leafwing_input_manager::common_conditions::action_pressed;
 
-use crate::{
-    canvas::{CanvasAction, select::SelectedRegion},
-    ui::CanvasState,
-};
+use crate::tools::{SelectedTool, ToolAction, select::SelectedRegion};
 
 pub(super) struct GizmosPlugin;
 
@@ -20,8 +17,8 @@ impl Plugin for GizmosPlugin {
         .add_systems(
             Update,
             update_select_gizmos
-                .run_if(action_pressed(CanvasAction::Draw))
-                .run_if(in_state(CanvasState::Select)),
+                .run_if(action_pressed(ToolAction::Primary))
+                .run_if(in_state(SelectedTool::Select)),
         );
         //app.add_systems(Update, update_brush_gizmos);
     }
