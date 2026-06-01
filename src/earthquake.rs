@@ -2,7 +2,7 @@ use avian2d::prelude::*;
 use bevy::platform::collections::{HashMap, HashSet};
 use bevy::prelude::*;
 use bevy_falling_sand::prelude::ParticleCollider;
-use bevy_falling_sand::utils::connected_components;
+use bevy_falling_sand::utils::{connected_components, mesh_from_grid_cells};
 use bevy_falling_sand::{
     ParticleMap,
     prelude::{DespawnParticleSignal, ParticleColor, StaticRigidBodyParticle},
@@ -197,11 +197,21 @@ fn spawn_fracture_body(
     let centroid =
         particle_world.iter().map(|(_, v)| *v).sum::<Vec2>() / particle_world.len() as f32;
 
-    let shapes: Vec<(Vec2, f32, Collider)> = particle_world
-        .iter()
-        .map(|(_, world)| (*world - centroid, 0.0, Collider::rectangle(1.0, 1.0)))
-        .collect();
-    let collider = Collider::compound(shapes);
+    let mesh = mesh_from_grid_cells(cell.iter().copied(), 0.0);
+    let collider = if mesh.vertices.is_empty() || mesh.indices.is_empty() {
+        let shapes: Vec<(Vec2, f32, Collider)> = particle_world
+            .iter()
+            .map(|(_, world)| (*world - centroid, 0.0, Collider::rectangle(1.0, 1.0)))
+            .collect();
+        Collider::compound(shapes)
+    } else {
+        let vertices = mesh
+            .vertices
+            .into_iter()
+            .map(|vertex| vertex - centroid)
+            .collect();
+        Collider::trimesh(vertices, mesh.indices)
+    };
 
     commands
         .spawn((

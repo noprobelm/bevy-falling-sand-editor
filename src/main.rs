@@ -82,7 +82,7 @@ fn main() {
             DebugPlugin,
             SavePlugin,
         ))
-        .add_plugins((ToolsPlugin, GameOfLifePlugin, FramesPlugin))
+        .add_plugins((ToolsPlugin, GameOfLifePlugin, FramesPlugin, EarthquakePlugin))
         .insert_gizmo_config(
             PhysicsGizmos {
                 collider_color: None,
