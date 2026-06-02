@@ -337,6 +337,7 @@ pub(super) fn spawn_built_fracture_body(
             Visibility::default(),
             rigid_body,
             collider,
+            CollisionMargin(0.1),
             particle_collider,
             FractureBody {
                 cells: cell_colors,
