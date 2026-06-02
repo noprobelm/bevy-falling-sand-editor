@@ -6,7 +6,9 @@ use bevy_falling_sand::prelude::{
 };
 
 use super::parse_position;
-use crate::{console_command::ConsoleCommand, earthquake::RemoveFractureBodyCellAtWorldPosition};
+use crate::{
+    console_command::ConsoleCommand, tools::earthquake::RemoveFractureBodyCellAtWorldPosition,
+};
 
 pub(super) struct RigidBodyConsoleCommandPlugin;
 
