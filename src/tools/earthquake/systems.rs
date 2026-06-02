@@ -9,9 +9,9 @@ use crate::{
     tools::{
         SelectedTool, ToolAction, ToolStateActions,
         earthquake::{
+            Earthquake, EarthquakeRegion,
             components::{EarthquakeBrush, EarthquakeBrushSize},
             setup::EarthquakeAction,
-            signals::{Earthquake, EarthquakeRegion},
             states::EarthquakeRegionState,
         },
     },
@@ -43,7 +43,7 @@ fn trigger_earthquake(
     region_state: Res<State<EarthquakeRegionState>>,
 ) {
     commands.trigger(Earthquake {
-        region: earthquake_region(*region_state.get(), cursor.current, brush.0),
+        region: EarthquakeRegion::from_brush_state(*region_state.get(), cursor.current, brush.0),
     });
 }
 
@@ -56,24 +56,5 @@ fn resize_earthquake_brush(
         brush.0 += 1.0;
     } else if delta < 0.0 {
         brush.0 = (brush.0 - 1.0).max(1.0);
-    }
-}
-
-fn earthquake_region(state: EarthquakeRegionState, center: Vec2, size: f32) -> EarthquakeRegion {
-    match state {
-        EarthquakeRegionState::Circle => EarthquakeRegion::circle(center, size),
-        EarthquakeRegionState::Rect => EarthquakeRegion::rect(center, Vec2::splat(size), 0.0),
-        EarthquakeRegionState::Polygon => {
-            let vertices = [
-                Vec2::new(0.0, size),
-                Vec2::new(size, 0.0),
-                Vec2::new(0.0, -size),
-                Vec2::new(-size, 0.0),
-            ]
-            .into_iter()
-            .map(|vertex| center + vertex)
-            .collect();
-            EarthquakeRegion::polygon(vertices)
-        }
     }
 }

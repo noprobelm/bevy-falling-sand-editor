@@ -5,7 +5,8 @@ pub(super) struct StatesPlugin;
 
 impl Plugin for StatesPlugin {
     fn build(&self, app: &mut App) {
-        app.init_state::<EarthquakeRegionState>();
+        app.init_state::<EarthquakeRegionState>()
+            .init_state::<EarthquakeFractureShapeState>();
     }
 }
 
@@ -29,4 +30,25 @@ pub enum EarthquakeRegionState {
     Circle,
     Rect,
     Polygon,
+}
+
+#[derive(
+    States,
+    Reflect,
+    Default,
+    Debug,
+    Copy,
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Serialize,
+    Deserialize,
+)]
+pub enum EarthquakeFractureShapeState {
+    SimplifiedConvexHulls,
+    #[default]
+    ExactVoronoiCells,
 }

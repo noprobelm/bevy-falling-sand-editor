@@ -9,7 +9,9 @@ use crate::{
         AvianDebugConfig, BevyFallingSandDebugConfig, BrushConfig, EarthquakeConfig, Keybindings,
         OptionalColor, SettingsConfig,
     },
-    tools::earthquake::{DebugEarthquake, EarthquakeBrushSize, EarthquakeRegionState},
+    tools::earthquake::{
+        DebugEarthquake, EarthquakeBrushSize, EarthquakeFractureShapeState, EarthquakeRegionState,
+    },
     ui::UiKeyBindings,
 };
 
@@ -62,12 +64,14 @@ fn on_prepare_save_brush(
 fn on_prepare_save_earthquake(
     _trigger: On<PrepareSaveSettingsEvent>,
     region_state: Res<State<EarthquakeRegionState>>,
+    fracture_shape_state: Res<State<EarthquakeFractureShapeState>>,
     brush_size: Single<&EarthquakeBrushSize>,
     debug: Option<Res<DebugEarthquake>>,
     mut builder: ResMut<SaveSettingsBuilder>,
 ) {
     builder.earthquake = Some(EarthquakeConfig {
         region: **region_state,
+        fracture_shape: **fracture_shape_state,
         size: **brush_size,
         debug: debug.is_some(),
     });

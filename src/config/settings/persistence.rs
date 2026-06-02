@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     brush::{BrushKeyBindings, BrushSize, BrushSpawnState, BrushTypeState},
     camera::CameraKeyBindings,
-    tools::earthquake::{EarthquakeBrushSize, EarthquakeRegionState},
+    tools::earthquake::{EarthquakeBrushSize, EarthquakeFractureShapeState, EarthquakeRegionState},
     ui::UiKeyBindings,
 };
 
@@ -88,6 +88,8 @@ impl Default for BrushConfig {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct EarthquakeConfig {
     pub region: EarthquakeRegionState,
+    #[serde(default)]
+    pub fracture_shape: EarthquakeFractureShapeState,
     pub size: EarthquakeBrushSize,
     pub debug: bool,
 }
@@ -96,6 +98,7 @@ impl Default for EarthquakeConfig {
     fn default() -> Self {
         Self {
             region: EarthquakeRegionState::default(),
+            fracture_shape: EarthquakeFractureShapeState::default(),
             size: EarthquakeBrushSize(24.0),
             debug: false,
         }

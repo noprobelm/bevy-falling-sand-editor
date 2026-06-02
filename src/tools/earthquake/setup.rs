@@ -13,7 +13,7 @@ use crate::{
         components::{EarthquakeBrush, EarthquakeBrushColor, EarthquakeBrushSize},
         debug::DebugEarthquake,
         gizmos::EarthquakeBrushGizmos,
-        states::EarthquakeRegionState,
+        states::{EarthquakeFractureShapeState, EarthquakeRegionState},
     },
 };
 
@@ -50,6 +50,7 @@ fn spawn_earthquake_brush(mut commands: Commands) {
 fn load_settings(
     mut commands: Commands,
     mut next_region_state: ResMut<NextState<EarthquakeRegionState>>,
+    mut next_fracture_shape_state: ResMut<NextState<EarthquakeFractureShapeState>>,
     brush: Single<Entity, With<EarthquakeBrush>>,
     settings_config: Res<Persistent<SettingsConfig>>,
 ) {
@@ -57,6 +58,7 @@ fn load_settings(
         .entity(brush.entity())
         .insert((input_map(), settings_config.earthquake.size));
     next_region_state.set(settings_config.earthquake.region);
+    next_fracture_shape_state.set(settings_config.earthquake.fracture_shape);
 
     if settings_config.earthquake.debug {
         commands.insert_resource(DebugEarthquake);
