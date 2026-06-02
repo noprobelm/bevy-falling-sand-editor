@@ -1,3 +1,4 @@
+use avian2d::prelude::{Physics, PhysicsTime};
 use bevy::prelude::*;
 use bevy_falling_sand::{
     core::{ParticleSimulationRun, SimulationStepSignal},
@@ -70,9 +71,16 @@ fn handle_toggle_dirty_chunks(mut commands: Commands, debug_chunks: Option<Res<D
 
 fn handle_toggle_simulation_run(
     mut commands: Commands,
+    mut physics_time: ResMut<Time<Physics>>,
     simulation_run: Option<Res<ParticleSimulationRun>>,
 ) {
-    toggle_resource(&mut commands, &simulation_run);
+    if simulation_run.is_some() {
+        commands.remove_resource::<ParticleSimulationRun>();
+        physics_time.pause();
+    } else {
+        commands.init_resource::<ParticleSimulationRun>();
+        physics_time.unpause();
+    }
 }
 
 fn handle_toggle_simulation_step(mut msgw_simulation_step: MessageWriter<SimulationStepSignal>) {
