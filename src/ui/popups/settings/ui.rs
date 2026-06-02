@@ -14,7 +14,7 @@ use crate::{
     ui::{
         ConsoleAction, QuickAction, SettingsApplicationState, SettingsCategory, ShowUi,
         UiKeyBindings, UiSystems, add_label_with_toggle_switch, add_major_grid_separator,
-        show_brush_settings,
+        show_brush_options,
     },
 };
 
@@ -90,7 +90,7 @@ fn show(mut contexts: EguiContexts, mut settings_param: SettingsParam) -> Result
             ui.vertical(|ui| {
                 ui.separator();
                 match *settings_param.current_settings_category.get() {
-                    SettingsCategory::Brush => show_brush_settings(ui, settings_param.brush),
+                    SettingsCategory::Brush => show_brush_options(ui, settings_param.brush),
                     SettingsCategory::Debug => show_debug_settings(ui, &mut settings_param),
                     SettingsCategory::Keybinds => show_keybinds_settings(ui, &mut settings_param),
                 };

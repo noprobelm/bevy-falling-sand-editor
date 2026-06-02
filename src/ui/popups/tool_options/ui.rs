@@ -5,10 +5,13 @@ use bevy_egui::{
 };
 
 use crate::{
-    tools::{PreviousSelectedTool, SelectedTool, brush::BrushOptions, select::SelectOptions},
+    tools::{
+        PreviousSelectedTool, SelectedTool, brush::BrushOptions, earthquake::EarthquakeOptions,
+        select::SelectOptions,
+    },
     ui::{
-        PopupState, ShowUi, ToolOptionsWindowState, UiSystems, show_brush_settings,
-        show_select_settings,
+        PopupState, ShowUi, ToolOptionsWindowState, UiSystems, show_brush_options,
+        show_earthquake_options, show_select_options,
     },
 };
 
@@ -29,10 +32,12 @@ impl Plugin for UiPlugin {
 struct ToolOptions<'w, 's> {
     pub brush: BrushOptions<'w, 's>,
     pub select: SelectOptions<'w>,
+    pub earthquake: EarthquakeOptions<'w>,
 }
 
 fn show(
     mut contexts: EguiContexts,
+    commands: Commands,
     selected_tool: Res<PreviousSelectedTool>,
     tool_options: ToolOptions,
 ) -> Result {
@@ -42,8 +47,11 @@ fn show(
         .constrain_to(ctx.available_rect())
         .show(ctx, |ui| {
             match selected_tool.0 {
-                SelectedTool::Brush => show_brush_settings(ui, tool_options.brush),
-                SelectedTool::Select => show_select_settings(ui, tool_options.select),
+                SelectedTool::Brush => show_brush_options(ui, tool_options.brush),
+                SelectedTool::Select => show_select_options(ui, tool_options.select),
+                SelectedTool::Earthquake => {
+                    show_earthquake_options(ui, commands, tool_options.earthquake)
+                }
             };
         });
 

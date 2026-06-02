@@ -17,6 +17,7 @@ pub enum SelectedTool {
     Select,
     #[default]
     Brush,
+    Earthquake,
 }
 
 #[derive(Resource, Default)]

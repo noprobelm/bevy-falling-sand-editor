@@ -35,7 +35,7 @@ impl ConsoleCommand for ToolSelectCommand {
 
     fn run(&self, args: &[String], commands: &mut Commands) {
         if args.is_empty() {
-            error!("Tool seletion required (usage: tools select <brush|select>");
+            error!("Tool selection required (usage: tools select <brush|earthquake|select>)");
             return;
         }
 
@@ -48,7 +48,11 @@ impl ConsoleCommand for ToolSelectCommand {
                 info!("Setting selected tool to 'Brush'");
                 commands.trigger(SetSelectedToolEvent(SelectedTool::Brush));
             }
-            _ => error!("Invalid tool. Specify one of 'select', 'brush'"),
+            "earthquake" => {
+                info!("Setting selected tool to 'Earthquake'");
+                commands.trigger(SetSelectedToolEvent(SelectedTool::Earthquake))
+            }
+            _ => error!("Invalid tool. Specify one of 'select', 'brush', 'earthquake'"),
         };
     }
 }

@@ -11,11 +11,14 @@ impl Plugin for DebugPlugin {
     }
 }
 
+#[derive(Resource, Default)]
+pub struct DebugEarthquake;
+
 #[derive(GizmoConfigGroup, Copy, Clone, Default, Debug, Reflect)]
 pub(super) struct EarthquakeGizmos;
 
 #[derive(Component)]
-pub(super) struct DebugEarthquake {
+pub(super) struct DebugEarthquakeInfo {
     pub(super) region: EarthquakeRegion,
     pub(super) fracture_edges: Vec<(Vec2, Vec2)>,
     pub(super) timer: Timer,
@@ -23,7 +26,7 @@ pub(super) struct DebugEarthquake {
 
 fn debug_earthquake(
     mut commands: Commands,
-    mut debug_earthquake: Query<(Entity, &mut DebugEarthquake)>,
+    mut debug_earthquake: Query<(Entity, &mut DebugEarthquakeInfo)>,
     time: Res<Time>,
     mut earthquake_gizmos: Gizmos<EarthquakeGizmos>,
 ) {

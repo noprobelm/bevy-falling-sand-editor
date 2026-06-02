@@ -1,9 +1,11 @@
 mod brush;
+mod earthquake;
 mod select;
 mod states;
 mod ui;
 
 pub use brush::*;
+pub use earthquake::*;
 pub use select::*;
 pub use states::*;
 use ui::*;

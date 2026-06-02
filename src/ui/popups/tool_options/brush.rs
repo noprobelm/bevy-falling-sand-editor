@@ -3,12 +3,12 @@ use bevy_egui::egui;
 
 use crate::tools::brush::{BrushOptions, BrushSize, BrushSpawnState, BrushTypeState};
 
-const BRUSH_OPTION_GAP: f32 = 40.0;
+const OPTION_GAP: f32 = 40.0;
 
-pub fn show_brush_settings(ui: &mut egui::Ui, mut brush_settings: BrushOptions) {
+pub fn show_brush_options(ui: &mut egui::Ui, mut brush_settings: BrushOptions) {
     egui::Grid::new("brush_grid")
         .num_columns(2)
-        .spacing(egui::vec2(BRUSH_OPTION_GAP, ui.spacing().item_spacing.y))
+        .spacing(egui::vec2(OPTION_GAP, ui.spacing().item_spacing.y))
         .show(ui, |ui| {
             show_brush_size(ui, &mut brush_settings);
             show_brush_type_selection(ui, &mut brush_settings);
