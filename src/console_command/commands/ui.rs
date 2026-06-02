@@ -1,7 +1,7 @@
 use crate::console_command::ConsoleCommand;
 use crate::ui::{
-    UiToggleCursorOverlaySignal, UiToggleParticleEditorSignal, UiToggleSettingsSignal,
-    UiToggleSignal,
+    UiToggleCursorOverlayEvent, UiToggleParticleEditorEvent, UiToggleSettingsEvent,
+    UiToggleEvent, UiToggleToolOptionsEvent,
 };
 use bevy::prelude::*;
 
@@ -18,14 +18,14 @@ impl ConsoleCommand for UiConsoleCommand {
     }
 
     fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
-        vec![Box::new(ToggleUiConsoleCommand)]
+        vec![Box::new(UiToggleConsoleCommand)]
     }
 }
 
 #[derive(Default)]
-pub struct ToggleUiConsoleCommand;
+pub struct UiToggleConsoleCommand;
 
-impl ConsoleCommand for ToggleUiConsoleCommand {
+impl ConsoleCommand for UiToggleConsoleCommand {
     fn name(&self) -> &'static str {
         "toggle"
     }
@@ -34,24 +34,29 @@ impl ConsoleCommand for ToggleUiConsoleCommand {
         "Toggle Ui components"
     }
 
-    fn run(&self, _args: &[String], commands: &mut Commands) {
-        info!("Toggling UI");
-        commands.trigger(UiToggleSignal);
+    fn run(&self, args: &[String], commands: &mut Commands) {
+        if args.len() != 0 {
+            warn!("Invalid argument");
+            return;
+        }
+        commands.trigger(UiToggleEvent);
     }
 
     fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
         vec![
-            Box::new(ToggleParticleEditorConsoleCommand),
-            Box::new(ToggleSettingsConsoleCommand),
-            Box::new(ToggleCursorOverlayConsoleCommand),
+            Box::new(UiToggleParticleEditorConsoleCommand),
+            Box::new(UiToggleSettingsConsoleCommand),
+            Box::new(UiToggleCursorOverlayConsoleCommand),
+            Box::new(UiToggleToolOptionsConsoleCommand),
+
         ]
     }
 }
 
 #[derive(Default)]
-pub struct ToggleParticleEditorConsoleCommand;
+pub struct UiToggleParticleEditorConsoleCommand;
 
-impl ConsoleCommand for ToggleParticleEditorConsoleCommand {
+impl ConsoleCommand for UiToggleParticleEditorConsoleCommand {
     fn name(&self) -> &'static str {
         "particle_editor"
     }
@@ -61,14 +66,14 @@ impl ConsoleCommand for ToggleParticleEditorConsoleCommand {
     }
 
     fn run(&self, _args: &[String], commands: &mut Commands) {
-        commands.trigger(UiToggleParticleEditorSignal);
+        commands.trigger(UiToggleParticleEditorEvent);
     }
 }
 
 #[derive(Default)]
-pub struct ToggleSettingsConsoleCommand;
+pub struct UiToggleSettingsConsoleCommand;
 
-impl ConsoleCommand for ToggleSettingsConsoleCommand {
+impl ConsoleCommand for UiToggleSettingsConsoleCommand {
     fn name(&self) -> &'static str {
         "settings"
     }
@@ -78,14 +83,14 @@ impl ConsoleCommand for ToggleSettingsConsoleCommand {
     }
 
     fn run(&self, _args: &[String], commands: &mut Commands) {
-        commands.trigger(UiToggleSettingsSignal);
+        commands.trigger(UiToggleSettingsEvent);
     }
 }
 
 #[derive(Default)]
-pub struct ToggleCursorOverlayConsoleCommand;
+pub struct UiToggleCursorOverlayConsoleCommand;
 
-impl ConsoleCommand for ToggleCursorOverlayConsoleCommand {
+impl ConsoleCommand for UiToggleCursorOverlayConsoleCommand {
     fn name(&self) -> &'static str {
         "cursor_overlay"
     }
@@ -95,6 +100,23 @@ impl ConsoleCommand for ToggleCursorOverlayConsoleCommand {
     }
 
     fn run(&self, _args: &[String], commands: &mut Commands) {
-        commands.trigger(UiToggleCursorOverlaySignal);
+        commands.trigger(UiToggleCursorOverlayEvent);
+    }
+}
+
+#[derive(Default)]
+pub struct UiToggleToolOptionsConsoleCommand;
+
+impl ConsoleCommand for UiToggleToolOptionsConsoleCommand {
+    fn name(&self) -> &'static str {
+        "tool_options"
+    }
+
+    fn description(&self) -> &'static str {
+        "Toggle Tool Options"
+    }
+
+    fn run(&self, _args: &[String], commands: &mut Commands) {
+        commands.trigger(UiToggleToolOptionsEvent);
     }
 }

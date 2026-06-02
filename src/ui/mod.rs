@@ -6,6 +6,7 @@ mod quick_actions;
 mod setup;
 mod states;
 pub mod widgets;
+mod signals;
 
 use bevy::prelude::*;
 
@@ -17,9 +18,7 @@ pub use popups::*;
 pub use quick_actions::*;
 pub use setup::*;
 pub use states::*;
-
-#[derive(Event)]
-pub struct UiToggleSignal;
+pub use signals::*;
 
 pub(super) struct UiPlugin;
 
@@ -33,6 +32,7 @@ impl Plugin for UiPlugin {
             PopupsPlugin,
             ConsolePlugin,
             UiStatePlugin,
+            SignalsPlugin,
         ))
         .configure_sets(
             EguiPrimaryContextPass,
@@ -47,8 +47,7 @@ impl Plugin for UiPlugin {
             )
                 .chain(),
         )
-        .init_resource::<ShowUi>()
-        .add_observer(on_ui_toggle);
+        .init_resource::<ShowUi>();
     }
 }
 
@@ -63,16 +62,4 @@ pub enum UiSystems {
     Settings,
     ToolOptions,
     CursorInfoOverlay,
-}
-
-fn on_ui_toggle(
-    _trigger: On<UiToggleSignal>,
-    mut commands: Commands,
-    enabled: Option<Res<ShowUi>>,
-) {
-    if enabled.is_some() {
-        commands.remove_resource::<ShowUi>();
-    } else {
-        commands.insert_resource(ShowUi);
-    }
 }
