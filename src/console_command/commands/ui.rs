@@ -35,7 +35,7 @@ impl ConsoleCommand for UiToggleConsoleCommand {
     }
 
     fn run(&self, args: &[String], commands: &mut Commands) {
-        if args.len() != 0 {
+        if !args.is_empty() {
             warn!("Invalid argument");
             return;
         }
