@@ -43,9 +43,9 @@ struct FractureBody {
 }
 
 #[derive(Event)]
-pub struct RemoveFractureBodyCells {
-    pub entity: Entity,
-    pub cells: Vec<IVec2>,
+struct RemoveFractureBodyCells {
+    entity: Entity,
+    cells: Vec<IVec2>,
 }
 
 #[derive(Event)]
