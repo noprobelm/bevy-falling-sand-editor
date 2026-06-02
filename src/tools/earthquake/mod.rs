@@ -30,7 +30,7 @@ const EARTHQUAKE_RIGID_BODY_RENDER_Z: f32 = 1.0;
 const MIN_FRACTURE_BODY_CELLS: usize = 2;
 
 #[derive(Component)]
-pub struct DebugEarthquake {
+struct DebugEarthquake {
     region: EarthquakeRegion,
     fracture_edges: Vec<(Vec2, Vec2)>,
     timer: Timer,
