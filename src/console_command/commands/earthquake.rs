@@ -1,7 +1,10 @@
 use bevy::prelude::*;
 
 use super::parse_position;
-use crate::{console_command::ConsoleCommand, earthquake::Earthquake};
+use crate::{
+    console_command::ConsoleCommand,
+    tools::earthquake::{Earthquake, EarthquakeRegion},
+};
 
 #[derive(Default)]
 pub struct EarthquakeConsoleCommand;
@@ -12,32 +15,123 @@ impl ConsoleCommand for EarthquakeConsoleCommand {
     }
 
     fn description(&self) -> &'static str {
-        "Trigger an earthquake. Usage: earthquake <x>,<y> <radius>"
+        "Trigger an earthquake. Usage: earthquake circle <x>,<y> <radius> | earthquake rect <x>,<y> <w>,<h> [degrees] | earthquake poly <x1>,<y1> <x2>,<y2> <x3>,<y3> ..."
     }
 
     fn run(&self, args: &[String], commands: &mut Commands) {
-        if args.len() < 2 {
-            warn!("Usage: earthquake <x>,<y> <radius>");
-            return;
+        if let Some(kind) = args.first().map(String::as_str) {
+            match kind {
+                "circle" => {
+                    run_circle_earthquake(&args[1..], commands);
+                    return;
+                }
+                "rect" | "rectangle" => {
+                    run_rect_earthquake(&args[1..], commands);
+                    return;
+                }
+                "poly" | "polygon" => {
+                    run_polygon_earthquake(&args[1..], commands);
+                    return;
+                }
+                _ => {}
+            }
         }
 
-        let center = match parse_position::<Vec2>(&args[0..1]) {
-            Ok(c) => c,
-            Err(e) => {
-                warn!("Invalid position: {e}");
-                return;
-            }
-        };
-
-        let radius: f32 = match args[1].parse() {
-            Ok(v) if v > 0.0 => v,
-            _ => {
-                warn!("Invalid radius: must be a positive number");
-                return;
-            }
-        };
-
-        info!("Triggering earthquake at {center} with radius {radius}");
-        commands.trigger(Earthquake { center, radius });
+        // Backward-compatible shorthand for the old circle-only command.
+        // Equivalent to `earthquake circle <x>,<y> <radius>`.
+        run_circle_earthquake(args, commands);
     }
+}
+
+fn run_circle_earthquake(args: &[String], commands: &mut Commands) {
+    if args.len() < 2 {
+        warn!("Usage: earthquake circle <x>,<y> <radius>");
+        return;
+    }
+
+    let center = match parse_position::<Vec2>(&args[0..1]) {
+        Ok(c) => c,
+        Err(e) => {
+            warn!("Invalid position: {e}");
+            return;
+        }
+    };
+
+    let radius: f32 = match args[1].parse() {
+        Ok(v) if v > 0.0 => v,
+        _ => {
+            warn!("Invalid radius: must be a positive number");
+            return;
+        }
+    };
+
+    info!("Triggering earthquake at {center} with radius {radius}");
+    commands.trigger(Earthquake {
+        region: EarthquakeRegion::circle(center, radius),
+    });
+}
+
+fn run_rect_earthquake(args: &[String], commands: &mut Commands) {
+    if args.len() < 2 {
+        warn!("Usage: earthquake rect <x>,<y> <w>,<h> [degrees]");
+        return;
+    }
+
+    let center = match parse_position::<Vec2>(&args[0..1]) {
+        Ok(c) => c,
+        Err(e) => {
+            warn!("Invalid rectangle center: {e}");
+            return;
+        }
+    };
+
+    let size = match parse_position::<Vec2>(&args[1..2]) {
+        Ok(s) if s.x > 0.0 && s.y > 0.0 => s,
+        _ => {
+            warn!("Invalid rectangle size: width and height must be positive");
+            return;
+        }
+    };
+
+    let rotation = match args.get(2) {
+        Some(value) => match value.parse::<f32>() {
+            Ok(degrees) => degrees.to_radians(),
+            Err(_) => {
+                warn!("Invalid rectangle rotation: must be degrees");
+                return;
+            }
+        },
+        None => 0.0,
+    };
+
+    info!("Triggering rectangular earthquake at {center} with size {size}");
+    commands.trigger(Earthquake {
+        region: EarthquakeRegion::rect(center, size * 0.5, rotation),
+    });
+}
+
+fn run_polygon_earthquake(args: &[String], commands: &mut Commands) {
+    if args.len() < 3 {
+        warn!("Usage: earthquake poly <x1>,<y1> <x2>,<y2> <x3>,<y3> ...");
+        return;
+    }
+
+    let mut vertices = Vec::with_capacity(args.len());
+    for arg in args {
+        match parse_position::<Vec2>(std::slice::from_ref(arg)) {
+            Ok(vertex) => vertices.push(vertex),
+            Err(e) => {
+                warn!("Invalid polygon vertex: {e}");
+                return;
+            }
+        }
+    }
+
+    info!(
+        "Triggering polygon earthquake with {} vertices",
+        vertices.len()
+    );
+    commands.trigger(Earthquake {
+        region: EarthquakeRegion::polygon(vertices),
+    });
 }

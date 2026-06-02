@@ -1,4 +1,5 @@
 pub mod brush;
+pub mod earthquake;
 pub mod select;
 mod setup;
 mod signals;
@@ -20,6 +21,7 @@ impl Plugin for ToolsPlugin {
             signals::SignalsPlugin,
             brush::BrushToolPlugin,
             select::SelectToolPlugin,
+            earthquake::EarthquakePlugin,
         ));
     }
 }

@@ -8,7 +8,6 @@ use leafwing_input_manager::{common_conditions::action_pressed, prelude::ActionS
 
 use crate::{
     Cursor,
-    earthquake::RemoveFractureBodyCellsAtWorldPositions,
     game_of_life::{GolSpawnBuffer, GolTextures},
     tools::{
         ToolAction,
@@ -16,6 +15,7 @@ use crate::{
             BrushAction, BrushModeSpawnState, BrushSpawnState, BrushState, BrushTypeState,
             components::{BrushSize, SelectedParticle, SelectedParticleType},
         },
+        earthquake::RemoveFractureBodyCellsAtWorldPositions,
     },
 };
 

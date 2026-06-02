@@ -29,16 +29,9 @@ pub(super) struct EarthquakeGizmos;
 const EARTHQUAKE_RIGID_BODY_RENDER_Z: f32 = 1.0;
 const MIN_FRACTURE_BODY_CELLS: usize = 2;
 
-#[derive(Event)]
-pub struct Earthquake {
-    pub center: Vec2,
-    pub radius: f32,
-}
-
 #[derive(Component)]
 pub struct DebugEarthquake {
-    center: Vec2,
-    radius: f32,
+    region: EarthquakeRegion,
     fracture_edges: Vec<(Vec2, Vec2)>,
     timer: Timer,
 }
@@ -65,6 +58,99 @@ pub(crate) struct RemoveFractureBodyCellsAtWorldPositions {
     pub positions: Vec<IVec2>,
 }
 
+#[derive(Event)]
+pub struct Earthquake {
+    pub region: EarthquakeRegion,
+}
+
+#[derive(Clone, Debug)]
+pub enum EarthquakeRegion {
+    Circle {
+        center: Vec2,
+        radius: f32,
+    },
+    Rect {
+        center: Vec2,
+        half_extents: Vec2,
+        rotation: f32,
+    },
+    Polygon {
+        vertices: Vec<Vec2>,
+    },
+}
+
+impl EarthquakeRegion {
+    pub fn circle(center: Vec2, radius: f32) -> Self {
+        Self::Circle { center, radius }
+    }
+
+    pub fn rect(center: Vec2, half_extents: Vec2, rotation: f32) -> Self {
+        Self::Rect {
+            center,
+            half_extents,
+            rotation,
+        }
+    }
+
+    pub fn polygon(vertices: Vec<Vec2>) -> Self {
+        Self::Polygon { vertices }
+    }
+
+    fn area_hint(&self) -> f32 {
+        match self {
+            Self::Circle { radius, .. } => std::f32::consts::PI * radius * radius,
+            Self::Rect { half_extents, .. } => half_extents.x * half_extents.y * 4.0,
+            Self::Polygon { vertices } => polygon_signed_area(vertices).abs() * 0.5,
+        }
+    }
+
+    fn bounds(&self) -> IRect {
+        match self {
+            Self::Circle { center, radius } => {
+                let half = Vec2::splat(*radius);
+                IRect::from_corners(
+                    (*center - half).floor().as_ivec2(),
+                    (*center + half).ceil().as_ivec2(),
+                )
+            }
+            Self::Rect {
+                center,
+                half_extents,
+                rotation,
+            } => {
+                let rot = Rot2::radians(*rotation);
+                let corners = [
+                    Vec2::new(-half_extents.x, -half_extents.y),
+                    Vec2::new(half_extents.x, -half_extents.y),
+                    Vec2::new(half_extents.x, half_extents.y),
+                    Vec2::new(-half_extents.x, half_extents.y),
+                ]
+                .map(|corner| *center + rot * corner);
+                points_bounds(corners)
+                    .unwrap_or_else(|| IRect::from_corners(IVec2::ZERO, IVec2::ZERO))
+            }
+            Self::Polygon { vertices } => points_bounds(vertices.iter().copied())
+                .unwrap_or_else(|| IRect::from_corners(IVec2::ZERO, IVec2::ZERO)),
+        }
+        .inflate(1)
+    }
+
+    fn contains_point(&self, point: Vec2) -> bool {
+        match self {
+            Self::Circle { center, radius } => point.distance_squared(*center) <= radius * radius,
+            Self::Rect {
+                center,
+                half_extents,
+                rotation,
+            } => {
+                let local = Rot2::radians(-*rotation) * (point - *center);
+                local.x.abs() <= half_extents.x && local.y.abs() <= half_extents.y
+            }
+            Self::Polygon { vertices } => polygon_contains_point(vertices, point),
+        }
+    }
+}
+
 fn on_earthquake(
     trigger: On<Earthquake>,
     mut commands: Commands,
@@ -74,23 +160,22 @@ fn on_earthquake(
     static_particles: Query<&StaticRigidBodyParticle>,
     particle_colors: Query<&ParticleColor>,
 ) {
+    let region = &trigger.region;
+    let bounds = region.bounds();
     let mut by_position: HashMap<IVec2, Entity> = HashMap::default();
-    map.within_radius(trigger.center.round().as_ivec2(), trigger.radius)
-        .for_each(|(pos, entity)| {
-            if static_particles.contains(entity) {
+    map.within_rect(bounds).for_each(|(pos, entity)| {
+        if static_particles.contains(entity) {
+            let cell_center = pos.as_vec2() + Vec2::splat(0.5);
+            if region.contains_point(cell_center) {
                 by_position.insert(pos, entity);
             }
-        });
+        }
+    });
 
     let shape_count = connected_components(by_position.keys().copied()).len();
 
     let particle_positions: Vec<IVec2> = by_position.keys().copied().collect();
-    let cells = generate_voronoi_cells(
-        &mut rng,
-        trigger.center,
-        trigger.radius,
-        &particle_positions,
-    );
+    let cells = generate_voronoi_cells(&mut rng, region, bounds, &particle_positions);
 
     let fracture_edges: Vec<(Vec2, Vec2)> = cells.iter().flat_map(cell_boundary_edges).collect();
 
@@ -109,277 +194,18 @@ fn on_earthquake(
     // JAB TODO: Despawn this entity after duration using `DelayedCommands` once Bevy releases it.
 
     debug!(
-        "earthquake at {:?} r={}: {} shapes, {} cells, {} fracture edges",
-        trigger.center,
-        trigger.radius,
+        "earthquake in {:?}: {} shapes, {} cells, {} fracture edges",
+        region,
         shape_count,
         cells.len(),
         fracture_edges.len(),
     );
 
     commands.spawn(DebugEarthquake {
-        center: trigger.center,
-        radius: trigger.radius,
+        region: region.clone(),
         fracture_edges,
         timer: Timer::from_seconds(5., TimerMode::Once),
     });
-}
-
-fn generate_voronoi_cells(
-    rng: &mut GlobalRng,
-    center: Vec2,
-    radius: f32,
-    particles: &[IVec2],
-) -> Vec<HashSet<IVec2>> {
-    if particles.is_empty() {
-        return Vec::new();
-    }
-
-    let target_count = ((radius * radius * 0.01) as usize).clamp(8, 256);
-    let site_count = target_count.min(particles.len());
-
-    let sites: Vec<Point> = rng
-        .as_mut()
-        .sample_multiple(particles, site_count)
-        .into_iter()
-        .map(|p| Point {
-            x: p.x as f64,
-            y: p.y as f64,
-        })
-        .collect();
-
-    let bbox = BoundingBox::new(
-        Point {
-            x: center.x as f64,
-            y: center.y as f64,
-        },
-        (radius * 2.0 + 2.0) as f64,
-        (radius * 2.0 + 2.0) as f64,
-    );
-
-    let Some(voronoi) = VoronoiBuilder::default()
-        .set_sites(sites)
-        .set_bounding_box(bbox)
-        .build()
-    else {
-        return Vec::new();
-    };
-
-    let final_sites = voronoi.sites();
-    let mut cells: HashMap<usize, HashSet<IVec2>> = HashMap::default();
-    for &p in particles {
-        let mut best_idx: usize = 0;
-        let mut best_dist = f32::INFINITY;
-        for (i, site) in final_sites.iter().enumerate() {
-            let dx = p.x as f32 - site.x as f32;
-            let dy = p.y as f32 - site.y as f32;
-            let d = dx * dx + dy * dy;
-            if d < best_dist {
-                best_dist = d;
-                best_idx = i;
-            }
-        }
-        cells.entry(best_idx).or_default().insert(p);
-    }
-
-    cells.into_values().collect()
-}
-
-fn cell_boundary_edges(cell: &HashSet<IVec2>) -> Vec<(Vec2, Vec2)> {
-    let mut edges = Vec::new();
-    for &p in cell {
-        let fx = p.x as f32;
-        let fy = p.y as f32;
-        if !cell.contains(&IVec2::new(p.x, p.y + 1)) {
-            edges.push((Vec2::new(fx, fy + 1.0), Vec2::new(fx + 1.0, fy + 1.0)));
-        }
-        if !cell.contains(&IVec2::new(p.x, p.y - 1)) {
-            edges.push((Vec2::new(fx, fy), Vec2::new(fx + 1.0, fy)));
-        }
-        if !cell.contains(&IVec2::new(p.x + 1, p.y)) {
-            edges.push((Vec2::new(fx + 1.0, fy), Vec2::new(fx + 1.0, fy + 1.0)));
-        }
-        if !cell.contains(&IVec2::new(p.x - 1, p.y)) {
-            edges.push((Vec2::new(fx, fy), Vec2::new(fx, fy + 1.0)));
-        }
-    }
-    edges
-}
-
-fn erode_outer_perimeter(cell: &HashSet<IVec2>) -> HashSet<IVec2> {
-    cell.iter()
-        .copied()
-        .filter(|p| {
-            [
-                IVec2::new(p.x, p.y + 1),
-                IVec2::new(p.x, p.y - 1),
-                IVec2::new(p.x + 1, p.y),
-                IVec2::new(p.x - 1, p.y),
-            ]
-            .into_iter()
-            .all(|neighbor| cell.contains(&neighbor))
-        })
-        .collect()
-}
-
-fn erode_outer_perimeter_layers(cell: &HashSet<IVec2>, layers: usize) -> HashSet<IVec2> {
-    let mut eroded = cell.clone();
-    for _ in 0..layers {
-        eroded = erode_outer_perimeter(&eroded);
-        if eroded.is_empty() {
-            break;
-        }
-    }
-    eroded
-}
-
-fn particle_world_positions<'a, I>(cell: I) -> Vec<(IVec2, Vec2)>
-where
-    I: IntoIterator<Item = &'a IVec2>,
-{
-    cell.into_iter()
-        .map(|&p| (p, Vec2::new(p.x as f32 + 0.5, p.y as f32 + 0.5)))
-        .collect()
-}
-
-fn particle_centroid(particle_world: &[(IVec2, Vec2)]) -> Vec2 {
-    particle_world.iter().map(|(_, v)| *v).sum::<Vec2>() / particle_world.len() as f32
-}
-
-fn compound_particle_collider(particle_world: &[(IVec2, Vec2)], centroid: Vec2) -> Collider {
-    let shapes: Vec<(Vec2, f32, Collider)> = particle_world
-        .iter()
-        .map(|(_, world)| (*world - centroid, 0.0, Collider::rectangle(1.0, 1.0)))
-        .collect();
-    Collider::compound(shapes)
-}
-
-fn convex_particle_collider(
-    cell: &HashSet<IVec2>,
-    particle_world: &[(IVec2, Vec2)],
-    centroid: Vec2,
-) -> Collider {
-    let mesh = mesh_from_grid_cells(cell.iter().copied(), 0.0);
-    if mesh.vertices.is_empty() {
-        return compound_particle_collider(particle_world, centroid);
-    }
-
-    let vertices: Vec<Vec2> = mesh
-        .vertices
-        .into_iter()
-        .map(|vertex| vertex - centroid)
-        .collect();
-
-    Collider::convex_hull(vertices)
-        .unwrap_or_else(|| compound_particle_collider(particle_world, centroid))
-}
-
-fn spawn_fracture_body(
-    commands: &mut Commands,
-    particle_colors: &Query<&ParticleColor>,
-    by_position: &HashMap<IVec2, Entity>,
-    cell: &HashSet<IVec2>,
-) {
-    if cell.is_empty() {
-        return;
-    }
-
-    let collider_cell = erode_outer_perimeter_layers(cell, 2);
-    if collider_cell.is_empty() {
-        return;
-    }
-
-    let cell_colors: HashMap<IVec2, Color> = collider_cell
-        .iter()
-        .map(|grid_pos| {
-            let color = by_position
-                .get(grid_pos)
-                .and_then(|e| particle_colors.get(*e).ok())
-                .map_or(Color::WHITE, |pc| pc.0);
-            (*grid_pos, color)
-        })
-        .collect();
-
-    spawn_fracture_body_from_cells(commands, cell_colors, None);
-}
-
-fn spawn_fracture_body_from_cells(
-    commands: &mut Commands,
-    cell_colors: HashMap<IVec2, Color>,
-    transform: Option<Transform>,
-) -> Option<Entity> {
-    let built = build_fracture_body(&cell_colors)?;
-
-    Some(
-        commands
-            .spawn((
-                transform.unwrap_or_else(|| {
-                    Transform::from_xyz(
-                        built.source_centroid.x,
-                        built.source_centroid.y,
-                        EARTHQUAKE_RIGID_BODY_RENDER_Z,
-                    )
-                }),
-                Visibility::default(),
-                RigidBody::Dynamic,
-                built.collider,
-                built.particle_collider.with_default_resting(),
-                FractureBody {
-                    cells: cell_colors,
-                    source_centroid: built.source_centroid,
-                },
-            ))
-            .with_children(|p| {
-                spawn_fracture_body_sprites(p, built.source_centroid, &built.sprites);
-            })
-            .id(),
-    )
-}
-
-struct BuiltFractureBody {
-    source_centroid: Vec2,
-    collider: Collider,
-    particle_collider: ParticleCollider,
-    sprites: Vec<(Vec2, Color)>,
-}
-
-fn build_fracture_body(cell_colors: &HashMap<IVec2, Color>) -> Option<BuiltFractureBody> {
-    if cell_colors.len() < MIN_FRACTURE_BODY_CELLS {
-        return None;
-    }
-
-    let cells: HashSet<IVec2> = cell_colors.keys().copied().collect();
-    let particle_world = particle_world_positions(cells.iter());
-    let centroid = particle_centroid(&particle_world);
-    let collider = convex_particle_collider(&cells, &particle_world, centroid);
-    let sprites = particle_world
-        .iter()
-        .map(|(grid_pos, world)| {
-            let color = cell_colors.get(grid_pos).copied().unwrap_or(Color::WHITE);
-            (*world, color)
-        })
-        .collect();
-
-    Some(BuiltFractureBody {
-        source_centroid: centroid,
-        collider,
-        particle_collider: ParticleCollider::from_grid_cells(cells, centroid),
-        sprites,
-    })
-}
-
-fn spawn_fracture_body_sprites(
-    parent: &mut ChildSpawnerCommands,
-    centroid: Vec2,
-    sprites: &[(Vec2, Color)],
-) {
-    for (world, color) in sprites {
-        let local = *world - centroid;
-        parent.spawn((
-            Sprite::from_color(*color, Vec2::ONE),
-            Transform::from_xyz(local.x, local.y, 0.0),
-        ));
-    }
 }
 
 fn on_remove_fracture_body_cell_at_world_position(
@@ -588,6 +414,377 @@ fn on_remove_fracture_body_cells(
     }
 }
 
+fn debug_earthquake(
+    mut commands: Commands,
+    mut debug_earthquake: Query<(Entity, &mut DebugEarthquake)>,
+    time: Res<Time>,
+    mut earthquake_gizmos: Gizmos<EarthquakeGizmos>,
+) {
+    debug_earthquake
+        .iter_mut()
+        .for_each(|(entity, mut debug_earthquake)| {
+            debug_earthquake.timer.tick(time.delta());
+            let alpha = 1. - debug_earthquake.timer.fraction();
+            draw_earthquake_region_gizmo(
+                &mut earthquake_gizmos,
+                &debug_earthquake.region,
+                Color::srgba(1., 1., 1., alpha),
+            );
+            let fracture_color = Color::srgba(1., 0.4, 0.2, alpha);
+            for &(start, end) in &debug_earthquake.fracture_edges {
+                earthquake_gizmos.line_2d(start, end, fracture_color);
+            }
+            if debug_earthquake.timer.is_finished() {
+                commands.entity(entity).despawn();
+            }
+        });
+}
+
+fn draw_earthquake_region_gizmo(
+    gizmos: &mut Gizmos<EarthquakeGizmos>,
+    region: &EarthquakeRegion,
+    color: Color,
+) {
+    match region {
+        EarthquakeRegion::Circle { center, radius } => {
+            gizmos.circle_2d(Isometry2d::from_translation(*center), *radius, color);
+        }
+        EarthquakeRegion::Rect {
+            center,
+            half_extents,
+            rotation,
+        } => {
+            gizmos.rect_2d(
+                Isometry2d::new(*center, Rot2::radians(*rotation)),
+                *half_extents * 2.0,
+                color,
+            );
+        }
+        EarthquakeRegion::Polygon { vertices } => {
+            if vertices.len() < 2 {
+                return;
+            }
+
+            for (&start, &end) in vertices.iter().zip(vertices.iter().cycle().skip(1)) {
+                gizmos.line_2d(start, end, color);
+            }
+        }
+    }
+}
+
+fn generate_voronoi_cells(
+    rng: &mut GlobalRng,
+    region: &EarthquakeRegion,
+    bounds: IRect,
+    particles: &[IVec2],
+) -> Vec<HashSet<IVec2>> {
+    if particles.is_empty() {
+        return Vec::new();
+    }
+
+    let target_count = ((region.area_hint() * 0.01) as usize).clamp(8, 256);
+    let site_count = target_count.min(particles.len());
+
+    let sites: Vec<Point> = rng
+        .as_mut()
+        .sample_multiple(particles, site_count)
+        .into_iter()
+        .map(|p| Point {
+            x: p.x as f64,
+            y: p.y as f64,
+        })
+        .collect();
+
+    let bbox = voronoi_bounding_box(bounds);
+
+    let Some(voronoi) = VoronoiBuilder::default()
+        .set_sites(sites)
+        .set_bounding_box(bbox)
+        .build()
+    else {
+        return Vec::new();
+    };
+
+    let final_sites = voronoi.sites();
+    let mut cells: HashMap<usize, HashSet<IVec2>> = HashMap::default();
+    for &p in particles {
+        let mut best_idx: usize = 0;
+        let mut best_dist = f32::INFINITY;
+        for (i, site) in final_sites.iter().enumerate() {
+            let dx = p.x as f32 - site.x as f32;
+            let dy = p.y as f32 - site.y as f32;
+            let d = dx * dx + dy * dy;
+            if d < best_dist {
+                best_dist = d;
+                best_idx = i;
+            }
+        }
+        cells.entry(best_idx).or_default().insert(p);
+    }
+
+    cells.into_values().collect()
+}
+
+fn voronoi_bounding_box(bounds: IRect) -> BoundingBox {
+    let min = bounds.min.as_vec2();
+    let max = bounds.max.as_vec2();
+    let center = (min + max) * 0.5;
+    let size = (max - min).max(Vec2::splat(1.0));
+    BoundingBox::new(
+        Point {
+            x: center.x as f64,
+            y: center.y as f64,
+        },
+        size.x as f64,
+        size.y as f64,
+    )
+}
+
+fn points_bounds<I>(points: I) -> Option<IRect>
+where
+    I: IntoIterator<Item = Vec2>,
+{
+    let mut points = points.into_iter();
+    let first = points.next()?;
+    let mut min = first;
+    let mut max = first;
+    for point in points {
+        min = min.min(point);
+        max = max.max(point);
+    }
+    Some(IRect::from_corners(
+        min.floor().as_ivec2(),
+        max.ceil().as_ivec2(),
+    ))
+}
+
+fn polygon_signed_area(vertices: &[Vec2]) -> f32 {
+    if vertices.len() < 3 {
+        return 0.0;
+    }
+
+    vertices
+        .iter()
+        .zip(vertices.iter().cycle().skip(1))
+        .map(|(a, b)| a.x * b.y - b.x * a.y)
+        .sum()
+}
+
+fn polygon_contains_point(vertices: &[Vec2], point: Vec2) -> bool {
+    if vertices.len() < 3 {
+        return false;
+    }
+
+    let mut inside = false;
+    for (a, b) in vertices.iter().zip(vertices.iter().cycle().skip(1)) {
+        let crosses_y = (a.y > point.y) != (b.y > point.y);
+        if crosses_y {
+            let x_intersection = (b.x - a.x) * (point.y - a.y) / (b.y - a.y) + a.x;
+            if point.x < x_intersection {
+                inside = !inside;
+            }
+        }
+    }
+    inside
+}
+
+fn cell_boundary_edges(cell: &HashSet<IVec2>) -> Vec<(Vec2, Vec2)> {
+    let mut edges = Vec::new();
+    for &p in cell {
+        let fx = p.x as f32;
+        let fy = p.y as f32;
+        if !cell.contains(&IVec2::new(p.x, p.y + 1)) {
+            edges.push((Vec2::new(fx, fy + 1.0), Vec2::new(fx + 1.0, fy + 1.0)));
+        }
+        if !cell.contains(&IVec2::new(p.x, p.y - 1)) {
+            edges.push((Vec2::new(fx, fy), Vec2::new(fx + 1.0, fy)));
+        }
+        if !cell.contains(&IVec2::new(p.x + 1, p.y)) {
+            edges.push((Vec2::new(fx + 1.0, fy), Vec2::new(fx + 1.0, fy + 1.0)));
+        }
+        if !cell.contains(&IVec2::new(p.x - 1, p.y)) {
+            edges.push((Vec2::new(fx, fy), Vec2::new(fx, fy + 1.0)));
+        }
+    }
+    edges
+}
+
+fn erode_outer_perimeter(cell: &HashSet<IVec2>) -> HashSet<IVec2> {
+    cell.iter()
+        .copied()
+        .filter(|p| {
+            [
+                IVec2::new(p.x, p.y + 1),
+                IVec2::new(p.x, p.y - 1),
+                IVec2::new(p.x + 1, p.y),
+                IVec2::new(p.x - 1, p.y),
+            ]
+            .into_iter()
+            .all(|neighbor| cell.contains(&neighbor))
+        })
+        .collect()
+}
+
+fn erode_outer_perimeter_layers(cell: &HashSet<IVec2>, layers: usize) -> HashSet<IVec2> {
+    let mut eroded = cell.clone();
+    for _ in 0..layers {
+        eroded = erode_outer_perimeter(&eroded);
+        if eroded.is_empty() {
+            break;
+        }
+    }
+    eroded
+}
+
+fn particle_world_positions<'a, I>(cell: I) -> Vec<(IVec2, Vec2)>
+where
+    I: IntoIterator<Item = &'a IVec2>,
+{
+    cell.into_iter()
+        .map(|&p| (p, Vec2::new(p.x as f32 + 0.5, p.y as f32 + 0.5)))
+        .collect()
+}
+
+fn particle_centroid(particle_world: &[(IVec2, Vec2)]) -> Vec2 {
+    particle_world.iter().map(|(_, v)| *v).sum::<Vec2>() / particle_world.len() as f32
+}
+
+fn compound_particle_collider(particle_world: &[(IVec2, Vec2)], centroid: Vec2) -> Collider {
+    let shapes: Vec<(Vec2, f32, Collider)> = particle_world
+        .iter()
+        .map(|(_, world)| (*world - centroid, 0.0, Collider::rectangle(1.0, 1.0)))
+        .collect();
+    Collider::compound(shapes)
+}
+
+fn convex_particle_collider(
+    cell: &HashSet<IVec2>,
+    particle_world: &[(IVec2, Vec2)],
+    centroid: Vec2,
+) -> Collider {
+    let mesh = mesh_from_grid_cells(cell.iter().copied(), 0.0);
+    if mesh.vertices.is_empty() {
+        return compound_particle_collider(particle_world, centroid);
+    }
+
+    let vertices: Vec<Vec2> = mesh
+        .vertices
+        .into_iter()
+        .map(|vertex| vertex - centroid)
+        .collect();
+
+    Collider::convex_hull(vertices)
+        .unwrap_or_else(|| compound_particle_collider(particle_world, centroid))
+}
+
+fn spawn_fracture_body(
+    commands: &mut Commands,
+    particle_colors: &Query<&ParticleColor>,
+    by_position: &HashMap<IVec2, Entity>,
+    cell: &HashSet<IVec2>,
+) {
+    if cell.is_empty() {
+        return;
+    }
+
+    let collider_cell = erode_outer_perimeter_layers(cell, 2);
+    if collider_cell.is_empty() {
+        return;
+    }
+
+    let cell_colors: HashMap<IVec2, Color> = collider_cell
+        .iter()
+        .map(|grid_pos| {
+            let color = by_position
+                .get(grid_pos)
+                .and_then(|e| particle_colors.get(*e).ok())
+                .map_or(Color::WHITE, |pc| pc.0);
+            (*grid_pos, color)
+        })
+        .collect();
+
+    spawn_fracture_body_from_cells(commands, cell_colors, None);
+}
+
+fn spawn_fracture_body_from_cells(
+    commands: &mut Commands,
+    cell_colors: HashMap<IVec2, Color>,
+    transform: Option<Transform>,
+) -> Option<Entity> {
+    let built = build_fracture_body(&cell_colors)?;
+
+    Some(
+        commands
+            .spawn((
+                transform.unwrap_or_else(|| {
+                    Transform::from_xyz(
+                        built.source_centroid.x,
+                        built.source_centroid.y,
+                        EARTHQUAKE_RIGID_BODY_RENDER_Z,
+                    )
+                }),
+                Visibility::default(),
+                RigidBody::Dynamic,
+                built.collider,
+                built.particle_collider.with_default_resting(),
+                FractureBody {
+                    cells: cell_colors,
+                    source_centroid: built.source_centroid,
+                },
+            ))
+            .with_children(|p| {
+                spawn_fracture_body_sprites(p, built.source_centroid, &built.sprites);
+            })
+            .id(),
+    )
+}
+
+struct BuiltFractureBody {
+    source_centroid: Vec2,
+    collider: Collider,
+    particle_collider: ParticleCollider,
+    sprites: Vec<(Vec2, Color)>,
+}
+
+fn build_fracture_body(cell_colors: &HashMap<IVec2, Color>) -> Option<BuiltFractureBody> {
+    if cell_colors.len() < MIN_FRACTURE_BODY_CELLS {
+        return None;
+    }
+
+    let cells: HashSet<IVec2> = cell_colors.keys().copied().collect();
+    let particle_world = particle_world_positions(cells.iter());
+    let centroid = particle_centroid(&particle_world);
+    let collider = convex_particle_collider(&cells, &particle_world, centroid);
+    let sprites = particle_world
+        .iter()
+        .map(|(grid_pos, world)| {
+            let color = cell_colors.get(grid_pos).copied().unwrap_or(Color::WHITE);
+            (*world, color)
+        })
+        .collect();
+
+    Some(BuiltFractureBody {
+        source_centroid: centroid,
+        collider,
+        particle_collider: ParticleCollider::from_grid_cells(cells, centroid),
+        sprites,
+    })
+}
+
+fn spawn_fracture_body_sprites(
+    parent: &mut ChildSpawnerCommands,
+    centroid: Vec2,
+    sprites: &[(Vec2, Color)],
+) {
+    for (world, color) in sprites {
+        let local = *world - centroid;
+        parent.spawn((
+            Sprite::from_color(*color, Vec2::ONE),
+            Transform::from_xyz(local.x, local.y, 0.0),
+        ));
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 fn rebuild_fracture_body(
     commands: &mut Commands,
@@ -685,30 +882,4 @@ fn mark_fracture_cell_dirty(
     {
         dirty_state.mark_dirty(position);
     }
-}
-
-fn debug_earthquake(
-    mut commands: Commands,
-    mut debug_earthquake: Query<(Entity, &mut DebugEarthquake)>,
-    time: Res<Time>,
-    mut earthquake_gizmos: Gizmos<EarthquakeGizmos>,
-) {
-    debug_earthquake
-        .iter_mut()
-        .for_each(|(entity, mut debug_earthquake)| {
-            debug_earthquake.timer.tick(time.delta());
-            let alpha = 1. - debug_earthquake.timer.fraction();
-            earthquake_gizmos.circle_2d(
-                Isometry2d::from_translation(debug_earthquake.center),
-                debug_earthquake.radius,
-                Color::srgba(1., 1., 1., alpha),
-            );
-            let fracture_color = Color::srgba(1., 0.4, 0.2, alpha);
-            for &(start, end) in &debug_earthquake.fracture_edges {
-                earthquake_gizmos.line_2d(start, end, fracture_color);
-            }
-            if debug_earthquake.timer.is_finished() {
-                commands.entity(entity).despawn();
-            }
-        });
 }
