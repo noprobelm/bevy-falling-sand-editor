@@ -32,7 +32,7 @@ impl Plugin for UiPlugin {
 struct ToolOptions<'w, 's> {
     pub brush: BrushOptions<'w, 's>,
     pub select: SelectOptions<'w>,
-    pub earthquake: EarthquakeOptions<'w>,
+    pub earthquake: EarthquakeOptions<'w, 's>,
 }
 
 fn show(

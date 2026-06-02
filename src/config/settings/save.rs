@@ -6,9 +6,10 @@ use crate::{
     brush::{BrushKeyBindings, BrushSize, BrushSpawnState, BrushTypeState},
     camera::CameraKeyBindings,
     config::{
-        AvianDebugConfig, BevyFallingSandDebugConfig, BrushConfig, Keybindings, OptionalColor,
-        SettingsConfig,
+        AvianDebugConfig, BevyFallingSandDebugConfig, BrushConfig, EarthquakeConfig, Keybindings,
+        OptionalColor, SettingsConfig,
     },
+    tools::earthquake::{DebugEarthquake, EarthquakeBrushSize, EarthquakeRegionState},
     ui::UiKeyBindings,
 };
 
@@ -18,6 +19,7 @@ impl Plugin for SavePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<SaveSettingsBuilder>()
             .add_observer(on_prepare_save_brush)
+            .add_observer(on_prepare_save_earthquake)
             .add_observer(on_prepare_save_bfs_debug)
             .add_observer(on_prepare_save_avian_debug)
             .add_observer(on_prepare_save_keys)
@@ -37,6 +39,7 @@ pub struct SaveSettingsEvent;
 #[derive(Resource, Default)]
 pub struct SaveSettingsBuilder {
     pub brush: Option<BrushConfig>,
+    pub earthquake: Option<EarthquakeConfig>,
     pub bfs_debug: Option<BevyFallingSandDebugConfig>,
     pub avian_debug: Option<AvianDebugConfig>,
     pub keys: Option<Keybindings>,
@@ -53,6 +56,20 @@ fn on_prepare_save_brush(
         btype: **brush_type_state,
         mode: **brush_mode_state,
         size: **brush_size,
+    });
+}
+
+fn on_prepare_save_earthquake(
+    _trigger: On<PrepareSaveSettingsEvent>,
+    region_state: Res<State<EarthquakeRegionState>>,
+    brush_size: Single<&EarthquakeBrushSize>,
+    debug: Option<Res<DebugEarthquake>>,
+    mut builder: ResMut<SaveSettingsBuilder>,
+) {
+    builder.earthquake = Some(EarthquakeConfig {
+        region: **region_state,
+        size: **brush_size,
+        debug: debug.is_some(),
     });
 }
 
@@ -122,6 +139,10 @@ fn on_save_settings(
     persistent
         .set(SettingsConfig {
             brush: builder.brush.take().expect("brush config not set"),
+            earthquake: builder
+                .earthquake
+                .take()
+                .expect("earthquake config not set"),
             bfs_debug: builder.bfs_debug.take().expect("bfs debug config not set"),
             avian_debug: builder
                 .avian_debug

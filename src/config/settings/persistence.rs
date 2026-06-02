@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     brush::{BrushKeyBindings, BrushSize, BrushSpawnState, BrushTypeState},
     camera::CameraKeyBindings,
+    tools::earthquake::{EarthquakeBrushSize, EarthquakeRegionState},
     ui::UiKeyBindings,
 };
 
@@ -60,6 +61,8 @@ impl From<MouseButton> for InputButton {
 #[derive(Resource, Default, Serialize, Deserialize)]
 pub struct SettingsConfig {
     pub brush: BrushConfig,
+    #[serde(default)]
+    pub earthquake: EarthquakeConfig,
     pub bfs_debug: BevyFallingSandDebugConfig,
     pub avian_debug: AvianDebugConfig,
     pub keys: Keybindings,
@@ -78,6 +81,23 @@ impl Default for BrushConfig {
             btype: BrushTypeState::default(),
             mode: BrushSpawnState::default(),
             size: BrushSize(2),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct EarthquakeConfig {
+    pub region: EarthquakeRegionState,
+    pub size: EarthquakeBrushSize,
+    pub debug: bool,
+}
+
+impl Default for EarthquakeConfig {
+    fn default() -> Self {
+        Self {
+            region: EarthquakeRegionState::default(),
+            size: EarthquakeBrushSize(24.0),
+            debug: false,
         }
     }
 }

@@ -10,7 +10,9 @@ use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
 pub use signals::*;
 
-use crate::tools::earthquake::debug::DebugEarthquake;
+pub use components::*;
+pub use debug::DebugEarthquake;
+pub use states::*;
 
 pub(super) struct EarthquakePlugin;
 
@@ -28,6 +30,9 @@ impl Plugin for EarthquakePlugin {
 }
 
 #[derive(SystemParam)]
-pub struct EarthquakeOptions<'w> {
+pub struct EarthquakeOptions<'w, 's> {
+    pub size: Single<'w, 's, &'static mut EarthquakeBrushSize>,
+    pub current_region_state: Res<'w, State<EarthquakeRegionState>>,
+    pub next_region_state: ResMut<'w, NextState<EarthquakeRegionState>>,
     pub debug: Option<Res<'w, DebugEarthquake>>,
 }

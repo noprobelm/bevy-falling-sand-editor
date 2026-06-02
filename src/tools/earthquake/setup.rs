@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_persistent::Persistent;
 use leafwing_input_manager::{
     Actionlike,
     plugin::InputManagerPlugin,
@@ -6,10 +7,13 @@ use leafwing_input_manager::{
 };
 
 use crate::{
+    config::SettingsConfig,
     setup::SetupSystems,
     tools::earthquake::{
         components::{EarthquakeBrush, EarthquakeBrushColor, EarthquakeBrushSize},
+        debug::DebugEarthquake,
         gizmos::EarthquakeBrushGizmos,
+        states::EarthquakeRegionState,
     },
 };
 
@@ -25,18 +29,42 @@ impl Plugin for SetupPlugin {
                     ..default()
                 },
             )
-            .add_systems(Startup, spawn_earthquake_brush.in_set(SetupSystems::Tools));
+            .add_systems(
+                Startup,
+                (spawn_earthquake_brush, load_settings)
+                    .chain()
+                    .in_set(SetupSystems::Tools),
+            );
     }
 }
 
 fn spawn_earthquake_brush(mut commands: Commands) {
-    let input_map = InputMap::default().with_axis(EarthquakeAction::ChangeSize, MouseScrollAxis::Y);
     commands.spawn((
         EarthquakeBrush,
         EarthquakeBrushSize(24.0),
         EarthquakeBrushColor(Color::srgba(1.0, 1.0, 1.0, 0.3)),
-        input_map,
+        input_map(),
     ));
+}
+
+fn load_settings(
+    mut commands: Commands,
+    mut next_region_state: ResMut<NextState<EarthquakeRegionState>>,
+    brush: Single<Entity, With<EarthquakeBrush>>,
+    settings_config: Res<Persistent<SettingsConfig>>,
+) {
+    commands
+        .entity(brush.entity())
+        .insert((input_map(), settings_config.earthquake.size));
+    next_region_state.set(settings_config.earthquake.region);
+
+    if settings_config.earthquake.debug {
+        commands.insert_resource(DebugEarthquake);
+    }
+}
+
+fn input_map() -> InputMap<EarthquakeAction> {
+    InputMap::default().with_axis(EarthquakeAction::ChangeSize, MouseScrollAxis::Y)
 }
 
 #[derive(Actionlike, PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
