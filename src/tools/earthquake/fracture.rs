@@ -12,6 +12,12 @@ use crate::tools::earthquake::{
 pub(super) const MIN_FRACTURE_BODY_CELLS: usize = 2;
 
 const EARTHQUAKE_RIGID_BODY_RENDER_Z: f32 = 1.0;
+const CARDINAL_CELL_OFFSETS: [IVec2; 4] = [
+    IVec2::new(0, 1),
+    IVec2::new(0, -1),
+    IVec2::new(1, 0),
+    IVec2::new(-1, 0),
+];
 
 pub(super) struct BuiltFractureBody {
     pub(super) source_centroid: Vec2,
@@ -37,8 +43,11 @@ pub(super) fn spawn_fracture_body_for_cell(
         return None;
     }
 
-    let cell_colors =
+    let mut cell_colors =
         cell_colors_for_voronoi_cell(cell, fracture_shape, particle_colors, by_position);
+    if fracture_shape == EarthquakeFractureShapeState::ExactVoronoiCells {
+        remove_outer_perimeter_cells(&mut cell_colors);
+    }
 
     spawn_fracture_body_from_cells(
         commands,
@@ -128,6 +137,24 @@ fn particle_color_at(
         .map(|entity| particle_colors.get(*entity).map_or(Color::WHITE, |pc| pc.0))
 }
 
+fn remove_outer_perimeter_cells(cell_colors: &mut HashMap<IVec2, Color>) {
+    let perimeter: Vec<IVec2> = cell_colors
+        .keys()
+        .copied()
+        .filter(|cell| is_outer_perimeter_cell(cell_colors, *cell))
+        .collect();
+
+    for cell in perimeter {
+        cell_colors.remove(&cell);
+    }
+}
+
+fn is_outer_perimeter_cell(cell_colors: &HashMap<IVec2, Color>, cell: IVec2) -> bool {
+    CARDINAL_CELL_OFFSETS
+        .iter()
+        .any(|offset| !cell_colors.contains_key(&(cell + *offset)))
+}
+
 fn convex_hull_vertices_for_cells(cells: &HashSet<IVec2>) -> Option<Vec<Vec2>> {
     let mesh = mesh_from_grid_cells(cells.iter().copied(), 0.0);
     convex_hull_vertices(mesh.vertices)
@@ -186,16 +213,16 @@ fn cell_boundary_edges(cell: &HashSet<IVec2>) -> Vec<(Vec2, Vec2)> {
     for &p in cell {
         let fx = p.x as f32;
         let fy = p.y as f32;
-        if !cell.contains(&IVec2::new(p.x, p.y + 1)) {
+        if !cell.contains(&(p + CARDINAL_CELL_OFFSETS[0])) {
             edges.push((Vec2::new(fx, fy + 1.0), Vec2::new(fx + 1.0, fy + 1.0)));
         }
-        if !cell.contains(&IVec2::new(p.x, p.y - 1)) {
+        if !cell.contains(&(p + CARDINAL_CELL_OFFSETS[1])) {
             edges.push((Vec2::new(fx, fy), Vec2::new(fx + 1.0, fy)));
         }
-        if !cell.contains(&IVec2::new(p.x + 1, p.y)) {
+        if !cell.contains(&(p + CARDINAL_CELL_OFFSETS[2])) {
             edges.push((Vec2::new(fx + 1.0, fy), Vec2::new(fx + 1.0, fy + 1.0)));
         }
-        if !cell.contains(&IVec2::new(p.x - 1, p.y)) {
+        if !cell.contains(&(p + CARDINAL_CELL_OFFSETS[3])) {
             edges.push((Vec2::new(fx, fy), Vec2::new(fx, fy + 1.0)));
         }
     }
@@ -337,7 +364,6 @@ pub(super) fn spawn_built_fracture_body(
             Visibility::default(),
             rigid_body,
             collider,
-            CollisionMargin(0.1),
             particle_collider,
             FractureBody {
                 cells: cell_colors,
