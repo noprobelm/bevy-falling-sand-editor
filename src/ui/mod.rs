@@ -4,6 +4,7 @@ mod helpers;
 mod popups;
 mod quick_actions;
 mod setup;
+mod signals;
 mod states;
 pub mod widgets;
 
@@ -16,6 +17,7 @@ pub use helpers::*;
 pub use popups::*;
 pub use quick_actions::*;
 pub use setup::*;
+pub use signals::*;
 pub use states::*;
 
 pub(super) struct UiPlugin;
@@ -30,6 +32,7 @@ impl Plugin for UiPlugin {
             PopupsPlugin,
             ConsolePlugin,
             UiStatePlugin,
+            SignalsPlugin,
         ))
         .configure_sets(
             EguiPrimaryContextPass,

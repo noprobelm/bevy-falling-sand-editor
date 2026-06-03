@@ -11,6 +11,7 @@ pub(crate) mod scene;
 mod select;
 mod setup;
 mod tools;
+mod ui;
 
 use bevy::prelude::*;
 
@@ -27,6 +28,7 @@ pub use scene::*;
 pub use select::*;
 use setup::SetupPlugin;
 pub use tools::*;
+pub use ui::*;
 
 pub struct CommandsPlugin;
 
