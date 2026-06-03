@@ -30,13 +30,17 @@ pub(super) fn spawn_fracture_body_for_cell(
     config: &EarthquakeConfiguration,
     cell: &GeneratedVoronoiCell,
     fracture_shape: EarthquakeFractureShape,
+    excluded_particles: &HashSet<IVec2>,
 ) -> Option<Entity> {
     if cell.particles.is_empty() {
         return None;
     }
 
     let cell_colors =
-        cell_colors_for_voronoi_cell(cell, fracture_shape, particle_colors, by_position);
+        cell_colors_for_voronoi_cell(cell, fracture_shape, particle_colors, by_position)
+            .into_iter()
+            .filter(|(position, _)| !excluded_particles.contains(position))
+            .collect();
 
     spawn_fracture_body_from_cells(
         commands,
@@ -74,6 +78,31 @@ pub(super) fn fracture_debug_edges(
         EarthquakeFractureShape::Convex => cell_boundary_edges(&cell.particles),
         EarthquakeFractureShape::Concave => polygon_edges(&cell.vertices),
     }
+}
+
+pub(super) fn concave_fracture_line_particles(
+    cells: &[GeneratedVoronoiCell],
+    particles: impl IntoIterator<Item = IVec2>,
+) -> HashSet<IVec2> {
+    let particles: HashSet<IVec2> = particles.into_iter().collect();
+    let mut edge_counts: HashMap<VoronoiEdgeKey, (Vec2, Vec2, usize)> = HashMap::default();
+
+    for cell in cells {
+        for (start, end) in polygon_edges(&cell.vertices) {
+            let key = VoronoiEdgeKey::new(start, end);
+            edge_counts
+                .entry(key)
+                .and_modify(|(_, _, count)| *count += 1)
+                .or_insert((start, end, 1));
+        }
+    }
+
+    edge_counts
+        .into_values()
+        .filter(|(_, _, count)| *count > 1)
+        .flat_map(|(start, end, _)| rasterized_line_cells(start, end))
+        .filter(|position| particles.contains(position))
+        .collect()
 }
 
 fn cell_colors_for_positions(
@@ -195,6 +224,39 @@ fn cell_boundary_edges(cell: &HashSet<IVec2>) -> Vec<(Vec2, Vec2)> {
         }
     }
     edges
+}
+
+#[derive(Clone, Copy, Eq, Hash, PartialEq)]
+struct VoronoiEdgeKey {
+    a: IVec2,
+    b: IVec2,
+}
+
+impl VoronoiEdgeKey {
+    fn new(start: Vec2, end: Vec2) -> Self {
+        let start = quantized_point(start);
+        let end = quantized_point(end);
+        if (start.x, start.y) <= (end.x, end.y) {
+            Self { a: start, b: end }
+        } else {
+            Self { a: end, b: start }
+        }
+    }
+}
+
+fn quantized_point(point: Vec2) -> IVec2 {
+    (point * 1000.0).round().as_ivec2()
+}
+
+fn rasterized_line_cells(start: Vec2, end: Vec2) -> Vec<IVec2> {
+    let delta = end - start;
+    let steps = ((delta.x.abs().max(delta.y.abs()) * 2.0).ceil() as usize).max(1);
+    (0..=steps)
+        .map(|i| {
+            let t = i as f32 / steps as f32;
+            (start + delta * t).floor().as_ivec2()
+        })
+        .collect()
 }
 
 fn particle_world_positions<'a, I>(cell: I) -> Vec<(IVec2, Vec2)>

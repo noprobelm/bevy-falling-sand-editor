@@ -9,8 +9,8 @@ use crate::tools::earthquake::{
     debug::{DebugEarthquake, DebugEarthquakeInfo},
     fracture::{
         FractureBody, apply_built_fracture_body, build_fracture_body, cell_colors_for_component,
-        fracture_debug_edges, shifted_fracture_transform, spawn_built_fracture_body,
-        spawn_fracture_body_for_cell,
+        concave_fracture_line_particles, fracture_debug_edges, shifted_fracture_transform,
+        spawn_built_fracture_body, spawn_fracture_body_for_cell,
     },
     states::EarthquakeFractureShape,
     voronoi::generate_voronoi_cells,
@@ -76,6 +76,11 @@ fn on_earthquake(
     let particle_positions: Vec<IVec2> = by_position.keys().copied().collect();
     let cells = generate_voronoi_cells(&mut rng, &config, region, bounds, &particle_positions);
     let fracture_shape = **fracture_shape_state;
+    let fracture_line_particles = if fracture_shape == EarthquakeFractureShape::Concave {
+        concave_fracture_line_particles(&cells, particle_positions.iter().copied())
+    } else {
+        HashSet::default()
+    };
 
     let fracture_edges: Vec<(Vec2, Vec2)> = cells
         .iter()
@@ -90,6 +95,7 @@ fn on_earthquake(
             &config,
             cell,
             fracture_shape,
+            &fracture_line_particles,
         );
     }
 
@@ -98,11 +104,12 @@ fn on_earthquake(
     }
 
     debug!(
-        "earthquake in {:?}: {} shapes, {} cells, {} fracture edges",
+        "earthquake in {:?}: {} shapes, {} cells, {} fracture edges, {} removed fracture line particles",
         region,
         shape_count,
         cells.len(),
         fracture_edges.len(),
+        fracture_line_particles.len(),
     );
 
     if debug_earthquake.is_some() {

@@ -80,8 +80,8 @@ pub enum EarthquakeShape {
     Deserialize,
 )]
 pub enum EarthquakeFractureShape {
-    Convex,
     #[default]
+    Convex,
     Concave,
 }
 
