@@ -1,14 +1,14 @@
 mod brush;
 mod select;
+mod signals;
 mod states;
 mod ui;
-mod signals;
 
 pub use brush::*;
 pub use select::*;
+pub use signals::*;
 pub use states::*;
 use ui::*;
-pub use signals::*;
 
 use bevy::prelude::*;
 
