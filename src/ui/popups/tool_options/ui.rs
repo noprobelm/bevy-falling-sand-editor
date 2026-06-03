@@ -1,4 +1,4 @@
-use bevy::{ecs::system::SystemParam, prelude::*};
+use bevy::{ecs::system::SystemParam, prelude::*, reflect::Enum};
 use bevy_egui::{
     EguiContexts, EguiPrimaryContextPass,
     egui::{self},
@@ -43,7 +43,8 @@ fn show(
 ) -> Result {
     let ctx = contexts.ctx_mut()?;
 
-    egui::Window::new("Tool Options")
+    let title = format!("Tool Options - {}", selected_tool.0.variant_name());
+    egui::Window::new(title)
         .constrain_to(ctx.available_rect())
         .show(ctx, |ui| {
             match selected_tool.0 {
