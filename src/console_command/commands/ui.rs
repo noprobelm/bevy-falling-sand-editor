@@ -1,7 +1,7 @@
 use crate::console_command::ConsoleCommand;
 use crate::ui::{
-    UiToggleCursorOverlayEvent, UiToggleParticleEditorEvent, UiToggleSettingsEvent,
-    UiToggleEvent, UiToggleToolOptionsEvent,
+    UiToggleCursorOverlayEvent, UiToggleEvent, UiToggleParticleEditorEvent, UiToggleSettingsEvent,
+    UiToggleToolOptionsEvent,
 };
 use bevy::prelude::*;
 
@@ -48,7 +48,6 @@ impl ConsoleCommand for UiToggleConsoleCommand {
             Box::new(UiToggleSettingsConsoleCommand),
             Box::new(UiToggleCursorOverlayConsoleCommand),
             Box::new(UiToggleToolOptionsConsoleCommand),
-
         ]
     }
 }

@@ -1,6 +1,5 @@
-
-use bevy::prelude::*;
 use crate::ui::ShowCursorOverlay;
+use bevy::prelude::*;
 
 pub(super) struct SignalsPlugin;
 

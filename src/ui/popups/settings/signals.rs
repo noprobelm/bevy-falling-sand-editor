@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::ui::SettingsApplicationState;
+use bevy::prelude::*;
 
 pub(super) struct SignalsPlugin;
 

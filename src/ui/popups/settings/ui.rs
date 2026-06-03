@@ -13,8 +13,8 @@ use crate::{
     tools::brush::BrushOptions,
     ui::{
         ConsoleAction, QuickAction, SettingsApplicationState, SettingsCategory, ShowUi,
-        UiKeyBindings, UiSystems, add_label_with_toggle_switch,
-        add_major_grid_separator, show_brush_settings,
+        UiKeyBindings, UiSystems, add_label_with_toggle_switch, add_major_grid_separator,
+        show_brush_settings,
     },
 };
 

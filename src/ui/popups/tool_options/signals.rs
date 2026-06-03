@@ -1,5 +1,5 @@
+use crate::ui::{PopupState, ToolOptionsWindowState};
 use bevy::prelude::*;
-use crate::ui::{ PopupState, ToolOptionsWindowState};
 
 pub(super) struct SignalsPlugin;
 

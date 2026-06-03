@@ -1,11 +1,10 @@
-mod ui;
 mod signals;
-use ui::*;
+mod ui;
 use signals::*;
+use ui::*;
 
 use bevy::prelude::*;
 pub use signals::*;
-
 
 pub(super) struct CursorOverlayPlugin;
 

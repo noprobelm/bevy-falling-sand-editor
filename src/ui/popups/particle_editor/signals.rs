@@ -1,6 +1,5 @@
-
+use crate::ui::{ParticleEditorWindowState, PopupState};
 use bevy::prelude::*;
-use crate::ui::{ PopupState, ParticleEditorWindowState};
 
 pub(super) struct SignalsPlugin;
 
