@@ -24,5 +24,6 @@ fn setup_console_command_registry(mut commands: Commands) {
     registry.register(SelectCommand);
     registry.register(SaveCommand);
     registry.register(EarthquakeConsoleCommand);
+    registry.register(UiConsoleCommand);
     commands.insert_resource(registry);
 }
