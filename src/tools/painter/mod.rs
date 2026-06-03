@@ -27,19 +27,13 @@ pub struct PainterOptions<'w, 's> {
         'w,
         's,
         &'static mut crate::tools::brush::ToolBrushSize,
-        (
-            With<crate::tools::painter::PainterBrush>,
-            Without<crate::tools::earthquake::EarthquakeBrush>,
-        ),
+        With<crate::tools::painter::PainterBrush>,
     >,
     pub color: Single<
         'w,
         's,
         &'static mut crate::tools::brush::ToolBrushColor,
-        (
-            With<crate::tools::painter::PainterBrush>,
-            Without<crate::tools::earthquake::EarthquakeBrush>,
-        ),
+        With<crate::tools::painter::PainterBrush>,
     >,
     pub configuration: ResMut<'w, PainterConfiguration>,
     pub current_type_state: Res<'w, State<PainterShape>>,

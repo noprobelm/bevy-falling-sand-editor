@@ -41,19 +41,13 @@ pub struct EarthquakeOptions<'w, 's> {
         'w,
         's,
         &'static mut crate::tools::brush::ToolBrushSize,
-        (
-            With<crate::tools::earthquake::EarthquakeBrush>,
-            Without<crate::tools::painter::PainterBrush>,
-        ),
+        With<crate::tools::earthquake::EarthquakeBrush>,
     >,
     pub color: Single<
         'w,
         's,
         &'static mut crate::tools::brush::ToolBrushColor,
-        (
-            With<crate::tools::earthquake::EarthquakeBrush>,
-            Without<crate::tools::painter::PainterBrush>,
-        ),
+        With<crate::tools::earthquake::EarthquakeBrush>,
     >,
     pub configuration: ResMut<'w, EarthquakeConfiguration>,
     pub current_region_state: Res<'w, State<EarthquakeShape>>,

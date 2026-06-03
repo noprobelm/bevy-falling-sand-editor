@@ -1,4 +1,4 @@
-use bevy::{ecs::system::SystemParam, prelude::*, reflect::Enum};
+use bevy::{ecs::system::ParamSet, prelude::*, reflect::Enum};
 use bevy_egui::{
     EguiContexts, EguiPrimaryContextPass,
     egui::{self},
@@ -28,18 +28,12 @@ impl Plugin for UiPlugin {
     }
 }
 
-#[derive(SystemParam)]
-struct ToolOptions<'w, 's> {
-    pub painter: PainterOptions<'w, 's>,
-    pub select: SelectOptions<'w>,
-    pub earthquake: EarthquakeOptions<'w, 's>,
-}
-
 fn show(
     mut contexts: EguiContexts,
     commands: Commands,
     selected_tool: Res<PreviousSelectedTool>,
-    tool_options: ToolOptions,
+    mut brush_options: ParamSet<(PainterOptions, EarthquakeOptions)>,
+    select_options: SelectOptions,
 ) -> Result {
     let ctx = contexts.ctx_mut()?;
 
@@ -48,10 +42,10 @@ fn show(
         .constrain_to(ctx.available_rect())
         .show(ctx, |ui| {
             match selected_tool.0 {
-                SelectedTool::Painter => show_painter_options(ui, tool_options.painter),
-                SelectedTool::Select => show_select_options(ui, tool_options.select),
+                SelectedTool::Painter => show_painter_options(ui, brush_options.p0()),
+                SelectedTool::Select => show_select_options(ui, select_options),
                 SelectedTool::Earthquake => {
-                    show_earthquake_options(ui, commands, tool_options.earthquake)
+                    show_earthquake_options(ui, commands, brush_options.p1())
                 }
             };
         });

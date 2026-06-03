@@ -74,17 +74,19 @@ pub struct SetSelectedToolBrushSize(pub f32);
 fn on_set_selected_tool_brush_size(
     trigger: On<SetSelectedToolBrushSize>,
     selected_tool: Res<State<SelectedTool>>,
-    mut painter_brush: Query<&mut ToolBrushSize, (With<PainterBrush>, Without<EarthquakeBrush>)>,
-    mut earthquake_brush: Query<&mut ToolBrushSize, (With<EarthquakeBrush>, Without<PainterBrush>)>,
+    mut brush_sizes: ParamSet<(
+        Query<&mut ToolBrushSize, With<PainterBrush>>,
+        Query<&mut ToolBrushSize, With<EarthquakeBrush>>,
+    )>,
 ) -> Result {
     let size = trigger.event().0;
 
     match selected_tool.get() {
         SelectedTool::Painter => {
-            painter_brush.single_mut()?.0 = size;
+            brush_sizes.p0().single_mut()?.0 = size;
         }
         SelectedTool::Earthquake => {
-            earthquake_brush.single_mut()?.0 = size;
+            brush_sizes.p1().single_mut()?.0 = size;
         }
         SelectedTool::Select => {
             error!("Selected tool does not have a brush");
