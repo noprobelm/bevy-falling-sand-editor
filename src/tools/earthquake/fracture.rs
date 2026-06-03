@@ -32,30 +32,6 @@ pub(super) struct FractureBody {
     pub(super) source_centroid: Vec2,
 }
 
-pub(super) fn spawn_fracture_body_for_cell(
-    commands: &mut Commands,
-    particle_colors: &Query<&ParticleColor>,
-    by_position: &HashMap<IVec2, Entity>,
-    cell: &GeneratedVoronoiCell,
-    fracture_shape: EarthquakeFractureShapeState,
-) -> Option<Entity> {
-    if cell.particles.is_empty() {
-        return None;
-    }
-
-    let mut cell_colors =
-        cell_colors_for_voronoi_cell(cell, fracture_shape, particle_colors, by_position);
-    if fracture_shape == EarthquakeFractureShapeState::ExactVoronoiCells {
-        remove_outer_perimeter_cells(&mut cell_colors);
-    }
-
-    spawn_fracture_body_from_cells(
-        commands,
-        cell_colors,
-        fracture_shape == EarthquakeFractureShapeState::ExactVoronoiCells,
-    )
-}
-
 pub(super) fn cell_colors_for_voronoi_cell(
     cell: &GeneratedVoronoiCell,
     fracture_shape: EarthquakeFractureShapeState,
@@ -137,16 +113,18 @@ fn particle_color_at(
         .map(|entity| particle_colors.get(*entity).map_or(Color::WHITE, |pc| pc.0))
 }
 
-fn remove_outer_perimeter_cells(cell_colors: &mut HashMap<IVec2, Color>) {
+pub(super) fn trim_outer_perimeter_cells(cell_colors: &mut HashMap<IVec2, Color>) -> Vec<IVec2> {
     let perimeter: Vec<IVec2> = cell_colors
         .keys()
         .copied()
         .filter(|cell| is_outer_perimeter_cell(cell_colors, *cell))
         .collect();
 
-    for cell in perimeter {
-        cell_colors.remove(&cell);
+    for cell in &perimeter {
+        cell_colors.remove(cell);
     }
+
+    perimeter
 }
 
 fn is_outer_perimeter_cell(cell_colors: &HashMap<IVec2, Color>, cell: IVec2) -> bool {
@@ -447,4 +425,47 @@ pub(super) fn cell_colors_for_component(
         .iter()
         .filter_map(|cell| colors.get(cell).copied().map(|color| (*cell, color)))
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn cells<const N: usize>(positions: [IVec2; N]) -> HashMap<IVec2, Color> {
+        positions
+            .into_iter()
+            .map(|position| (position, Color::WHITE))
+            .collect()
+    }
+
+    #[test]
+    fn trim_outer_perimeter_cells_keeps_interior_cells() {
+        let mut cell_colors = cells([
+            IVec2::new(0, 0),
+            IVec2::new(1, 0),
+            IVec2::new(2, 0),
+            IVec2::new(0, 1),
+            IVec2::new(1, 1),
+            IVec2::new(2, 1),
+            IVec2::new(0, 2),
+            IVec2::new(1, 2),
+            IVec2::new(2, 2),
+        ]);
+
+        let perimeter = trim_outer_perimeter_cells(&mut cell_colors);
+
+        assert_eq!(cell_colors.len(), 1);
+        assert!(cell_colors.contains_key(&IVec2::new(1, 1)));
+        assert_eq!(perimeter.len(), 8);
+    }
+
+    #[test]
+    fn trim_outer_perimeter_cells_removes_thin_shapes() {
+        let mut cell_colors = cells([IVec2::new(0, 0), IVec2::new(1, 0), IVec2::new(2, 0)]);
+
+        let perimeter = trim_outer_perimeter_cells(&mut cell_colors);
+
+        assert!(cell_colors.is_empty());
+        assert_eq!(perimeter.len(), 3);
+    }
 }

@@ -1,16 +1,19 @@
+use std::time::Duration;
+
 use avian2d::prelude::*;
 use bevy::platform::collections::{HashMap, HashSet};
 use bevy::prelude::*;
 use bevy_falling_sand::{prelude::*, utils::connected_components};
-use bevy_turborand::GlobalRng;
+use bevy_turborand::{DelegatedRng, GlobalRng};
 
 use crate::tools::earthquake::{
     EarthquakeRegion,
     debug::{DebugEarthquake, DebugEarthquakeInfo},
     fracture::{
         FractureBody, MIN_FRACTURE_BODY_CELLS, apply_built_fracture_body, build_fracture_body,
-        cell_colors_for_component, fracture_debug_edges, shifted_fracture_transform,
-        spawn_built_fracture_body, spawn_fracture_body_for_cell,
+        cell_colors_for_component, cell_colors_for_voronoi_cell, fracture_debug_edges,
+        shifted_fracture_transform, spawn_built_fracture_body, spawn_fracture_body_from_cells,
+        trim_outer_perimeter_cells,
     },
     states::EarthquakeFractureShapeState,
     voronoi::generate_voronoi_cells,
@@ -23,8 +26,21 @@ impl Plugin for SignalsPlugin {
         app.add_observer(on_earthquake)
             .add_observer(on_remove_fracture_body_cell_at_world_position)
             .add_observer(on_remove_fracture_body_cells_at_world_positions)
-            .add_observer(on_remove_fracture_body_cells);
+            .add_observer(on_remove_fracture_body_cells)
+            .add_systems(Update, process_pending_exact_voronoi_fractures);
     }
+}
+
+const PENDING_EXACT_VORONOI_FRACTURE_TICK: Duration = Duration::from_millis(100);
+const PENDING_EXACT_VORONOI_PERIMETER_MIN_BATCH: usize = 1;
+const PENDING_EXACT_VORONOI_PERIMETER_MAX_BATCH: usize = 6;
+
+#[derive(Component)]
+struct PendingExactVoronoiFracture {
+    cell_colors: HashMap<IVec2, Color>,
+    source_entities: HashMap<IVec2, Entity>,
+    perimeter: Vec<IVec2>,
+    timer: Timer,
 }
 
 #[derive(Event)]
@@ -82,17 +98,32 @@ fn on_earthquake(
         .collect();
 
     for cell in &cells {
-        spawn_fracture_body_for_cell(
+        let mut cell_colors =
+            cell_colors_for_voronoi_cell(cell, fracture_shape, &particle_colors, &by_position);
+        if fracture_shape == EarthquakeFractureShapeState::ExactVoronoiCells {
+            let source_entities = source_entities_for_cells(&by_position, cell_colors.keys());
+            let mut perimeter = trim_outer_perimeter_cells(&mut cell_colors);
+            rng.shuffle(&mut perimeter);
+            commands.spawn(PendingExactVoronoiFracture {
+                cell_colors,
+                source_entities,
+                perimeter,
+                timer: Timer::new(PENDING_EXACT_VORONOI_FRACTURE_TICK, TimerMode::Repeating),
+            });
+            continue;
+        }
+
+        spawn_fracture_body_from_cells(
             &mut commands,
-            &particle_colors,
-            &by_position,
-            cell,
-            fracture_shape,
+            cell_colors,
+            fracture_shape == EarthquakeFractureShapeState::ExactVoronoiCells,
         );
     }
 
-    for entity in by_position.values() {
-        despawn_writer.write(DespawnParticleSignal::from_entity(*entity));
+    if fracture_shape != EarthquakeFractureShapeState::ExactVoronoiCells {
+        for entity in by_position.values() {
+            despawn_writer.write(DespawnParticleSignal::from_entity(*entity));
+        }
     }
 
     debug!(
@@ -110,6 +141,115 @@ fn on_earthquake(
             timer: Timer::from_seconds(5., TimerMode::Once),
         });
     }
+}
+
+fn source_entities_for_cells<'a, I>(
+    by_position: &HashMap<IVec2, Entity>,
+    cells: I,
+) -> HashMap<IVec2, Entity>
+where
+    I: IntoIterator<Item = &'a IVec2>,
+{
+    cells
+        .into_iter()
+        .filter_map(|cell| by_position.get(cell).copied().map(|entity| (*cell, entity)))
+        .collect()
+}
+
+fn process_pending_exact_voronoi_fractures(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut rng: ResMut<GlobalRng>,
+    mut despawn_writer: MessageWriter<DespawnParticleSignal>,
+    mut pending_fractures: Query<(Entity, &mut PendingExactVoronoiFracture)>,
+) {
+    for (entity, mut pending) in &mut pending_fractures {
+        pending.timer.tick(time.delta());
+        if !pending.timer.just_finished() {
+            continue;
+        }
+
+        release_pending_perimeter_batch(&mut commands, &mut rng, &mut pending);
+
+        if pending.perimeter.is_empty() {
+            finish_pending_exact_voronoi_fracture(
+                &mut commands,
+                entity,
+                &mut despawn_writer,
+                &mut pending,
+            );
+        }
+    }
+}
+
+fn release_pending_perimeter_batch(
+    commands: &mut Commands,
+    rng: &mut GlobalRng,
+    pending: &mut PendingExactVoronoiFracture,
+) {
+    let batch_size = rng
+        .usize(
+            PENDING_EXACT_VORONOI_PERIMETER_MIN_BATCH..=PENDING_EXACT_VORONOI_PERIMETER_MAX_BATCH,
+        )
+        .min(pending.perimeter.len());
+
+    for _ in 0..batch_size {
+        let Some(position) = pending.perimeter.pop() else {
+            break;
+        };
+        if let Some(entity) = pending.source_entities.remove(&position) {
+            insert_movable_solid_behavior(commands, entity);
+        }
+    }
+}
+
+fn finish_pending_exact_voronoi_fracture(
+    commands: &mut Commands,
+    pending_entity: Entity,
+    despawn_writer: &mut MessageWriter<DespawnParticleSignal>,
+    pending: &mut PendingExactVoronoiFracture,
+) {
+    let cell_colors = std::mem::take(&mut pending.cell_colors);
+    let source_entities = std::mem::take(&mut pending.source_entities);
+    let interior_cells: Vec<IVec2> = cell_colors.keys().copied().collect();
+
+    let spawned = spawn_fracture_body_from_cells(commands, cell_colors, true).is_some();
+    for cell in interior_cells {
+        let Some(entity) = source_entities.get(&cell).copied() else {
+            continue;
+        };
+        if spawned {
+            despawn_writer.write(DespawnParticleSignal::from_entity(entity));
+        } else {
+            insert_movable_solid_behavior(commands, entity);
+        }
+    }
+
+    commands.entity(pending_entity).despawn();
+}
+
+fn insert_movable_solid_behavior(commands: &mut Commands, entity: Entity) {
+    let Ok(mut entity_commands) = commands.get_entity(entity) else {
+        return;
+    };
+
+    entity_commands.insert((
+        Density(1250),
+        Momentum(IVec2::ZERO),
+        movable_solid_movement(),
+        AirResistance::new([0.0, 0.9]),
+        Speed::new(5, 10),
+    ));
+}
+
+fn movable_solid_movement() -> Movement {
+    Movement::new(
+        vec![
+            NeighborGroup::new(vec![IVec2::new(0, -1)].into()),
+            NeighborGroup::new(vec![IVec2::new(-1, -1), IVec2::new(1, -1)].into()),
+        ]
+        .into(),
+    )
 }
 
 fn on_remove_fracture_body_cell_at_world_position(
