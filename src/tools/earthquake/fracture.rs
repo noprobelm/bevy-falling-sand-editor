@@ -62,10 +62,13 @@ pub(super) fn cell_colors_for_voronoi_cell(
             .unwrap_or_else(|| {
                 cell_colors_for_positions(&cell.particles, particle_colors, by_position)
             }),
-        EarthquakeFractureShape::Concave => {
+        EarthquakeFractureShape::Concave if !cell.is_on_hull => {
             cell_colors_for_polygon(&cell.vertices, particle_colors, by_position).unwrap_or_else(
                 || cell_colors_for_positions(&cell.particles, particle_colors, by_position),
             )
+        }
+        EarthquakeFractureShape::Concave => {
+            cell_colors_for_positions(&cell.particles, particle_colors, by_position)
         }
     }
 }
@@ -76,7 +79,8 @@ pub(super) fn fracture_debug_edges(
 ) -> Vec<(Vec2, Vec2)> {
     match fracture_shape {
         EarthquakeFractureShape::Convex => cell_boundary_edges(&cell.particles),
-        EarthquakeFractureShape::Concave => polygon_edges(&cell.vertices),
+        EarthquakeFractureShape::Concave if !cell.is_on_hull => polygon_edges(&cell.vertices),
+        EarthquakeFractureShape::Concave => cell_boundary_edges(&cell.particles),
     }
 }
 
