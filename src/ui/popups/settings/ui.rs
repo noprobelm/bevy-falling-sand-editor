@@ -7,14 +7,13 @@ use leafwing_input_manager::prelude::{InputMap, MouseScrollAxis};
 use super::{KeybindsListeningState, ListeningForKeybind};
 use crate::{
     ToolAction, ToolStateActions,
-    brush::{BrushAction, BrushKeyBindings},
     camera::{CameraAction, CameraKeyBindings},
     config::{AvianDebugConfig, InputButton, OptionalColor},
-    tools::brush::BrushOptions,
+    tools::painter::{PainterAction, PainterKeyBindings, PainterOptions},
     ui::{
         ConsoleAction, QuickAction, SettingsApplicationState, SettingsCategory, ShowUi,
         UiKeyBindings, UiSystems, add_label_with_toggle_switch, add_major_grid_separator,
-        show_brush_settings,
+        show_painter_options,
     },
 };
 
@@ -24,7 +23,7 @@ struct SettingsParam<'w, 's> {
     pub commands: Commands<'w, 's>,
     pub current_settings_category: ResMut<'w, State<SettingsCategory>>,
     pub next_settings_category: ResMut<'w, NextState<SettingsCategory>>,
-    pub brush: BrushOptions<'w, 's>,
+    pub painter: PainterOptions<'w, 's>,
     pub debug_falling_sand: BevyFallingSandDebugSettingsParam<'w>,
     pub avian: AvianDebugSettingsParam<'w>,
     pub keybinds: KeybindsSettingsParam<'w>,
@@ -33,7 +32,7 @@ struct SettingsParam<'w, 's> {
 #[derive(SystemParam)]
 struct KeybindsSettingsParam<'w> {
     pub camera_keys: ResMut<'w, CameraKeyBindings>,
-    pub brush_keys: ResMut<'w, BrushKeyBindings>,
+    pub painter_keys: ResMut<'w, PainterKeyBindings>,
     pub ui_keys: ResMut<'w, UiKeyBindings>,
     pub listening: Option<Res<'w, ListeningForKeybind>>,
     pub next_listening_state: ResMut<'w, NextState<KeybindsListeningState>>,
@@ -74,7 +73,7 @@ fn show(mut contexts: EguiContexts, mut settings_param: SettingsParam) -> Result
         .show(ctx, |ui| {
             ui.horizontal(|ui| {
                 for variant in [
-                    SettingsCategory::Brush,
+                    SettingsCategory::Painter,
                     SettingsCategory::Debug,
                     SettingsCategory::Keybinds,
                 ] {
@@ -90,7 +89,7 @@ fn show(mut contexts: EguiContexts, mut settings_param: SettingsParam) -> Result
             ui.vertical(|ui| {
                 ui.separator();
                 match *settings_param.current_settings_category.get() {
-                    SettingsCategory::Brush => show_brush_settings(ui, settings_param.brush),
+                    SettingsCategory::Painter => show_painter_options(ui, settings_param.painter),
                     SettingsCategory::Debug => show_debug_settings(ui, &mut settings_param),
                     SettingsCategory::Keybinds => show_keybinds_settings(ui, &mut settings_param),
                 };
@@ -264,9 +263,9 @@ fn show_keybinds_settings(ui: &mut egui::Ui, settings_param: &mut SettingsParam)
 
             add_major_grid_separator(ui);
 
-            ui.heading("Brush");
+            ui.heading("Painter");
             ui.end_row();
-            show_brush_keybinds(ui, settings_param);
+            show_painter_keybinds(ui, settings_param);
 
             add_major_grid_separator(ui);
 
@@ -364,25 +363,25 @@ fn show_camera_keybinds(ui: &mut egui::Ui, settings_param: &mut SettingsParam) {
     }
 }
 
-fn show_brush_keybinds(ui: &mut egui::Ui, settings_param: &mut SettingsParam) {
-    let keys = settings_param.keybinds.brush_keys.clone();
+fn show_painter_keybinds(ui: &mut egui::Ui, settings_param: &mut SettingsParam) {
+    let keys = settings_param.keybinds.painter_keys.clone();
     if show_keybind_row(
         ui,
         "Draw",
-        "brush.draw",
+        "painter.draw",
         &keys.draw,
         &settings_param.keybinds.listening,
     ) {
-        start_listening(settings_param, "brush.draw");
+        start_listening(settings_param, "painter.draw");
     }
     if show_keybind_row(
         ui,
         "Toggle Mode",
-        "brush.toggle_mode",
-        &keys.toggle_brush_mode,
+        "painter.toggle_mode",
+        &keys.toggle_mode,
         &settings_param.keybinds.listening,
     ) {
-        start_listening(settings_param, "brush.toggle_mode");
+        start_listening(settings_param, "painter.toggle_mode");
     }
 }
 
@@ -486,10 +485,10 @@ pub fn listen_for_keybind(
     mouse_input: Res<ButtonInput<MouseButton>>,
     mut next_listening_state: ResMut<NextState<KeybindsListeningState>>,
     mut camera_keys: ResMut<CameraKeyBindings>,
-    mut brush_keys: ResMut<BrushKeyBindings>,
+    mut painter_keys: ResMut<PainterKeyBindings>,
     mut ui_keys: ResMut<UiKeyBindings>,
     mut camera_input_map: Query<&mut InputMap<CameraAction>>,
-    mut brush_input_map: Query<&mut InputMap<BrushAction>>,
+    mut brush_input_map: Query<&mut InputMap<PainterAction>>,
     mut quick_action_input_map: Query<&mut InputMap<QuickAction>>,
     mut console_input_map: Query<&mut InputMap<ConsoleAction>>,
     mut tool_action_input_map: Query<&mut InputMap<ToolAction>>,
@@ -521,8 +520,8 @@ pub fn listen_for_keybind(
         "camera.pan_down" => camera_keys.pan_camera_down = new_button,
         "camera.pan_left" => camera_keys.pan_camera_left = new_button,
         "camera.pan_right" => camera_keys.pan_camera_right = new_button,
-        "brush.draw" => brush_keys.draw = new_button,
-        "brush.toggle_mode" => brush_keys.toggle_brush_mode = new_button,
+        "painter.draw" => painter_keys.draw = new_button,
+        "painter.toggle_mode" => painter_keys.toggle_mode = new_button,
         "quick_actions.toggle_ui" => ui_keys.quick_actions.toggle_ui = new_button,
         "quick_actions.toggle_map_overlay" => ui_keys.quick_actions.toggle_map_overlay = new_button,
         "quick_actions.toggle_dirty_chunks" => {
@@ -564,16 +563,16 @@ pub fn listen_for_keybind(
                     .insert_into_input_map(&mut map, CameraAction::PanRight);
             }
         }
-        id if id.starts_with("brush.") => {
+        id if id.starts_with("painter.") => {
             if let Ok(mut map) = brush_input_map.single_mut() {
-                *map = InputMap::default().with_axis(BrushAction::ChangeSize, MouseScrollAxis::Y);
-                brush_keys
-                    .toggle_brush_mode
-                    .insert_into_input_map(&mut map, BrushAction::ToggleMode);
+                *map = InputMap::default().with_axis(PainterAction::ChangeSize, MouseScrollAxis::Y);
+                painter_keys
+                    .toggle_mode
+                    .insert_into_input_map(&mut map, PainterAction::ToggleMode);
             }
             if let Ok(mut map) = tool_action_input_map.single_mut() {
                 *map = InputMap::default();
-                brush_keys
+                painter_keys
                     .draw
                     .insert_into_input_map(&mut map, ToolAction::Primary);
             }

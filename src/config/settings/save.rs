@@ -3,11 +3,20 @@ use bevy_falling_sand::debug::{ChunkColor, DebugDirtyRects, DebugParticleMap, Di
 use bevy_persistent::Persistent;
 
 use crate::{
-    brush::{BrushKeyBindings, BrushSize, BrushSpawnState, BrushTypeState},
     camera::CameraKeyBindings,
     config::{
-        AvianDebugConfig, BevyFallingSandDebugConfig, BrushConfig, Keybindings, OptionalColor,
-        SettingsConfig,
+        AvianDebugConfig, BevyFallingSandDebugConfig, EarthquakeConfig, Keybindings, OptionalColor,
+        PainterConfig, SettingsConfig,
+    },
+    tools::{
+        brush::ToolBrushSize,
+        earthquake::{
+            DebugEarthquake, EarthquakeBrush, EarthquakeConfiguration, EarthquakeFractureShape,
+            EarthquakeShape,
+        },
+        painter::{
+            PainterBrush, PainterConfiguration, PainterKeyBindings, PainterShape, PainterSpawnState,
+        },
     },
     ui::UiKeyBindings,
 };
@@ -18,6 +27,7 @@ impl Plugin for SavePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<SaveSettingsBuilder>()
             .add_observer(on_prepare_save_brush)
+            .add_observer(on_prepare_save_earthquake)
             .add_observer(on_prepare_save_bfs_debug)
             .add_observer(on_prepare_save_avian_debug)
             .add_observer(on_prepare_save_keys)
@@ -36,7 +46,8 @@ pub struct SaveSettingsEvent;
 
 #[derive(Resource, Default)]
 pub struct SaveSettingsBuilder {
-    pub brush: Option<BrushConfig>,
+    pub painter: Option<PainterConfig>,
+    pub earthquake: Option<EarthquakeConfig>,
     pub bfs_debug: Option<BevyFallingSandDebugConfig>,
     pub avian_debug: Option<AvianDebugConfig>,
     pub keys: Option<Keybindings>,
@@ -44,15 +55,35 @@ pub struct SaveSettingsBuilder {
 
 fn on_prepare_save_brush(
     _trigger: On<PrepareSaveSettingsEvent>,
-    brush_type_state: Res<State<BrushTypeState>>,
-    brush_mode_state: Res<State<BrushSpawnState>>,
-    brush_size: Single<&BrushSize>,
+    brush_type_state: Res<State<PainterShape>>,
+    brush_mode_state: Res<State<PainterSpawnState>>,
+    brush_size: Single<&ToolBrushSize, With<PainterBrush>>,
+    configuration: Res<PainterConfiguration>,
     mut builder: ResMut<SaveSettingsBuilder>,
 ) {
-    builder.brush = Some(BrushConfig {
-        btype: **brush_type_state,
+    builder.painter = Some(PainterConfig {
+        shape: **brush_type_state,
         mode: **brush_mode_state,
         size: **brush_size,
+        configuration: configuration.clone(),
+    });
+}
+
+fn on_prepare_save_earthquake(
+    _trigger: On<PrepareSaveSettingsEvent>,
+    region_state: Res<State<EarthquakeShape>>,
+    fracture_shape_state: Res<State<EarthquakeFractureShape>>,
+    brush_size: Single<&ToolBrushSize, With<EarthquakeBrush>>,
+    configuration: Res<EarthquakeConfiguration>,
+    debug: Option<Res<DebugEarthquake>>,
+    mut builder: ResMut<SaveSettingsBuilder>,
+) {
+    builder.earthquake = Some(EarthquakeConfig {
+        region: **region_state,
+        fracture_shape: **fracture_shape_state,
+        size: **brush_size,
+        debug: debug.is_some(),
+        configuration: configuration.clone(),
     });
 }
 
@@ -100,13 +131,13 @@ fn on_prepare_save_keys(
     _trigger: On<PrepareSaveSettingsEvent>,
     camera: Res<CameraKeyBindings>,
     ui: Res<UiKeyBindings>,
-    brush: Res<BrushKeyBindings>,
+    painter: Res<PainterKeyBindings>,
     mut builder: ResMut<SaveSettingsBuilder>,
 ) {
     builder.keys = Some(Keybindings {
         camera: camera.clone(),
         ui: ui.clone(),
-        brush: brush.clone(),
+        painter: painter.clone(),
     });
 }
 
@@ -121,7 +152,11 @@ fn on_save_settings(
 ) {
     persistent
         .set(SettingsConfig {
-            brush: builder.brush.take().expect("brush config not set"),
+            painter: builder.painter.take().expect("painter config not set"),
+            earthquake: builder
+                .earthquake
+                .take()
+                .expect("earthquake config not set"),
             bfs_debug: builder.bfs_debug.take().expect("bfs debug config not set"),
             avian_debug: builder
                 .avian_debug

@@ -1,4 +1,6 @@
 pub mod brush;
+pub mod earthquake;
+pub mod painter;
 pub mod select;
 mod setup;
 mod signals;
@@ -15,11 +17,13 @@ pub struct ToolsPlugin;
 impl Plugin for ToolsPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
+            brush::BrushPlugin,
             setup::SetupPlugin,
             states::StatesPlugin,
             signals::SignalsPlugin,
-            brush::BrushToolPlugin,
+            painter::PainterPlugin,
             select::SelectToolPlugin,
+            earthquake::EarthquakePlugin,
         ));
     }
 }

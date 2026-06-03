@@ -10,7 +10,7 @@ impl Plugin for StatesPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<PopupState<ParticleEditorWindowState>>()
             .init_state::<PopupState<LoadParticlesWindowState>>()
-            .init_state::<SynchronizeBrushState>()
+            .init_state::<SynchronizeWithBrush>()
             .add_systems(
                 Update,
                 (
@@ -37,7 +37,7 @@ pub enum LoadParticlesWindowState {
 }
 
 #[derive(States, Reflect, Default, Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub enum SynchronizeBrushState {
+pub enum SynchronizeWithBrush {
     #[default]
     Enabled,
     Disabled,

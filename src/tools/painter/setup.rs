@@ -11,10 +11,14 @@ use serde::{Deserialize, Serialize};
 use crate::{
     config::{InputButton, SettingsConfig},
     setup::SetupSystems,
-    tools::brush::{
-        BrushSpawnState, BrushTypeState,
-        components::{Brush, BrushColor, BrushSize, SelectedParticle, SelectedParticleType},
-        gizmos::BrushGizmos,
+    tools::{
+        brush::{ToolBrushColor, ToolBrushSize},
+        painter::{
+            PainterConfiguration, PainterShape, PainterSpawnState,
+            components::{PainterBrush, SelectedParticle, SelectedParticleType},
+            gizmos::PainterBrushGizmos,
+            resources::PAINTER_BRUSH_DEFAULT_SIZE,
+        },
     },
 };
 
@@ -22,9 +26,10 @@ pub(super) struct SetupPlugin;
 
 impl Plugin for SetupPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(InputManagerPlugin::<BrushAction>::default())
+        app.add_plugins(InputManagerPlugin::<PainterAction>::default())
+            .init_resource::<PainterConfiguration>()
             .insert_gizmo_config(
-                BrushGizmos,
+                PainterBrushGizmos,
                 GizmoConfig {
                     enabled: true,
                     ..default()
@@ -44,33 +49,34 @@ impl Plugin for SetupPlugin {
 }
 
 #[derive(Resource, Clone, Debug, Serialize, Deserialize)]
-pub struct BrushKeyBindings {
+pub struct PainterKeyBindings {
     pub draw: InputButton,
-    pub toggle_brush_mode: InputButton,
+    #[serde(alias = "toggle_brush_mode")]
+    pub toggle_mode: InputButton,
 }
 
-impl Default for BrushKeyBindings {
+impl Default for PainterKeyBindings {
     fn default() -> Self {
         Self {
             draw: MouseButton::Left.into(),
-            toggle_brush_mode: MouseButton::Right.into(),
+            toggle_mode: MouseButton::Right.into(),
         }
     }
 }
 
 #[derive(Actionlike, PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
-pub enum BrushAction {
+pub enum PainterAction {
     ToggleMode,
     ToggleType,
     #[actionlike(Axis)]
     ChangeSize,
 }
 
-fn spawn_brush(mut commands: Commands) {
+fn spawn_brush(mut commands: Commands, config: Res<PainterConfiguration>) {
     commands.spawn((
-        Brush,
-        BrushSize(2),
-        BrushColor(Color::Srgba(Srgba::new(1., 1., 1., 0.3))),
+        PainterBrush,
+        ToolBrushSize(PAINTER_BRUSH_DEFAULT_SIZE),
+        ToolBrushColor(config.brush.color),
     ));
 }
 
@@ -78,7 +84,7 @@ fn insert_selected_particle(
     mut commands: Commands,
     registry: Res<ParticleTypeRegistry>,
     particle_types: Query<&ParticleType>,
-    brush: Single<Entity, With<Brush>>,
+    brush: Single<Entity, With<PainterBrush>>,
 ) {
     const DEFAULT_PARTICLE_NAME: &str = "Dirt Wall";
     let pt_entity = if let Some(entity) = registry.get(DEFAULT_PARTICLE_NAME) {
@@ -103,27 +109,31 @@ fn insert_selected_particle(
 
 fn load_settings(
     mut commands: Commands,
-    mut next_brush_type_state: ResMut<NextState<BrushTypeState>>,
-    mut next_brush_mode_state: ResMut<NextState<BrushSpawnState>>,
-    brush: Single<Entity, With<Brush>>,
+    mut next_brush_type_state: ResMut<NextState<PainterShape>>,
+    mut next_brush_mode_state: ResMut<NextState<PainterSpawnState>>,
+    brush: Single<Entity, With<PainterBrush>>,
     settings_config: Res<Persistent<SettingsConfig>>,
 ) {
-    let keys = &settings_config.keys.brush;
-    let mut input_map = InputMap::default().with_axis(BrushAction::ChangeSize, MouseScrollAxis::Y);
-    keys.toggle_brush_mode
-        .insert_into_input_map(&mut input_map, BrushAction::ToggleMode);
+    let keys = &settings_config.keys.painter;
+    let mut input_map =
+        InputMap::default().with_axis(PainterAction::ChangeSize, MouseScrollAxis::Y);
+    keys.toggle_mode
+        .insert_into_input_map(&mut input_map, PainterAction::ToggleMode);
 
-    commands
-        .entity(brush.entity())
-        .insert((input_map, settings_config.brush.size));
-    commands.insert_resource(settings_config.keys.brush.clone());
-    next_brush_type_state.set(settings_config.brush.btype);
-    next_brush_mode_state.set(settings_config.brush.mode);
+    commands.entity(brush.entity()).insert((
+        input_map,
+        settings_config.painter.size,
+        ToolBrushColor(settings_config.painter.configuration.brush.color),
+    ));
+    commands.insert_resource(settings_config.painter.configuration.clone());
+    commands.insert_resource(settings_config.keys.painter.clone());
+    next_brush_type_state.set(settings_config.painter.shape);
+    next_brush_mode_state.set(settings_config.painter.mode);
 }
 
 fn condition_setup_brush_particle_ready(
     particle_types: Query<Entity, Added<ParticleType>>,
-    brush_without_particle: Query<(), (With<Brush>, Without<SelectedParticle>)>,
+    brush_without_particle: Query<(), (With<PainterBrush>, Without<SelectedParticle>)>,
 ) -> bool {
     !particle_types.is_empty() && !brush_without_particle.is_empty()
 }

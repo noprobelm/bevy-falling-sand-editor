@@ -35,6 +35,7 @@ bevy_dev_tools = { version = "0.18.1", optional = true }
 bevy_turborand = "0.13.0"
 bevy_framepace = "0.21.0"
 fontdue = "0.9.3"
+voronoice = "0.2.0"
 
 [target.wasm32-unknown-unknown.dependencies]
 getrandom = { version = "0.3", features = ["wasm_js"] }

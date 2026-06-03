@@ -16,27 +16,7 @@ use serde::{Deserialize, Serialize};
     Serialize,
     Deserialize,
 )]
-pub struct Brush;
-
-#[derive(
-    Component,
-    Copy,
-    Clone,
-    Default,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-    Debug,
-    Reflect,
-    Serialize,
-    Deserialize,
-)]
-pub struct BrushSize(pub usize);
-
-#[derive(Component, Clone, Default, PartialEq, Debug, Reflect, Serialize, Deserialize)]
-pub struct BrushColor(pub Color);
+pub struct PainterBrush;
 
 #[derive(Component, Clone, Default, PartialEq, Debug, Reflect, Serialize, Deserialize)]
 pub struct SelectedParticle(pub ParticleType);

@@ -35,7 +35,7 @@ impl Plugin for UiPlugin {
 #[derive(SystemParam)]
 pub struct ParticleEditorParams<'w, 's> {
     pub commands: Commands<'w, 's>,
-    pub brush: Single<'w, 's, &'static mut crate::brush::SelectedParticle>,
+    pub brush: Single<'w, 's, &'static mut crate::tools::painter::SelectedParticle>,
     pub category_labels: Res<'w, ParticleCategoryLabels>,
     pub particle_registry: Res<'w, ParticleTypeRegistry>,
     pub editor_state: ResMut<'w, EditorState>,
@@ -52,8 +52,8 @@ pub struct ParticleEditorParams<'w, 's> {
 
 fn show(
     mut contexts: EguiContexts,
-    synchronize_brush_state: Res<State<SynchronizeBrushState>>,
-    mut next_synchronize_brush_state: ResMut<NextState<SynchronizeBrushState>>,
+    synchronize_brush_state: Res<State<SynchronizeWithBrush>>,
+    mut next_synchronize_brush_state: ResMut<NextState<SynchronizeWithBrush>>,
     mut selected_particle: Option<ResMut<SelectedParticle>>,
     mut editor_params: ParticleEditorParams,
     particle_query: Query<ParticleDataQuery>,
@@ -87,25 +87,25 @@ fn show(
 
 fn show_top_options(
     ui: &mut egui::Ui,
-    synchronize_brush_state: &Res<State<SynchronizeBrushState>>,
-    next_synchronize_brush_state: &mut ResMut<NextState<SynchronizeBrushState>>,
+    synchronize_brush_state: &Res<State<SynchronizeWithBrush>>,
+    next_synchronize_brush_state: &mut ResMut<NextState<SynchronizeWithBrush>>,
     selected_entity: Option<Entity>,
     editor_params: &mut ParticleEditorParams,
 ) {
     ui.horizontal(|ui| {
         ui.label("Link to brush");
         let mut is_on = match synchronize_brush_state.get() {
-            SynchronizeBrushState::Enabled => true,
-            SynchronizeBrushState::Disabled => false,
+            SynchronizeWithBrush::Enabled => true,
+            SynchronizeWithBrush::Disabled => false,
         };
         if ui
             .add(crate::ui::widgets::toggle_switch::toggle(&mut is_on))
             .changed()
         {
             if is_on {
-                next_synchronize_brush_state.set(SynchronizeBrushState::Enabled)
+                next_synchronize_brush_state.set(SynchronizeWithBrush::Enabled)
             } else {
-                next_synchronize_brush_state.set(SynchronizeBrushState::Disabled)
+                next_synchronize_brush_state.set(SynchronizeWithBrush::Disabled)
             }
         };
     });
@@ -169,7 +169,7 @@ fn show_top_options(
 /// `ParticleTypeRegistry` in sync with the new name.
 fn save_particle_name(
     entity: Entity,
-    synchronize_brush_state: &Res<State<SynchronizeBrushState>>,
+    synchronize_brush_state: &Res<State<SynchronizeWithBrush>>,
     editor_params: &mut ParticleEditorParams,
 ) {
     if editor_params.name_draft.entity != Some(entity) {
@@ -193,7 +193,7 @@ fn save_particle_name(
         .remove::<ParticleType>()
         .insert(ParticleType::from_string(new_name.clone()));
 
-    if synchronize_brush_state.get() == &SynchronizeBrushState::Enabled {
+    if synchronize_brush_state.get() == &SynchronizeWithBrush::Enabled {
         editor_params.brush.0 = ParticleType::from(new_name);
     }
 }
@@ -215,7 +215,7 @@ fn unique_new_particle_name(registry: &ParticleTypeRegistry) -> String {
 
 fn spawn_new_particle_from(
     source_entity: Entity,
-    synchronize_brush_state: &Res<State<SynchronizeBrushState>>,
+    synchronize_brush_state: &Res<State<SynchronizeWithBrush>>,
     editor_params: &mut ParticleEditorParams,
 ) {
     let new_name = unique_new_particle_name(&editor_params.particle_registry);
@@ -233,7 +233,7 @@ fn spawn_new_particle_from(
         .commands
         .insert_resource(SelectedParticle(new_entity));
 
-    if synchronize_brush_state.get() == &SynchronizeBrushState::Enabled {
+    if synchronize_brush_state.get() == &SynchronizeWithBrush::Enabled {
         editor_params.brush.0 = ParticleType::from(new_name);
     }
 }
@@ -242,7 +242,7 @@ fn show_editor(
     ui: &mut egui::Ui,
     selected_particle: &mut Option<ResMut<SelectedParticle>>,
     mut editor_params: ParticleEditorParams,
-    synchronize_brush_selection: Res<State<SynchronizeBrushState>>,
+    synchronize_brush_selection: Res<State<SynchronizeWithBrush>>,
     particle_query: Query<ParticleDataQuery>,
 ) {
     ui.columns(2, |columns| {
@@ -383,7 +383,7 @@ fn show_load_particle_types_popup(
 fn show_category_labels(
     ui: &mut egui::Ui,
     editor_params: &mut ParticleEditorParams,
-    synchronize_brush_selection: Res<State<SynchronizeBrushState>>,
+    synchronize_brush_selection: Res<State<SynchronizeWithBrush>>,
 ) {
     let categories: Vec<_> = editor_params
         .category_labels
@@ -415,7 +415,7 @@ fn show_category_labels(
         editor_params
             .commands
             .insert_resource(SelectedParticle(*entity));
-        if synchronize_brush_selection.get() == &SynchronizeBrushState::Enabled {
+        if synchronize_brush_selection.get() == &SynchronizeWithBrush::Enabled {
             editor_params.brush.0 = ParticleType::from(label);
         }
     }

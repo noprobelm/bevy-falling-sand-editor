@@ -6,8 +6,12 @@ use leafwing_input_manager::prelude::InputMap;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    brush::{BrushKeyBindings, BrushSize, BrushSpawnState, BrushTypeState},
     camera::CameraKeyBindings,
+    tools::{
+        brush::ToolBrushSize,
+        earthquake::{EarthquakeConfiguration, EarthquakeFractureShape, EarthquakeShape},
+        painter::{PainterConfiguration, PainterKeyBindings, PainterShape, PainterSpawnState},
+    },
     ui::UiKeyBindings,
 };
 
@@ -59,25 +63,55 @@ impl From<MouseButton> for InputButton {
 
 #[derive(Resource, Default, Serialize, Deserialize)]
 pub struct SettingsConfig {
-    pub brush: BrushConfig,
+    #[serde(alias = "brush")]
+    pub painter: PainterConfig,
+    #[serde(default)]
+    pub earthquake: EarthquakeConfig,
     pub bfs_debug: BevyFallingSandDebugConfig,
     pub avian_debug: AvianDebugConfig,
     pub keys: Keybindings,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct BrushConfig {
-    pub btype: BrushTypeState,
-    pub mode: BrushSpawnState,
-    pub size: BrushSize,
+pub struct PainterConfig {
+    #[serde(alias = "btype")]
+    pub shape: PainterShape,
+    pub mode: PainterSpawnState,
+    pub size: ToolBrushSize,
+    #[serde(default)]
+    pub configuration: PainterConfiguration,
 }
 
-impl Default for BrushConfig {
+impl Default for PainterConfig {
     fn default() -> Self {
         Self {
-            btype: BrushTypeState::default(),
-            mode: BrushSpawnState::default(),
-            size: BrushSize(2),
+            shape: PainterShape::default(),
+            mode: PainterSpawnState::default(),
+            size: ToolBrushSize(2.0),
+            configuration: PainterConfiguration::default(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct EarthquakeConfig {
+    pub region: EarthquakeShape,
+    #[serde(default)]
+    pub fracture_shape: EarthquakeFractureShape,
+    pub size: ToolBrushSize,
+    pub debug: bool,
+    #[serde(default)]
+    pub configuration: EarthquakeConfiguration,
+}
+
+impl Default for EarthquakeConfig {
+    fn default() -> Self {
+        Self {
+            region: EarthquakeShape::default(),
+            fracture_shape: EarthquakeFractureShape::default(),
+            size: ToolBrushSize(24.0),
+            debug: false,
+            configuration: EarthquakeConfiguration::default(),
         }
     }
 }
@@ -107,7 +141,8 @@ impl Default for BevyFallingSandDebugConfig {
 pub struct Keybindings {
     pub camera: CameraKeyBindings,
     pub ui: UiKeyBindings,
-    pub brush: BrushKeyBindings,
+    #[serde(alias = "brush")]
+    pub painter: PainterKeyBindings,
 }
 
 /// TOML-friendly mirror of [`PhysicsGizmos`].

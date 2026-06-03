@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_falling_sand::core::SpawnParticleSignal;
 
-use crate::brush::SelectedParticle;
+use crate::tools::painter::SelectedParticle;
 
 pub mod carpet {
     use super::*;

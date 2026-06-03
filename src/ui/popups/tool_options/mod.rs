@@ -1,10 +1,12 @@
-mod brush;
+mod earthquake;
+mod painter;
 mod select;
 mod signals;
 mod states;
 mod ui;
 
-pub use brush::*;
+pub use earthquake::*;
+pub use painter::*;
 pub use select::*;
 pub use signals::*;
 pub use states::*;

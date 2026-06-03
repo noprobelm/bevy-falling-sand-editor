@@ -3,7 +3,7 @@ use bevy_egui::egui;
 
 use crate::tools::select::{SelectOptions, states::SelectModeState};
 
-pub fn show_select_settings(ui: &mut egui::Ui, mut select_options: SelectOptions) {
+pub fn show_select_options(ui: &mut egui::Ui, mut select_options: SelectOptions) {
     egui::Grid::new("select_grid")
         .num_columns(2)
         .show(ui, |ui| {

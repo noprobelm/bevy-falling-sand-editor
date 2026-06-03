@@ -1,9 +1,11 @@
-mod brush;
 mod conway;
+mod earthquake;
 mod exit;
 mod help;
 mod helpers;
+mod painter;
 mod particles;
+mod rigid_body;
 mod save;
 pub(crate) mod scene;
 mod select;
@@ -13,12 +15,14 @@ mod ui;
 
 use bevy::prelude::*;
 
-pub use brush::*;
 pub use conway::*;
+pub use earthquake::*;
 pub use exit::*;
 pub use help::*;
 use helpers::*;
+pub use painter::*;
 pub use particles::*;
+pub use rigid_body::*;
 pub use save::*;
 pub use scene::*;
 pub use select::*;
