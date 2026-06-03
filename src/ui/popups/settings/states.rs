@@ -50,7 +50,7 @@ pub enum SettingsApplicationState {
 #[source(SettingsApplicationState = SettingsApplicationState::Open)]
 pub enum SettingsCategory {
     #[default]
-    Brush,
+    Painter,
     Debug,
     Keybinds,
 }

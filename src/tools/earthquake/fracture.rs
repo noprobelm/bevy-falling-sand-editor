@@ -4,14 +4,11 @@ use bevy::prelude::*;
 use bevy_falling_sand::{prelude::*, utils::mesh_from_grid_cells};
 
 use crate::tools::earthquake::{
+    EarthquakeConfiguration,
     region::{points_bounds, polygon_contains_point, polygon_edges},
-    states::EarthquakeFractureShapeState,
+    states::EarthquakeFractureShape,
     voronoi::GeneratedVoronoiCell,
 };
-
-pub(super) const MIN_FRACTURE_BODY_CELLS: usize = 2;
-
-const EARTHQUAKE_RIGID_BODY_RENDER_Z: f32 = 1.0;
 
 pub(super) struct BuiltFractureBody {
     pub(super) source_centroid: Vec2,
@@ -30,8 +27,9 @@ pub(super) fn spawn_fracture_body_for_cell(
     commands: &mut Commands,
     particle_colors: &Query<&ParticleColor>,
     by_position: &HashMap<IVec2, Entity>,
+    config: &EarthquakeConfiguration,
     cell: &GeneratedVoronoiCell,
-    fracture_shape: EarthquakeFractureShapeState,
+    fracture_shape: EarthquakeFractureShape,
 ) -> Option<Entity> {
     if cell.particles.is_empty() {
         return None;
@@ -43,27 +41,24 @@ pub(super) fn spawn_fracture_body_for_cell(
     spawn_fracture_body_from_cells(
         commands,
         cell_colors,
-        fracture_shape == EarthquakeFractureShapeState::ExactVoronoiCells,
+        config,
+        fracture_shape == EarthquakeFractureShape::Concave,
     )
 }
 
 pub(super) fn cell_colors_for_voronoi_cell(
     cell: &GeneratedVoronoiCell,
-    fracture_shape: EarthquakeFractureShapeState,
+    fracture_shape: EarthquakeFractureShape,
     particle_colors: &Query<&ParticleColor>,
     by_position: &HashMap<IVec2, Entity>,
 ) -> HashMap<IVec2, Color> {
     match fracture_shape {
-        EarthquakeFractureShapeState::SimplifiedConvexHulls => {
-            convex_hull_vertices_for_cells(&cell.particles)
-                .and_then(|vertices| {
-                    cell_colors_for_polygon(&vertices, particle_colors, by_position)
-                })
-                .unwrap_or_else(|| {
-                    cell_colors_for_positions(&cell.particles, particle_colors, by_position)
-                })
-        }
-        EarthquakeFractureShapeState::ExactVoronoiCells => {
+        EarthquakeFractureShape::Convex => convex_hull_vertices_for_cells(&cell.particles)
+            .and_then(|vertices| cell_colors_for_polygon(&vertices, particle_colors, by_position))
+            .unwrap_or_else(|| {
+                cell_colors_for_positions(&cell.particles, particle_colors, by_position)
+            }),
+        EarthquakeFractureShape::Concave => {
             cell_colors_for_polygon(&cell.vertices, particle_colors, by_position).unwrap_or_else(
                 || cell_colors_for_positions(&cell.particles, particle_colors, by_position),
             )
@@ -73,11 +68,11 @@ pub(super) fn cell_colors_for_voronoi_cell(
 
 pub(super) fn fracture_debug_edges(
     cell: &GeneratedVoronoiCell,
-    fracture_shape: EarthquakeFractureShapeState,
+    fracture_shape: EarthquakeFractureShape,
 ) -> Vec<(Vec2, Vec2)> {
     match fracture_shape {
-        EarthquakeFractureShapeState::SimplifiedConvexHulls => cell_boundary_edges(&cell.particles),
-        EarthquakeFractureShapeState::ExactVoronoiCells => polygon_edges(&cell.vertices),
+        EarthquakeFractureShape::Convex => cell_boundary_edges(&cell.particles),
+        EarthquakeFractureShape::Concave => polygon_edges(&cell.vertices),
     }
 }
 
@@ -266,13 +261,14 @@ fn mesh_particle_collider(
 pub(super) fn spawn_fracture_body_from_cells(
     commands: &mut Commands,
     cell_colors: HashMap<IVec2, Color>,
+    config: &EarthquakeConfiguration,
     use_mesh_collider: bool,
 ) -> Option<Entity> {
-    let built = build_fracture_body(&cell_colors, use_mesh_collider)?;
+    let built = build_fracture_body(&cell_colors, config, use_mesh_collider)?;
     let transform = Transform::from_xyz(
         built.source_centroid.x,
         built.source_centroid.y,
-        EARTHQUAKE_RIGID_BODY_RENDER_Z,
+        config.rigid_body_render_z,
     );
     Some(spawn_built_fracture_body(
         commands,
@@ -280,15 +276,17 @@ pub(super) fn spawn_fracture_body_from_cells(
         built,
         transform,
         RigidBody::Dynamic,
+        config,
         ParticleCollider::with_default_resting,
     ))
 }
 
 pub(super) fn build_fracture_body(
     cell_colors: &HashMap<IVec2, Color>,
+    config: &EarthquakeConfiguration,
     use_mesh_collider: bool,
 ) -> Option<BuiltFractureBody> {
-    if cell_colors.len() < MIN_FRACTURE_BODY_CELLS {
+    if cell_colors.len() < config.min_fracture_body_cells() {
         return None;
     }
 
@@ -321,6 +319,7 @@ pub(super) fn spawn_built_fracture_body(
     built: BuiltFractureBody,
     transform: Transform,
     rigid_body: RigidBody,
+    config: &EarthquakeConfiguration,
     configure_particle_collider: impl FnOnce(ParticleCollider) -> ParticleCollider,
 ) -> Entity {
     let BuiltFractureBody {
@@ -337,6 +336,7 @@ pub(super) fn spawn_built_fracture_body(
             Visibility::default(),
             rigid_body,
             collider,
+            CollisionMargin(config.collision_margin),
             particle_collider,
             FractureBody {
                 cells: cell_colors,

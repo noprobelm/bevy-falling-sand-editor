@@ -9,11 +9,16 @@ use leafwing_input_manager::{
 use crate::{
     config::SettingsConfig,
     setup::SetupSystems,
-    tools::earthquake::{
-        components::{EarthquakeBrush, EarthquakeBrushColor, EarthquakeBrushSize},
-        debug::DebugEarthquake,
-        gizmos::EarthquakeBrushGizmos,
-        states::{EarthquakeFractureShapeState, EarthquakeRegionState},
+    tools::{
+        brush::{ToolBrushColor, ToolBrushSize},
+        earthquake::{
+            EarthquakeConfiguration,
+            components::EarthquakeBrush,
+            debug::DebugEarthquake,
+            gizmos::EarthquakeBrushGizmos,
+            resources::EARTHQUAKE_BRUSH_DEFAULT_SIZE,
+            states::{EarthquakeFractureShape, EarthquakeShape},
+        },
     },
 };
 
@@ -22,6 +27,7 @@ pub(super) struct SetupPlugin;
 impl Plugin for SetupPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(InputManagerPlugin::<EarthquakeAction>::default())
+            .init_resource::<EarthquakeConfiguration>()
             .insert_gizmo_config(
                 EarthquakeBrushGizmos,
                 GizmoConfig {
@@ -38,25 +44,28 @@ impl Plugin for SetupPlugin {
     }
 }
 
-fn spawn_earthquake_brush(mut commands: Commands) {
+fn spawn_earthquake_brush(mut commands: Commands, config: Res<EarthquakeConfiguration>) {
     commands.spawn((
         EarthquakeBrush,
-        EarthquakeBrushSize(24.0),
-        EarthquakeBrushColor(Color::srgba(1.0, 1.0, 1.0, 0.3)),
+        ToolBrushSize(EARTHQUAKE_BRUSH_DEFAULT_SIZE),
+        ToolBrushColor(config.brush.color),
         input_map(),
     ));
 }
 
 fn load_settings(
     mut commands: Commands,
-    mut next_region_state: ResMut<NextState<EarthquakeRegionState>>,
-    mut next_fracture_shape_state: ResMut<NextState<EarthquakeFractureShapeState>>,
+    mut next_region_state: ResMut<NextState<EarthquakeShape>>,
+    mut next_fracture_shape_state: ResMut<NextState<EarthquakeFractureShape>>,
     brush: Single<Entity, With<EarthquakeBrush>>,
     settings_config: Res<Persistent<SettingsConfig>>,
 ) {
-    commands
-        .entity(brush.entity())
-        .insert((input_map(), settings_config.earthquake.size));
+    commands.entity(brush.entity()).insert((
+        input_map(),
+        settings_config.earthquake.size,
+        ToolBrushColor(settings_config.earthquake.configuration.brush.color),
+    ));
+    commands.insert_resource(settings_config.earthquake.configuration.clone());
     next_region_state.set(settings_config.earthquake.region);
     next_fracture_shape_state.set(settings_config.earthquake.fracture_shape);
 

@@ -5,14 +5,14 @@ use bevy_falling_sand::{prelude::*, utils::connected_components};
 use bevy_turborand::GlobalRng;
 
 use crate::tools::earthquake::{
-    EarthquakeRegion,
+    EarthquakeConfiguration, EarthquakeRegion,
     debug::{DebugEarthquake, DebugEarthquakeInfo},
     fracture::{
-        FractureBody, MIN_FRACTURE_BODY_CELLS, apply_built_fracture_body, build_fracture_body,
-        cell_colors_for_component, fracture_debug_edges, shifted_fracture_transform,
-        spawn_built_fracture_body, spawn_fracture_body_for_cell,
+        FractureBody, apply_built_fracture_body, build_fracture_body, cell_colors_for_component,
+        fracture_debug_edges, shifted_fracture_transform, spawn_built_fracture_body,
+        spawn_fracture_body_for_cell,
     },
-    states::EarthquakeFractureShapeState,
+    states::EarthquakeFractureShape,
     voronoi::generate_voronoi_cells,
 };
 
@@ -56,8 +56,9 @@ fn on_earthquake(
     map: Res<ParticleMap>,
     static_particles: Query<&StaticRigidBodyParticle>,
     particle_colors: Query<&ParticleColor>,
+    config: Res<EarthquakeConfiguration>,
     debug_earthquake: Option<Res<DebugEarthquake>>,
-    fracture_shape_state: Res<State<EarthquakeFractureShapeState>>,
+    fracture_shape_state: Res<State<EarthquakeFractureShape>>,
 ) {
     let region = &trigger.region;
     let bounds = region.bounds();
@@ -73,7 +74,7 @@ fn on_earthquake(
 
     let shape_count = connected_components(by_position.keys().copied()).len();
     let particle_positions: Vec<IVec2> = by_position.keys().copied().collect();
-    let cells = generate_voronoi_cells(&mut rng, region, bounds, &particle_positions);
+    let cells = generate_voronoi_cells(&mut rng, &config, region, bounds, &particle_positions);
     let fracture_shape = **fracture_shape_state;
 
     let fracture_edges: Vec<(Vec2, Vec2)> = cells
@@ -86,6 +87,7 @@ fn on_earthquake(
             &mut commands,
             &particle_colors,
             &by_position,
+            &config,
             cell,
             fracture_shape,
         );
@@ -107,7 +109,7 @@ fn on_earthquake(
         commands.spawn(DebugEarthquakeInfo {
             region: region.clone(),
             fracture_edges,
-            timer: Timer::from_seconds(5., TimerMode::Once),
+            timer: Timer::from_seconds(config.debug_gizmo_duration_secs(), TimerMode::Once),
         });
     }
 }
@@ -164,6 +166,7 @@ fn on_remove_fracture_body_cells(
         Option<&AngularVelocity>,
     )>,
     children: Query<&Children>,
+    config: Res<EarthquakeConfiguration>,
     chunk_index: Res<bevy_falling_sand::prelude::ChunkIndex>,
     mut chunk_query: Query<&mut bevy_falling_sand::prelude::ChunkDirtyState>,
 ) {
@@ -209,7 +212,7 @@ fn on_remove_fracture_body_cells(
     let mut components: Vec<Vec<IVec2>> = connected_components(fracture_body.cells.keys().copied())
         .into_iter()
         .filter(|component| {
-            if component.len() < MIN_FRACTURE_BODY_CELLS {
+            if component.len() < config.min_fracture_body_cells() {
                 mark_fracture_cells_dirty(
                     component.iter().copied(),
                     fracture_body.source_centroid,
@@ -239,6 +242,7 @@ fn on_remove_fracture_body_cells(
             &mut collider,
             &mut particle_collider,
             &mut transform,
+            &config,
             &components[0],
             &chunk_index,
             &mut chunk_query,
@@ -263,6 +267,7 @@ fn on_remove_fracture_body_cells(
         &mut collider,
         &mut particle_collider,
         &mut transform,
+        &config,
         &components[0],
         &chunk_index,
         &mut chunk_query,
@@ -270,7 +275,7 @@ fn on_remove_fracture_body_cells(
 
     for component in components.iter().skip(1) {
         let cell_colors = cell_colors_for_component(&original.cells, component);
-        let Some(built) = build_fracture_body(&cell_colors, false) else {
+        let Some(built) = build_fracture_body(&cell_colors, &config, false) else {
             continue;
         };
 
@@ -286,6 +291,7 @@ fn on_remove_fracture_body_cells(
             built,
             split_transform,
             body_kind,
+            &config,
             |particle_collider| particle_collider.with_resting(resting),
         );
 
@@ -315,12 +321,13 @@ fn rebuild_fracture_body(
     collider: &mut Collider,
     particle_collider: &mut ParticleCollider,
     transform: &mut Transform,
+    config: &EarthquakeConfiguration,
     component: &[IVec2],
     chunk_index: &bevy_falling_sand::prelude::ChunkIndex,
     chunk_query: &mut Query<&mut bevy_falling_sand::prelude::ChunkDirtyState>,
 ) {
     let cell_colors = cell_colors_for_component(&fracture_body.cells, component);
-    let Some(built) = build_fracture_body(&cell_colors, false) else {
+    let Some(built) = build_fracture_body(&cell_colors, config, false) else {
         commands.entity(entity).despawn();
         return;
     };

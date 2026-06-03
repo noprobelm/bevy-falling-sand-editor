@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use bevy_turborand::{GlobalRng, TurboRand};
 use voronoice::{BoundingBox, Point, VoronoiBuilder};
 
-use crate::tools::earthquake::EarthquakeRegion;
+use crate::tools::earthquake::{EarthquakeConfiguration, EarthquakeRegion};
 
 pub(super) struct GeneratedVoronoiCell {
     pub(super) particles: HashSet<IVec2>,
@@ -12,6 +12,7 @@ pub(super) struct GeneratedVoronoiCell {
 
 pub(super) fn generate_voronoi_cells(
     rng: &mut GlobalRng,
+    config: &EarthquakeConfiguration,
     region: &EarthquakeRegion,
     bounds: IRect,
     particles: &[IVec2],
@@ -20,8 +21,7 @@ pub(super) fn generate_voronoi_cells(
         return Vec::new();
     }
 
-    let target_count = ((region.area_hint() * 0.01) as usize).clamp(8, 256);
-    let site_count = target_count.min(particles.len());
+    let site_count = config.voronoi_site_count(region.area_hint(), particles.len());
 
     let sites: Vec<Point> = rng
         .as_mut()

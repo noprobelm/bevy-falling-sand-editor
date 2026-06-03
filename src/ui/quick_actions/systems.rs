@@ -7,8 +7,8 @@ use bevy_falling_sand::{
 use leafwing_input_manager::common_conditions::action_just_pressed;
 
 use crate::{
-    brush::SelectedParticle,
     particles::HoveredParticle,
+    tools::painter::SelectedParticle,
     ui::{QuickAction, ShowCursorOverlay, ShowUi, UiState},
 };
 

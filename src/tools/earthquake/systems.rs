@@ -1,18 +1,16 @@
 use bevy::prelude::*;
-use leafwing_input_manager::{
-    common_conditions::{action_just_pressed, action_pressed},
-    prelude::ActionState,
-};
+use leafwing_input_manager::{common_conditions::action_just_pressed, prelude::ActionState};
 
 use crate::{
     Cursor,
     tools::{
-        SelectedTool, ToolAction, ToolStateActions,
+        SelectedTool, ToolAction,
+        brush::ToolBrushSize,
         earthquake::{
-            Earthquake, EarthquakeRegion,
-            components::{EarthquakeBrush, EarthquakeBrushSize},
+            Earthquake, EarthquakeConfiguration, EarthquakeRegion,
+            components::EarthquakeBrush,
             setup::EarthquakeAction,
-            states::EarthquakeRegionState,
+            states::{EarthquakeBrushState, EarthquakeShape},
         },
     },
 };
@@ -29,9 +27,7 @@ impl Plugin for SystemsPlugin {
         )
         .add_systems(
             Update,
-            resize_earthquake_brush
-                .run_if(action_pressed(ToolStateActions::Resize))
-                .run_if(in_state(SelectedTool::Earthquake)),
+            resize_earthquake_brush.run_if(in_state(EarthquakeBrushState::Resize)),
         );
     }
 }
@@ -39,8 +35,8 @@ impl Plugin for SystemsPlugin {
 fn trigger_earthquake(
     mut commands: Commands,
     cursor: Res<Cursor>,
-    brush: Single<&EarthquakeBrushSize, With<EarthquakeBrush>>,
-    region_state: Res<State<EarthquakeRegionState>>,
+    brush: Single<&ToolBrushSize, With<EarthquakeBrush>>,
+    region_state: Res<State<EarthquakeShape>>,
 ) {
     commands.trigger(Earthquake {
         region: EarthquakeRegion::from_brush_state(*region_state.get(), cursor.current, brush.0),
@@ -49,12 +45,9 @@ fn trigger_earthquake(
 
 fn resize_earthquake_brush(
     actions: Single<&ActionState<EarthquakeAction>>,
-    mut brush: Single<&mut EarthquakeBrushSize, With<EarthquakeBrush>>,
+    config: Res<EarthquakeConfiguration>,
+    mut brush: Single<&mut ToolBrushSize, With<EarthquakeBrush>>,
 ) {
     let delta = actions.value(&EarthquakeAction::ChangeSize);
-    if delta > 0.0 {
-        brush.0 += 1.0;
-    } else if delta < 0.0 {
-        brush.0 = (brush.0 - 1.0).max(1.0);
-    }
+    config.resized_brush_size(&mut brush, delta);
 }

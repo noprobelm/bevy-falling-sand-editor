@@ -4,11 +4,8 @@ use crate::{
     Cursor,
     tools::{
         SelectedTool,
-        earthquake::{
-            EarthquakeRegion,
-            components::{EarthquakeBrush, EarthquakeBrushColor, EarthquakeBrushSize},
-            states::EarthquakeRegionState,
-        },
+        brush::{ToolBrushColor, ToolBrushSize},
+        earthquake::{EarthquakeRegion, components::EarthquakeBrush, states::EarthquakeShape},
     },
 };
 
@@ -28,9 +25,9 @@ pub struct EarthquakeBrushGizmos;
 
 fn update_earthquake_brush_gizmos(
     cursor_position: Res<Cursor>,
-    region_state: Res<State<EarthquakeRegionState>>,
+    region_state: Res<State<EarthquakeShape>>,
     mut brush_gizmos: Gizmos<EarthquakeBrushGizmos>,
-    brush_query: Query<(&EarthquakeBrushSize, &EarthquakeBrushColor), With<EarthquakeBrush>>,
+    brush_query: Query<(&ToolBrushSize, &ToolBrushColor), With<EarthquakeBrush>>,
 ) -> Result {
     let (size, color) = brush_query.single()?;
 

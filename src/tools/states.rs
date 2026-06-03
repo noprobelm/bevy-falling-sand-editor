@@ -16,7 +16,7 @@ impl Plugin for StatesPlugin {
 pub enum SelectedTool {
     Select,
     #[default]
-    Brush,
+    Painter,
     Earthquake,
 }
 

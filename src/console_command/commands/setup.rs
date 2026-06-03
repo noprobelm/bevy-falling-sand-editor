@@ -16,8 +16,8 @@ fn setup_console_command_registry(mut commands: Commands) {
     registry.register(HelpConsoleCommand);
     registry.register(ExitConsoleCommand);
     registry.register(ParticlesConsoleCommand);
+    registry.register(PainterConsoleCommand);
     registry.register(RigidBodyConsoleCommand);
-    registry.register(BrushConsoleCommand);
     registry.register(ConwayConsoleCommand);
     registry.register(SceneConsoleCommand);
     registry.register(ToolCommand);

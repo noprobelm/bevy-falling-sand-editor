@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::tools::earthquake::states::EarthquakeRegionState;
+use crate::tools::earthquake::states::EarthquakeShape;
 
 #[derive(Clone, Debug)]
 pub enum EarthquakeRegion {
@@ -35,11 +35,11 @@ impl EarthquakeRegion {
         Self::Polygon { vertices }
     }
 
-    pub fn from_brush_state(state: EarthquakeRegionState, center: Vec2, size: f32) -> Self {
+    pub fn from_brush_state(state: EarthquakeShape, center: Vec2, size: f32) -> Self {
         match state {
-            EarthquakeRegionState::Circle => Self::circle(center, size),
-            EarthquakeRegionState::Rect => Self::rect(center, Vec2::splat(size), 0.0),
-            EarthquakeRegionState::Polygon => {
+            EarthquakeShape::Circle => Self::circle(center, size),
+            EarthquakeShape::Rect => Self::rect(center, Vec2::splat(size), 0.0),
+            EarthquakeShape::Polygon => {
                 let vertices = diamond_vertices(center, size).into_iter().collect();
                 Self::polygon(vertices)
             }

@@ -30,7 +30,7 @@ fn load_settings(mut commands: Commands, settings_config: Res<Persistent<Setting
     let mut input_map = InputMap::default();
     settings_config
         .keys
-        .brush
+        .painter
         .draw
         .insert_into_input_map(&mut input_map, ToolAction::Primary);
     commands.spawn(input_map);

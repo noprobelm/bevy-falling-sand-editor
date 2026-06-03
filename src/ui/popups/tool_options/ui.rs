@@ -6,12 +6,12 @@ use bevy_egui::{
 
 use crate::{
     tools::{
-        PreviousSelectedTool, SelectedTool, brush::BrushOptions, earthquake::EarthquakeOptions,
+        PreviousSelectedTool, SelectedTool, earthquake::EarthquakeOptions, painter::PainterOptions,
         select::SelectOptions,
     },
     ui::{
-        PopupState, ShowUi, ToolOptionsWindowState, UiSystems, show_brush_options,
-        show_earthquake_options, show_select_options,
+        PopupState, ShowUi, ToolOptionsWindowState, UiSystems, show_earthquake_options,
+        show_painter_options, show_select_options,
     },
 };
 
@@ -30,7 +30,7 @@ impl Plugin for UiPlugin {
 
 #[derive(SystemParam)]
 struct ToolOptions<'w, 's> {
-    pub brush: BrushOptions<'w, 's>,
+    pub painter: PainterOptions<'w, 's>,
     pub select: SelectOptions<'w>,
     pub earthquake: EarthquakeOptions<'w, 's>,
 }
@@ -47,7 +47,7 @@ fn show(
         .constrain_to(ctx.available_rect())
         .show(ctx, |ui| {
             match selected_tool.0 {
-                SelectedTool::Brush => show_brush_options(ui, tool_options.brush),
+                SelectedTool::Painter => show_painter_options(ui, tool_options.painter),
                 SelectedTool::Select => show_select_options(ui, tool_options.select),
                 SelectedTool::Earthquake => {
                     show_earthquake_options(ui, commands, tool_options.earthquake)

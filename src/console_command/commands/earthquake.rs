@@ -3,7 +3,10 @@ use bevy::prelude::*;
 use super::parse_position;
 use crate::{
     console_command::ConsoleCommand,
-    tools::earthquake::{Earthquake, EarthquakeRegion},
+    tools::earthquake::{
+        Earthquake, EarthquakeFractureShape, EarthquakeRegion, EarthquakeShape,
+        SetEarthquakeFractureShape, SetEarthquakeShape,
+    },
 };
 
 #[derive(Default)]
@@ -16,6 +19,10 @@ impl ConsoleCommand for EarthquakeConsoleCommand {
 
     fn description(&self) -> &'static str {
         "Trigger an earthquake. Usage: earthquake circle <x>,<y> <radius> | earthquake rect <x>,<y> <w>,<h> [degrees] | earthquake poly <x1>,<y1> <x2>,<y2> <x3>,<y3> ..."
+    }
+
+    fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
+        vec![Box::new(EarthquakeSetConsoleCommand)]
     }
 
     fn run(&self, args: &[String], commands: &mut Commands) {
@@ -40,6 +47,98 @@ impl ConsoleCommand for EarthquakeConsoleCommand {
         // Backward-compatible shorthand for the old circle-only command.
         // Equivalent to `earthquake circle <x>,<y> <radius>`.
         run_circle_earthquake(args, commands);
+    }
+}
+
+#[derive(Default)]
+pub struct EarthquakeSetConsoleCommand;
+
+impl ConsoleCommand for EarthquakeSetConsoleCommand {
+    fn name(&self) -> &'static str {
+        "set"
+    }
+
+    fn description(&self) -> &'static str {
+        "Set earthquake configuration"
+    }
+
+    fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
+        vec![
+            Box::new(EarthquakeSetShapeConsoleCommand),
+            Box::new(EarthquakeSetFractureConsoleCommand),
+        ]
+    }
+}
+
+#[derive(Default)]
+pub struct EarthquakeSetShapeConsoleCommand;
+
+impl ConsoleCommand for EarthquakeSetShapeConsoleCommand {
+    fn name(&self) -> &'static str {
+        "shape"
+    }
+
+    fn description(&self) -> &'static str {
+        "Change earthquake brush shape"
+    }
+
+    fn run(&self, args: &[String], commands: &mut Commands) {
+        let Some(shape) = args.first().and_then(|value| parse_earthquake_shape(value)) else {
+            error!("Shape value required (usage: earthquake set shape <circle|rect|polygon>)");
+            return;
+        };
+
+        commands.trigger(SetEarthquakeShape(shape));
+    }
+}
+
+#[derive(Default)]
+pub struct EarthquakeSetFractureConsoleCommand;
+
+impl ConsoleCommand for EarthquakeSetFractureConsoleCommand {
+    fn name(&self) -> &'static str {
+        "fracture"
+    }
+
+    fn description(&self) -> &'static str {
+        "Change earthquake fracture shape"
+    }
+
+    fn run(&self, args: &[String], commands: &mut Commands) {
+        let Some(shape) = args
+            .first()
+            .and_then(|value| parse_earthquake_fracture(value))
+        else {
+            error!("Fracture value required (usage: earthquake set fracture <exact|convex>)");
+            return;
+        };
+
+        commands.trigger(SetEarthquakeFractureShape(shape));
+    }
+}
+
+fn parse_earthquake_shape(value: &str) -> Option<EarthquakeShape> {
+    match value.to_lowercase().as_str() {
+        "circle" => Some(EarthquakeShape::Circle),
+        "rect" | "rectangle" => Some(EarthquakeShape::Rect),
+        "poly" | "polygon" => Some(EarthquakeShape::Polygon),
+        _ => {
+            error!("Invalid earthquake shape. Specify one of 'circle', 'rect', 'polygon'");
+            None
+        }
+    }
+}
+
+fn parse_earthquake_fracture(value: &str) -> Option<EarthquakeFractureShape> {
+    match value.to_lowercase().as_str() {
+        "exact" | "voronoi" | "exact-voronoi" | "exact_voronoi" => {
+            Some(EarthquakeFractureShape::Concave)
+        }
+        "convex" | "hull" | "convex-hull" | "convex_hull" => Some(EarthquakeFractureShape::Convex),
+        _ => {
+            error!("Invalid earthquake fracture. Specify one of 'exact', 'convex'");
+            None
+        }
     }
 }
 

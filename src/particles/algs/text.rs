@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_falling_sand::core::SpawnParticleSignal;
 use fontdue::{Font, FontSettings};
 
-use crate::brush::SelectedParticle;
+use crate::tools::painter::SelectedParticle;
 
 const DEFAULT_FONT: &[u8] = include_bytes!("../../../assets/fonts/JetBrainsMono-Regular.ttf");
 

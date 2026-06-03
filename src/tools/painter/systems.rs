@@ -11,11 +11,14 @@ use crate::{
     game_of_life::{GolSpawnBuffer, GolTextures},
     tools::{
         ToolAction,
-        brush::{
-            BrushAction, BrushModeSpawnState, BrushSpawnState, BrushState, BrushTypeState,
-            components::{BrushSize, SelectedParticle, SelectedParticleType},
-        },
+        brush::ToolBrushSize,
         earthquake::RemoveFractureBodyCellsAtWorldPositions,
+        painter::{
+            PainterAction, PainterBrushState, PainterConfiguration, PainterModeState, PainterShape,
+            PainterSpawnState,
+            components::{PainterBrush, SelectedParticle, SelectedParticleType},
+            resources::PAINTER_BRUSH_MIN_SIZE,
+        },
     },
 };
 
@@ -30,23 +33,26 @@ impl Plugin for SystemsPlugin {
                 sync_selected_particle_name.after(sync_selected_particle_type),
             ),
         )
-        .add_systems(Update, resize_brush.run_if(in_state(BrushState::Edit)))
+        .add_systems(
+            Update,
+            resize_brush.run_if(in_state(PainterBrushState::Resize)),
+        )
         .add_systems(
             Update,
             (
                 brush_action_spawn_particles
                     .run_if(action_pressed(ToolAction::Primary))
-                    .run_if(in_state(BrushState::Draw))
-                    .run_if(in_state(BrushModeSpawnState::Particles)),
+                    .run_if(in_state(PainterBrushState::Draw))
+                    .run_if(in_state(PainterModeState::Particles)),
                 brush_action_despawn_particles
                     .run_if(action_pressed(ToolAction::Primary))
-                    .run_if(in_state(BrushState::Draw))
-                    .run_if(in_state(BrushSpawnState::Despawn)),
+                    .run_if(in_state(PainterBrushState::Draw))
+                    .run_if(in_state(PainterSpawnState::Despawn)),
                 brush_action_spawn_conway
                     .run_if(resource_exists::<GolTextures>)
                     .run_if(action_pressed(ToolAction::Primary))
-                    .run_if(in_state(BrushState::Draw))
-                    .run_if(in_state(BrushModeSpawnState::Conway)),
+                    .run_if(in_state(PainterBrushState::Draw))
+                    .run_if(in_state(PainterModeState::Conway)),
             ),
         );
     }
@@ -84,27 +90,28 @@ fn sync_selected_particle_name(
     }
 }
 
-fn resize_brush(mut single: Single<(&ActionState<BrushAction>, &mut BrushSize)>) {
+fn resize_brush(
+    config: Res<PainterConfiguration>,
+    mut single: Single<(&ActionState<PainterAction>, &mut ToolBrushSize)>,
+) {
     let (action_state, brush_size) = (single.0, &mut single.1);
-    let delta = action_state.value(&BrushAction::ChangeSize);
-    if delta > 0.0 {
-        brush_size.0 = brush_size.0.saturating_add(1);
-    } else if delta < 0.0 {
-        brush_size.0 = brush_size.0.saturating_sub(1).max(1);
-    }
+    let delta = action_state.value(&PainterAction::ChangeSize);
+    config
+        .brush
+        .resize(brush_size, PAINTER_BRUSH_MIN_SIZE, delta);
 }
 
 fn brush_action_spawn_particles(
     mut msgw_spawn: MessageWriter<SpawnParticleSignal>,
-    brush: Single<(&BrushSize, &SelectedParticle)>,
+    brush: Single<(&ToolBrushSize, &SelectedParticle)>,
     cursor: Res<Cursor>,
-    brush_type: Res<State<BrushTypeState>>,
+    brush_type: Res<State<PainterShape>>,
 ) {
     alg::get_positions(
         cursor.current,
         cursor.previous,
         cursor.previous_previous,
-        brush.0.0 as f32,
+        brush.0.0,
         &brush_type,
     )
     .iter()
@@ -116,15 +123,15 @@ fn brush_action_spawn_particles(
 fn brush_action_despawn_particles(
     mut commands: Commands,
     mut msgw_despawn: MessageWriter<DespawnParticleSignal>,
-    brush_size: Single<&BrushSize>,
+    brush_size: Single<&ToolBrushSize, With<PainterBrush>>,
     cursor: Res<Cursor>,
-    brush_type: Res<State<BrushTypeState>>,
+    brush_type: Res<State<PainterShape>>,
 ) {
     let positions = alg::get_positions(
         cursor.current,
         cursor.previous,
         cursor.previous_previous,
-        brush_size.0 as f32,
+        brush_size.0,
         &brush_type,
     );
 
@@ -141,18 +148,18 @@ fn brush_action_spawn_conway(
     cursor: Res<Cursor>,
     map: Res<ParticleMap>,
     tex_origin: Res<WorldTextureOrigin>,
-    brush: Single<&BrushSize>,
-    brush_type: Res<State<BrushTypeState>>,
+    brush: Single<&ToolBrushSize, With<PainterBrush>>,
+    brush_type: Res<State<PainterShape>>,
     mut spawn_buf: ResMut<GolSpawnBuffer>,
 ) {
     let w = map.width() as i32;
     let h = map.height() as i32;
 
-    let positions = crate::brush::systems::alg::get_positions(
+    let positions = crate::tools::painter::systems::alg::get_positions(
         cursor.current,
         cursor.previous,
         cursor.previous_previous,
-        brush.0 as f32,
+        brush.0,
         &brush_type,
     );
 
@@ -166,23 +173,23 @@ fn brush_action_spawn_conway(
 pub mod alg {
     use bevy::prelude::*;
 
-    use crate::tools::brush::BrushTypeState;
+    use crate::tools::painter::PainterShape;
 
     pub fn get_positions(
         p1: Vec2,
         p2: Vec2,
         p3: Vec2,
         brush_size: f32,
-        brush_type: &BrushTypeState,
+        brush_type: &PainterShape,
     ) -> Vec<IVec2> {
         let cursor_pairs = [(p1, p2), (p2, p3)];
 
         cursor_pairs
             .iter()
             .flat_map(|(start, end)| match brush_type {
-                BrushTypeState::Circle => get_interpolated_circle_points(*start, *end, brush_size),
-                BrushTypeState::Line => get_interpolated_line_points(*start, *end, brush_size),
-                BrushTypeState::Cursor => get_interpolated_cursor_points(*start, *end),
+                PainterShape::Circle => get_interpolated_circle_points(*start, *end, brush_size),
+                PainterShape::Line => get_interpolated_line_points(*start, *end, brush_size),
+                PainterShape::Cursor => get_interpolated_cursor_points(*start, *end),
             })
             .collect()
     }

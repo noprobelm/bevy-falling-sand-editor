@@ -3,14 +3,20 @@ use bevy_falling_sand::debug::{ChunkColor, DebugDirtyRects, DebugParticleMap, Di
 use bevy_persistent::Persistent;
 
 use crate::{
-    brush::{BrushKeyBindings, BrushSize, BrushSpawnState, BrushTypeState},
     camera::CameraKeyBindings,
     config::{
-        AvianDebugConfig, BevyFallingSandDebugConfig, BrushConfig, EarthquakeConfig, Keybindings,
-        OptionalColor, SettingsConfig,
+        AvianDebugConfig, BevyFallingSandDebugConfig, EarthquakeConfig, Keybindings, OptionalColor,
+        PainterConfig, SettingsConfig,
     },
-    tools::earthquake::{
-        DebugEarthquake, EarthquakeBrushSize, EarthquakeFractureShapeState, EarthquakeRegionState,
+    tools::{
+        brush::ToolBrushSize,
+        earthquake::{
+            DebugEarthquake, EarthquakeBrush, EarthquakeConfiguration, EarthquakeFractureShape,
+            EarthquakeShape,
+        },
+        painter::{
+            PainterBrush, PainterConfiguration, PainterKeyBindings, PainterShape, PainterSpawnState,
+        },
     },
     ui::UiKeyBindings,
 };
@@ -40,7 +46,7 @@ pub struct SaveSettingsEvent;
 
 #[derive(Resource, Default)]
 pub struct SaveSettingsBuilder {
-    pub brush: Option<BrushConfig>,
+    pub painter: Option<PainterConfig>,
     pub earthquake: Option<EarthquakeConfig>,
     pub bfs_debug: Option<BevyFallingSandDebugConfig>,
     pub avian_debug: Option<AvianDebugConfig>,
@@ -49,23 +55,26 @@ pub struct SaveSettingsBuilder {
 
 fn on_prepare_save_brush(
     _trigger: On<PrepareSaveSettingsEvent>,
-    brush_type_state: Res<State<BrushTypeState>>,
-    brush_mode_state: Res<State<BrushSpawnState>>,
-    brush_size: Single<&BrushSize>,
+    brush_type_state: Res<State<PainterShape>>,
+    brush_mode_state: Res<State<PainterSpawnState>>,
+    brush_size: Single<&ToolBrushSize, With<PainterBrush>>,
+    configuration: Res<PainterConfiguration>,
     mut builder: ResMut<SaveSettingsBuilder>,
 ) {
-    builder.brush = Some(BrushConfig {
-        btype: **brush_type_state,
+    builder.painter = Some(PainterConfig {
+        shape: **brush_type_state,
         mode: **brush_mode_state,
         size: **brush_size,
+        configuration: configuration.clone(),
     });
 }
 
 fn on_prepare_save_earthquake(
     _trigger: On<PrepareSaveSettingsEvent>,
-    region_state: Res<State<EarthquakeRegionState>>,
-    fracture_shape_state: Res<State<EarthquakeFractureShapeState>>,
-    brush_size: Single<&EarthquakeBrushSize>,
+    region_state: Res<State<EarthquakeShape>>,
+    fracture_shape_state: Res<State<EarthquakeFractureShape>>,
+    brush_size: Single<&ToolBrushSize, With<EarthquakeBrush>>,
+    configuration: Res<EarthquakeConfiguration>,
     debug: Option<Res<DebugEarthquake>>,
     mut builder: ResMut<SaveSettingsBuilder>,
 ) {
@@ -74,6 +83,7 @@ fn on_prepare_save_earthquake(
         fracture_shape: **fracture_shape_state,
         size: **brush_size,
         debug: debug.is_some(),
+        configuration: configuration.clone(),
     });
 }
 
@@ -121,13 +131,13 @@ fn on_prepare_save_keys(
     _trigger: On<PrepareSaveSettingsEvent>,
     camera: Res<CameraKeyBindings>,
     ui: Res<UiKeyBindings>,
-    brush: Res<BrushKeyBindings>,
+    painter: Res<PainterKeyBindings>,
     mut builder: ResMut<SaveSettingsBuilder>,
 ) {
     builder.keys = Some(Keybindings {
         camera: camera.clone(),
         ui: ui.clone(),
-        brush: brush.clone(),
+        painter: painter.clone(),
     });
 }
 
@@ -142,7 +152,7 @@ fn on_save_settings(
 ) {
     persistent
         .set(SettingsConfig {
-            brush: builder.brush.take().expect("brush config not set"),
+            painter: builder.painter.take().expect("painter config not set"),
             earthquake: builder
                 .earthquake
                 .take()

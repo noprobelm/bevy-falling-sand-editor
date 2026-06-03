@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::tools::earthquake::EarthquakeRegion;
+use crate::tools::earthquake::{EarthquakeConfiguration, EarthquakeRegion};
 
 pub(super) struct DebugPlugin;
 
@@ -27,6 +27,7 @@ pub(super) struct DebugEarthquakeInfo {
 fn debug_earthquake(
     mut commands: Commands,
     mut debug_earthquake: Query<(Entity, &mut DebugEarthquakeInfo)>,
+    config: Res<EarthquakeConfiguration>,
     time: Res<Time>,
     mut earthquake_gizmos: Gizmos<EarthquakeGizmos>,
 ) {
@@ -35,10 +36,11 @@ fn debug_earthquake(
         .for_each(|(entity, mut debug_earthquake)| {
             debug_earthquake.timer.tick(time.delta());
             let alpha = 1. - debug_earthquake.timer.fraction();
-            debug_earthquake
-                .region
-                .draw_gizmo(&mut earthquake_gizmos, Color::srgba(1., 1., 1., alpha));
-            let fracture_color = Color::srgba(1., 0.4, 0.2, alpha);
+            debug_earthquake.region.draw_gizmo(
+                &mut earthquake_gizmos,
+                config.debug_region_color_with_alpha(alpha),
+            );
+            let fracture_color = config.debug_fracture_color_with_alpha(alpha);
             for &(start, end) in &debug_earthquake.fracture_edges {
                 earthquake_gizmos.line_2d(start, end, fracture_color);
             }

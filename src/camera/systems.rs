@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use leafwing_input_manager::{common_conditions::action_pressed, prelude::ActionState};
 
-use crate::brush::BrushState;
+use crate::tools::{earthquake::EarthquakeBrushState, painter::PainterBrushState};
 use crate::ui::UiState;
 
 use super::{CameraAction, MainCamera, ZoomSpeed, ZoomTarget};
@@ -19,7 +19,9 @@ impl Plugin for SystemsPlugin {
                 pan_left.run_if(action_pressed(CameraAction::PanLeft)),
                 pan_down.run_if(action_pressed(CameraAction::PanDown)),
                 pan_right.run_if(action_pressed(CameraAction::PanRight)),
-                handle_zoom_target.run_if(not(in_state(BrushState::Edit))),
+                handle_zoom_target
+                    .run_if(not(in_state(PainterBrushState::Resize)))
+                    .run_if(not(in_state(EarthquakeBrushState::Resize))),
             )
                 .chain()
                 .run_if(in_state(UiState::Canvas))
