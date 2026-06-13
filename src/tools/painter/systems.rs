@@ -1,7 +1,8 @@
 use bevy::prelude::*;
 use bevy_falling_sand::{
-    ParticleMap,
-    core::{DespawnParticleSignal, ParticleType, ParticleTypeRegistry, SpawnParticleSignal},
+    core::{
+        DespawnParticleSignal, ParticleMap, ParticleType, ParticleTypeRegistry, SpawnParticleSignal,
+    },
     render::textures::WorldTextureOrigin,
 };
 use leafwing_input_manager::{common_conditions::action_pressed, prelude::ActionState};
