@@ -1,4 +1,7 @@
 use bevy::prelude::*;
+use bevy_falling_sand::prelude::{
+    ParticleColliderOptions, ParticleColliderRestingOptions, RestConversionType,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::tools::brush::{ToolBrushConfiguration, ToolBrushSize};
@@ -19,6 +22,7 @@ pub struct EarthquakeConfiguration {
     pub debug_gizmo_duration_secs: f32,
     pub debug_region_color: Color,
     pub debug_fracture_color: Color,
+    pub particle_collider_options: ParticleColliderOptions,
 }
 
 impl Default for EarthquakeConfiguration {
@@ -37,6 +41,11 @@ impl Default for EarthquakeConfiguration {
             debug_gizmo_duration_secs: 5.0,
             debug_region_color: Color::WHITE,
             debug_fracture_color: Color::srgba(1.0, 0.4, 0.2, 1.0),
+            particle_collider_options: ParticleColliderOptions::new().with_resting(
+                ParticleColliderRestingOptions::new()
+                    .enabled()
+                    .with_rest_type(RestConversionType::Sleep),
+            ),
         }
     }
 }

@@ -1,5 +1,6 @@
 use bevy::{prelude::*, reflect::Enum};
 use bevy_egui::egui;
+use bevy_falling_sand::prelude::RestConversionType;
 
 use crate::tools::{
     brush::{ToolBrushColor, ToolBrushSize},
@@ -136,6 +137,10 @@ fn show_earthquake_configuration(
         0.01,
     );
 
+    ui.heading("Resting");
+    ui.end_row();
+    show_particle_collider_resting_options(ui, earthquake_options);
+
     ui.heading("Debug");
     ui.end_row();
     show_earthquake_debug_toggle(ui, commands, earthquake_options);
@@ -156,6 +161,59 @@ fn show_earthquake_configuration(
         "Fracture Color",
         &mut earthquake_options.configuration.debug_fracture_color,
     );
+}
+
+fn show_particle_collider_resting_options(
+    ui: &mut egui::Ui,
+    earthquake_options: &mut EarthquakeOptions,
+) {
+    let resting = &mut earthquake_options
+        .configuration
+        .particle_collider_options
+        .resting;
+
+    ui.label("Enabled");
+    ui.add(crate::ui::widgets::toggle_switch::toggle(
+        &mut resting.enabled,
+    ));
+    ui.end_row();
+
+    ui.label("Action");
+    egui::ComboBox::from_id_salt("earthquake_rest_type_combo")
+        .selected_text(rest_conversion_type_label(resting.rest_type))
+        .show_ui(ui, |ui| {
+            for rest_type in [RestConversionType::Static, RestConversionType::Sleep] {
+                ui.selectable_value(
+                    &mut resting.rest_type,
+                    rest_type,
+                    rest_conversion_type_label(rest_type),
+                );
+            }
+        });
+    ui.end_row();
+
+    show_configuration_f32(
+        ui,
+        "Linear Threshold",
+        &mut resting.linear_velocity_threshold,
+        0.0..=20.0,
+        0.05,
+    );
+    show_configuration_f32(
+        ui,
+        "Angular Threshold",
+        &mut resting.angular_velocity_threshold,
+        0.0..=20.0,
+        0.05,
+    );
+    show_configuration_f32(ui, "Rest Time", &mut resting.rest_time, 0.0..=10.0, 0.05);
+}
+
+fn rest_conversion_type_label(rest_type: RestConversionType) -> &'static str {
+    match rest_type {
+        RestConversionType::Static => "Static",
+        RestConversionType::Sleep => "Sleep",
+    }
 }
 
 fn show_brush_color(ui: &mut egui::Ui, earthquake_options: &mut EarthquakeOptions) {

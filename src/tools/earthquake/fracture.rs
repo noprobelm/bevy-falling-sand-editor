@@ -343,7 +343,7 @@ pub(super) fn spawn_fracture_body_from_cells(
         transform,
         RigidBody::Dynamic,
         config,
-        ParticleCollider::with_default_resting,
+        config.particle_collider_options,
     ))
 }
 
@@ -386,7 +386,7 @@ pub(super) fn spawn_built_fracture_body(
     transform: Transform,
     rigid_body: RigidBody,
     config: &EarthquakeConfiguration,
-    configure_particle_collider: impl FnOnce(ParticleCollider) -> ParticleCollider,
+    particle_collider_options: ParticleColliderOptions,
 ) -> Entity {
     let BuiltFractureBody {
         source_centroid,
@@ -394,7 +394,7 @@ pub(super) fn spawn_built_fracture_body(
         particle_collider,
         sprites,
     } = built;
-    let particle_collider = configure_particle_collider(particle_collider);
+    let particle_collider = particle_collider.with_options(particle_collider_options);
 
     commands
         .spawn((
@@ -438,7 +438,8 @@ pub(super) fn apply_built_fracture_body(
     fracture_body.cells = cell_colors;
     fracture_body.source_centroid = source_centroid;
     *collider = new_collider;
-    *particle_collider = new_particle_collider.with_resting(particle_collider.resting);
+    *particle_collider = new_particle_collider
+        .with_options(ParticleColliderOptions::from(particle_collider.resting));
     *transform = shifted_fracture_transform(*transform, old_centroid, source_centroid);
 
     if let Ok(children) = children.get(entity) {
