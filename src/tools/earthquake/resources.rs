@@ -44,7 +44,7 @@ impl Default for EarthquakeConfiguration {
             particle_collider_options: ParticleColliderOptions::new().with_resting(
                 ParticleColliderRestingOptions::new()
                     .enabled()
-                    .with_rest_type(RestConversionType::Sleep),
+                    .with_rest_type(RestConversionType::Static),
             ),
         }
     }
