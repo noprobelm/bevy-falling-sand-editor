@@ -299,7 +299,7 @@ fn on_remove_fracture_body_cells(
             split_transform,
             body_kind,
             &config,
-            |particle_collider| particle_collider.with_resting(resting),
+            ParticleColliderOptions::from(resting),
         );
 
         if let Some(linear_velocity) = linear_velocity {
