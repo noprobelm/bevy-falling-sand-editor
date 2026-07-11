@@ -2,7 +2,8 @@ use std::collections::HashMap;
 
 use bevy::prelude::*;
 use bevy_falling_sand::core::{ParticleType, SpawnParticleSignal};
-use bevy_turborand::{GlobalRng, TurboRand};
+use bevy_rand::prelude::{GlobalRng, WyRand};
+use rand::Rng;
 
 #[derive(Event, Clone, PartialEq, Debug)]
 pub struct SpawnBarnsleyEvent {
@@ -33,7 +34,7 @@ pub struct FernPoint {
 /// preserving aspect ratio. Each point is classified as stem or pinna based
 /// on its proximity to the rachis (main axis).
 pub fn generate_fern(
-    rng: &mut GlobalRng,
+    rng: &mut WyRand,
     center: IVec2,
     size: IVec2,
     f1: f32,
@@ -48,12 +49,12 @@ pub fn generate_fern(
 }
 
 /// Runs the Barnsley fern iterated function system, producing raw f32 points.
-fn sample_ifs(rng: &mut GlobalRng, f1: f32, f2: f32, f3: f32, iterations: u32) -> Vec<Vec2> {
+fn sample_ifs(rng: &mut WyRand, f1: f32, f2: f32, f3: f32, iterations: u32) -> Vec<Vec2> {
     let mut points = Vec::with_capacity(iterations as usize);
     let (mut x, mut y) = (0.0_f32, 0.0_f32);
 
     for _ in 0..iterations {
-        let r = rng.as_mut().f32_normalized();
+        let r = rng.random::<f32>();
 
         if r < f1 {
             x = 0.0;
@@ -244,7 +245,7 @@ fn bresenham_line(a: IVec2, b: IVec2) -> Vec<IVec2> {
 pub fn spawn_barnsley(
     trigger: On<SpawnBarnsleyEvent>,
     mut particles: MessageWriter<SpawnParticleSignal>,
-    mut rng: ResMut<GlobalRng>,
+    mut rng: Single<&mut WyRand, With<GlobalRng>>,
 ) {
     let ev = trigger.event();
     let fern = generate_fern(
