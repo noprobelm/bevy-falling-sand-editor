@@ -2,7 +2,7 @@ use avian2d::prelude::*;
 use bevy::platform::collections::{HashMap, HashSet};
 use bevy::prelude::*;
 use bevy_falling_sand::{prelude::*, utils::connected_components};
-use bevy_turborand::GlobalRng;
+use bevy_rand::prelude::{GlobalRng, WyRand};
 
 use crate::tools::earthquake::{
     EarthquakeConfiguration, EarthquakeRegion,
@@ -51,7 +51,7 @@ pub struct Earthquake {
 fn on_earthquake(
     trigger: On<Earthquake>,
     mut commands: Commands,
-    mut rng: ResMut<GlobalRng>,
+    mut rng: Single<&mut WyRand, With<GlobalRng>>,
     mut despawn_writer: MessageWriter<DespawnParticleSignal>,
     map: Res<ParticleMap>,
     static_particles: Query<&StaticRigidBodyParticle>,

@@ -1,6 +1,7 @@
 use bevy::platform::collections::{HashMap, HashSet};
 use bevy::prelude::*;
-use bevy_turborand::{GlobalRng, TurboRand};
+use bevy_rand::prelude::WyRand;
+use rand::seq::IndexedRandom;
 use voronoice::{BoundingBox, ClipBehavior, Point, VoronoiBuilder};
 
 use crate::tools::earthquake::{EarthquakeConfiguration, EarthquakeRegion};
@@ -12,7 +13,7 @@ pub(super) struct GeneratedVoronoiCell {
 }
 
 pub(super) fn generate_voronoi_cells(
-    rng: &mut GlobalRng,
+    rng: &mut WyRand,
     config: &EarthquakeConfiguration,
     region: &EarthquakeRegion,
     bounds: IRect,
@@ -24,10 +25,8 @@ pub(super) fn generate_voronoi_cells(
 
     let site_count = config.voronoi_site_count(region.area_hint(), particles.len());
 
-    let sites: Vec<Point> = rng
-        .as_mut()
-        .sample_multiple(particles, site_count)
-        .into_iter()
+    let sites: Vec<Point> = particles
+        .choose_multiple(rng, site_count)
         .map(|p| {
             let center = p.as_vec2() + Vec2::splat(0.5);
             Point {
