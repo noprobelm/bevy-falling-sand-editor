@@ -42,15 +42,22 @@ fn show(
         information_area.is_open = !information_area.is_open;
     }
 
-    egui::TopBottomPanel::top("information_area").show_animated(
-        ctx,
-        information_area.is_open,
-        |ui| {
-            information_area_ui(ui, &information_area);
-        },
-    );
+    let console_width = ctx.content_rect().width();
+    let console_y = if information_area.is_open { 400.0 } else { 0.0 };
 
-    egui::TopBottomPanel::top("console").show(ctx, |ui| {
+    if information_area.is_open {
+        egui::Area::new("information_area".into())
+            .fixed_pos(egui::pos2(0.0, 0.0))
+            .show(ctx, |ui| {
+                ui.set_width(console_width);
+            information_area_ui(ui, &information_area);
+            });
+    }
+
+    egui::Area::new("console".into())
+        .fixed_pos(egui::pos2(0.0, console_y))
+        .show(ctx, |ui| {
+            ui.set_width(console_width);
         prompt_ui(
             ui,
             &mut msgw_console_command_queued,
@@ -59,7 +66,7 @@ fn show(
             toggle_info_area,
             &action_state,
         );
-    });
+        });
 
     Ok(())
 }

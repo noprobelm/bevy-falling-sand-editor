@@ -28,7 +28,7 @@ pub fn show(
     egui::Window::new("brush overlay")
         .title_bar(false)
         .resizable(false)
-        .constrain_to(ctx.available_rect())
+        .constrain_to(ctx.content_rect())
         .anchor(egui::Align2::RIGHT_TOP, [-10.0, 10.0])
         .show(ctx, |ui| {
             ui.label(

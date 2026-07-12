@@ -168,6 +168,8 @@ pub struct AvianDebugConfig {
     pub shapecast_point_color: OptionalColor,
     pub shapecast_normal_color: OptionalColor,
     pub island_color: OptionalColor,
+    #[serde(default)]
+    pub collider_tree_color: OptionalColor,
     pub hide_meshes: bool,
 }
 
@@ -347,6 +349,12 @@ impl OptionalColor {
     }
 }
 
+impl Default for OptionalColor {
+    fn default() -> Self {
+        Self::none()
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct OptionalVec2 {
     pub enabled: bool,
@@ -460,6 +468,7 @@ impl Default for AvianDebugConfig {
         config.shapecast_point_color.enabled = false;
         config.shapecast_normal_color.enabled = false;
         config.island_color.enabled = false;
+        config.collider_tree_color.enabled = false;
         config.hide_meshes = false;
         config
     }
@@ -487,6 +496,7 @@ impl From<PhysicsGizmos> for AvianDebugConfig {
             shapecast_point_color: OptionalColor::from_option(g.shapecast_point_color),
             shapecast_normal_color: OptionalColor::from_option(g.shapecast_normal_color),
             island_color: OptionalColor::from_option(g.island_color),
+            collider_tree_color: OptionalColor::from_option(g.collider_tree_color),
             hide_meshes: g.hide_meshes,
         }
     }
@@ -512,6 +522,7 @@ impl From<AvianDebugConfig> for PhysicsGizmos {
             shapecast_point_color: c.shapecast_point_color.to_option(),
             shapecast_normal_color: c.shapecast_normal_color.to_option(),
             island_color: c.island_color.to_option(),
+            collider_tree_color: c.collider_tree_color.to_option(),
             hide_meshes: c.hide_meshes,
         }
     }

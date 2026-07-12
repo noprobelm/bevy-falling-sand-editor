@@ -17,8 +17,9 @@ impl Plugin for CursorPlugin {
             .add_systems(Update, update_cursor_position)
             .add_systems(
                 Update,
-                handle_cursor_visibility
-                    .run_if(state_changed::<UiState>.or(resource_changed::<PreviousSelectedTool>)),
+                handle_cursor_visibility.run_if(
+                    state_changed::<UiState>.or_else(resource_changed::<PreviousSelectedTool>),
+                ),
             );
     }
 }
