@@ -50,7 +50,9 @@ fn show(
             .fixed_pos(egui::pos2(0.0, 0.0))
             .show(ctx, |ui| {
                 ui.set_width(console_width);
-            information_area_ui(ui, &information_area);
+                egui::Frame::NONE
+                    .fill(console_background())
+                    .show(ui, |ui| information_area_ui(ui, &information_area));
             });
     }
 
@@ -58,17 +60,23 @@ fn show(
         .fixed_pos(egui::pos2(0.0, console_y))
         .show(ctx, |ui| {
             ui.set_width(console_width);
-        prompt_ui(
-            ui,
-            &mut msgw_console_command_queued,
-            &mut prompt,
-            &mut command_history,
-            toggle_info_area,
-            &action_state,
-        );
+            egui::Frame::NONE.fill(console_background()).show(ui, |ui| {
+                prompt_ui(
+                    ui,
+                    &mut msgw_console_command_queued,
+                    &mut prompt,
+                    &mut command_history,
+                    toggle_info_area,
+                    &action_state,
+                );
+            });
         });
 
     Ok(())
+}
+
+fn console_background() -> egui::Color32 {
+    egui::Color32::from_rgba_unmultiplied(12, 12, 12, 230)
 }
 
 fn information_area_ui(ui: &mut egui::Ui, state: &ConsoleInformationAreaState) {
