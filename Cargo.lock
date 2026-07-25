@@ -924,6 +924,7 @@ dependencies = [
 [[package]]
 name = "bevy_falling_sand"
 version = "0.8.0-dev"
+source = "git+https://github.com/noprobelm/bevy_falling_sand?branch=main#eaad2561add298e589e99e88d6aea2a33f2fe6d7"
 dependencies = [
  "avian2d",
  "bevy",
