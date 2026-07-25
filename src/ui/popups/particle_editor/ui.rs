@@ -205,10 +205,10 @@ fn save_particle_name(
         .entity(entity)
         .insert(ParticleName(new_name.clone()));
 
-    if synchronize_brush_state.get() == &SynchronizeWithBrush::Enabled {
-        if let Ok(data) = particle_query.get(entity) {
-            editor_params.brush.0 = data.core.particle_type.id();
-        }
+    if synchronize_brush_state.get() == &SynchronizeWithBrush::Enabled
+        && let Ok(data) = particle_query.get(entity)
+    {
+        editor_params.brush.0 = data.core.particle_type.id();
     }
 }
 
@@ -447,10 +447,10 @@ fn show_category_labels(
         editor_params
             .commands
             .insert_resource(SelectedParticle(entity));
-        if synchronize_brush_selection.get() == &SynchronizeWithBrush::Enabled {
-            if let Ok(data) = particle_query.get(entity) {
-                editor_params.brush.0 = data.core.particle_type.id();
-            }
+        if synchronize_brush_selection.get() == &SynchronizeWithBrush::Enabled
+            && let Ok(data) = particle_query.get(entity)
+        {
+            editor_params.brush.0 = data.core.particle_type.id();
         }
     }
 }
