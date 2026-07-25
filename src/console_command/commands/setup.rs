@@ -6,6 +6,7 @@ pub(super) struct SetupPlugin;
 impl Plugin for SetupPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(HelpConsoleCommandPlugin)
+            .add_plugins(ParticlesConsoleCommandPlugin)
             .add_plugins(RigidBodyConsoleCommandPlugin)
             .add_systems(Startup, setup_console_command_registry);
     }

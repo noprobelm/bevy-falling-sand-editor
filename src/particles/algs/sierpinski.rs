@@ -19,7 +19,7 @@ pub mod carpet {
     ) {
         let positions = sierpinski_carpet(trigger.event().center, trigger.event().depth);
         positions.iter().for_each(|pos| {
-            msgw_spawn_particles.write(SpawnParticleSignal::new(selected_particle.0.clone(), *pos));
+            msgw_spawn_particles.write(SpawnParticleSignal::new(selected_particle.0, *pos));
         })
     }
 
@@ -68,7 +68,7 @@ pub mod triangle {
     ) {
         let positions = sierpinski_triangle(trigger.event().center, trigger.event().depth);
         positions.iter().for_each(|pos| {
-            msgw_spawn_particles.write(SpawnParticleSignal::new(selected_particle.0.clone(), *pos));
+            msgw_spawn_particles.write(SpawnParticleSignal::new(selected_particle.0, *pos));
         })
     }
 

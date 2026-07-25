@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_falling_sand::prelude::ParticleType;
+use bevy_falling_sand::prelude::ParticleTypeId;
 use serde::{Deserialize, Serialize};
 
 #[derive(
@@ -19,8 +19,8 @@ use serde::{Deserialize, Serialize};
 pub struct PainterBrush;
 
 #[derive(Component, Clone, Default, PartialEq, Debug, Reflect, Serialize, Deserialize)]
-pub struct SelectedParticle(pub ParticleType);
+pub struct SelectedParticle(pub ParticleTypeId);
 
-/// Tracks which [`ParticleType`] entity the brush's [`SelectedParticle`] corresponds to.
+/// Tracks which particle type entity the brush's [`SelectedParticle`] corresponds to.
 #[derive(Component, Copy, Clone, PartialEq, Debug, Reflect)]
 pub struct SelectedParticleType(pub Entity);

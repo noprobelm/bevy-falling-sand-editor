@@ -4,11 +4,12 @@ mod setup;
 
 use bevy::prelude::*;
 use bevy_falling_sand::core::particle::{
-    AttachedToParticleType, Particle, ParticleMap, ParticleSyncExt, ParticleType,
+    AttachedToParticleType, Particle, ParticleMap, ParticleSyncExt, ParticleType, ParticleTypeId,
 };
 use serde::{Deserialize, Serialize};
 
 pub use algs::*;
+pub use default::DefaultParticleIds;
 pub use setup::*;
 
 use crate::Cursor;
@@ -26,15 +27,24 @@ impl Plugin for ParticlesPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((SetupPlugin, PatternsPlugin))
             .register_type::<ParticleCategory>()
+            .register_type::<ParticleName>()
             .register_particle_sync_component::<ParticleCategory>()
             .init_resource::<HoveredParticle>()
             .add_systems(Update, update_hovered_particle);
     }
 }
 
+/// Editor-owned display name for a particle type.
+#[derive(
+    Component, Clone, Default, Eq, PartialEq, Hash, Debug, Reflect, Serialize, Deserialize,
+)]
+#[reflect(Component)]
+#[type_path = "bfs_editor::particle"]
+pub struct ParticleName(pub String);
+
 #[derive(Default, Resource, Clone, Debug)]
 pub struct HoveredParticle {
-    pub particle: Option<ParticleType>,
+    pub particle: Option<ParticleTypeId>,
 }
 
 fn update_hovered_particle(
@@ -52,7 +62,7 @@ fn update_hovered_particle(
         && let Ok(attached) = particle_query.get(entity)
         && let Ok(particle_type) = type_query.get(attached.0)
     {
-        hovered_particle.particle = Some(particle_type.clone());
+        hovered_particle.particle = Some(particle_type.id());
     } else {
         hovered_particle.particle = None;
     }

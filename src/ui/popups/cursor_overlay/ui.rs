@@ -1,7 +1,7 @@
 use crate::{
     Cursor,
     particles::HoveredParticle,
-    ui::{ShowCursorOverlay, ShowUi},
+    ui::{ParticleCategoryLabels, ShowCursorOverlay, ShowUi},
 };
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, EguiPrimaryContextPass, egui};
@@ -21,6 +21,7 @@ impl Plugin for UiPlugin {
 pub fn show(
     mut contexts: EguiContexts,
     hovered_particle: Res<HoveredParticle>,
+    labels: Res<ParticleCategoryLabels>,
     cursor_position: Res<Cursor>,
 ) -> Result {
     let ctx = contexts.ctx_mut()?;
@@ -37,10 +38,13 @@ pub fn show(
             ui.label(
                 egui::RichText::new(format!("y: {:8.3}", cursor_position.current.y)).monospace(),
             );
-            let particle = hovered_particle
-                .particle
-                .clone()
-                .map_or_else(|| "".into(), |p| p.name);
+            let particle = hovered_particle.particle.map_or_else(String::new, |id| {
+                labels
+                    .categories()
+                    .flat_map(|(_, labels)| labels.iter())
+                    .find_map(|label| (label.id == id).then(|| label.name.clone()))
+                    .unwrap_or_else(|| format!("Particle {}", id.get()))
+            });
             ui.label(particle);
         });
 

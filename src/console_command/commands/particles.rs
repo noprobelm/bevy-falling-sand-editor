@@ -1,17 +1,31 @@
 use bevy::prelude::*;
 use bevy_falling_sand::prelude::{
     DespawnAllParticlesSignal, DespawnDynamicParticlesSignal, DespawnParticleTypeChildrenSignal,
-    DespawnStaticParticlesSignal,
+    DespawnStaticParticlesSignal, ParticleType,
 };
 
 use super::parse_position;
 use crate::{
     console_command::ConsoleCommand,
     particles::{
-        SpawnBarnsleyEvent, SpawnTextEvent, TextAlignment, carpet::SpawnSierpinskiCarpetEvent,
-        triangle::SpawnSierpinskiTriangleEvent,
+        ParticleName, SpawnBarnsleyEvent, SpawnTextEvent, TextAlignment,
+        carpet::SpawnSierpinskiCarpetEvent, triangle::SpawnSierpinskiTriangleEvent,
     },
 };
+
+pub struct ParticlesConsoleCommandPlugin;
+
+impl Plugin for ParticlesConsoleCommandPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_message::<DespawnParticleTypeByNameCommand>()
+            .add_systems(Update, msgr_despawn_particle_type_by_name_command);
+    }
+}
+
+#[derive(Message, Clone, Debug)]
+struct DespawnParticleTypeByNameCommand {
+    name: String,
+}
 
 #[derive(Default)]
 pub struct ParticlesConsoleCommand;
@@ -207,13 +221,60 @@ impl ConsoleCommand for ParticlesDespawnNamedConsoleCommand {
     }
 
     fn description(&self) -> &'static str {
-        "Despawn all particles of specified name from the world"
+        "Despawn all particles of a specified particle type"
     }
 
     fn run(&self, args: &[String], commands: &mut Commands) {
-        let name = args.join(" ");
-        info!("Despawning all '{}' particles from the world", name);
-        commands.trigger(DespawnParticleTypeChildrenSignal::from_name(&name));
+        let Some(name) = particle_type_name_arg(args) else {
+            warn!("Usage: particles despawn named <particle_type_name>");
+            return;
+        };
+        commands.write_message(DespawnParticleTypeByNameCommand { name });
+    }
+}
+
+fn particle_type_name_arg(args: &[String]) -> Option<String> {
+    let name = args.join(" ");
+    let name = name.trim();
+    (!name.is_empty()).then(|| name.to_string())
+}
+
+fn msgr_despawn_particle_type_by_name_command(
+    mut messages: MessageReader<DespawnParticleTypeByNameCommand>,
+    particle_types: Query<(&ParticleType, Option<&ParticleName>)>,
+    mut commands: Commands,
+) {
+    for message in messages.read() {
+        let matches: Vec<_> = particle_types
+            .iter()
+            .filter_map(|(particle_type, name)| {
+                let name = name?;
+                name.0
+                    .eq_ignore_ascii_case(&message.name)
+                    .then_some((particle_type.id(), name.0.clone()))
+            })
+            .collect();
+
+        match matches.as_slice() {
+            [] => {
+                warn!("No particle type named '{}' found", message.name);
+            }
+            [(id, name)] => {
+                info!("Despawning all particles of type '{name}'");
+                commands.trigger(DespawnParticleTypeChildrenSignal::from_particle_type(*id));
+            }
+            _ => {
+                let names = matches
+                    .iter()
+                    .map(|(_, name)| name.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                warn!(
+                    "Particle type name '{}' is ambiguous: {names}",
+                    message.name
+                );
+            }
+        }
     }
 }
 

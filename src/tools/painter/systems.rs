@@ -1,8 +1,6 @@
 use bevy::prelude::*;
 use bevy_falling_sand::{
-    core::{
-        DespawnParticleSignal, ParticleMap, ParticleType, ParticleTypeRegistry, SpawnParticleSignal,
-    },
+    core::{DespawnParticleSignal, ParticleMap, ParticleTypeRegistry, SpawnParticleSignal},
     render::textures::WorldTextureOrigin,
 };
 use leafwing_input_manager::{common_conditions::action_pressed, prelude::ActionState};
@@ -27,35 +25,29 @@ pub(super) struct SystemsPlugin;
 
 impl Plugin for SystemsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            (
-                sync_selected_particle_type,
-                sync_selected_particle_name.after(sync_selected_particle_type),
-            ),
-        )
-        .add_systems(
-            Update,
-            resize_brush.run_if(in_state(PainterBrushState::Resize)),
-        )
-        .add_systems(
-            Update,
-            (
-                brush_action_spawn_particles
-                    .run_if(action_pressed(ToolAction::Primary))
-                    .run_if(in_state(PainterBrushState::Draw))
-                    .run_if(in_state(PainterModeState::Particles)),
-                brush_action_despawn_particles
-                    .run_if(action_pressed(ToolAction::Primary))
-                    .run_if(in_state(PainterBrushState::Draw))
-                    .run_if(in_state(PainterSpawnState::Despawn)),
-                brush_action_spawn_conway
-                    .run_if(resource_exists::<GolTextures>)
-                    .run_if(action_pressed(ToolAction::Primary))
-                    .run_if(in_state(PainterBrushState::Draw))
-                    .run_if(in_state(PainterModeState::Conway)),
-            ),
-        );
+        app.add_systems(Update, sync_selected_particle_type)
+            .add_systems(
+                Update,
+                resize_brush.run_if(in_state(PainterBrushState::Resize)),
+            )
+            .add_systems(
+                Update,
+                (
+                    brush_action_spawn_particles
+                        .run_if(action_pressed(ToolAction::Primary))
+                        .run_if(in_state(PainterBrushState::Draw))
+                        .run_if(in_state(PainterModeState::Particles)),
+                    brush_action_despawn_particles
+                        .run_if(action_pressed(ToolAction::Primary))
+                        .run_if(in_state(PainterBrushState::Draw))
+                        .run_if(in_state(PainterSpawnState::Despawn)),
+                    brush_action_spawn_conway
+                        .run_if(resource_exists::<GolTextures>)
+                        .run_if(action_pressed(ToolAction::Primary))
+                        .run_if(in_state(PainterBrushState::Draw))
+                        .run_if(in_state(PainterModeState::Conway)),
+                ),
+            );
     }
 }
 
@@ -69,24 +61,10 @@ fn sync_selected_particle_type(
     registry: Res<ParticleTypeRegistry>,
 ) {
     for (selected, mut tracked) in &mut brush_query {
-        if let Some(&entity) = registry.get(&selected.0.name)
+        if let Some(&entity) = registry.get(selected.0)
             && tracked.0 != entity
         {
             tracked.0 = entity;
-        }
-    }
-}
-
-/// Updates the brush's [`SelectedParticle`] name when the tracked [`ParticleType`] is renamed.
-fn sync_selected_particle_name(
-    mut brush_query: Query<(&mut SelectedParticle, &SelectedParticleType)>,
-    changed_types: Query<&ParticleType, Changed<ParticleType>>,
-) {
-    for (mut selected, tracked) in &mut brush_query {
-        if let Ok(particle_type) = changed_types.get(tracked.0)
-            && selected.0.name != particle_type.name
-        {
-            selected.0.name = particle_type.name.clone();
         }
     }
 }
@@ -117,7 +95,7 @@ fn brush_action_spawn_particles(
     )
     .iter()
     .for_each(|pos| {
-        msgw_spawn.write(SpawnParticleSignal::new(brush.1.0.clone(), *pos));
+        msgw_spawn.write(SpawnParticleSignal::new(brush.1.0, *pos));
     });
 }
 

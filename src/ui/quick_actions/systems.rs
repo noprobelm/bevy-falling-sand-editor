@@ -91,7 +91,7 @@ fn sample_hovered_particle(
     hovered_particle: Res<HoveredParticle>,
     mut selected_particle: Single<&mut SelectedParticle>,
 ) {
-    if let Some(particle) = hovered_particle.particle.clone() {
+    if let Some(particle) = hovered_particle.particle {
         selected_particle.0 = particle;
     }
 }

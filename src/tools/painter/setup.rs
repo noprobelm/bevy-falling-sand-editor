@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     config::{InputButton, SettingsConfig},
+    particles::DefaultParticleIds,
     setup::SetupSystems,
     tools::{
         brush::{ToolBrushColor, ToolBrushSize},
@@ -83,26 +84,25 @@ fn spawn_brush(mut commands: Commands, config: Res<PainterConfiguration>) {
 fn insert_selected_particle(
     mut commands: Commands,
     registry: Res<ParticleTypeRegistry>,
+    default_ids: Res<DefaultParticleIds>,
     particle_types: Query<&ParticleType>,
     brush: Single<Entity, With<PainterBrush>>,
 ) {
-    const DEFAULT_PARTICLE_NAME: &str = "Dirt Wall";
-    let pt_entity = if let Some(entity) = registry.get(DEFAULT_PARTICLE_NAME) {
-        *entity
+    let (particle_type_id, pt_entity) = if let Some(entity) = registry.get(default_ids.dirt_wall) {
+        (default_ids.dirt_wall, *entity)
     } else {
-        *registry
+        let entity = *registry
             .entities()
             .next()
-            .expect("No particle types found in the world")
+            .expect("No particle types found in the world");
+        let particle_type = particle_types
+            .get(entity)
+            .expect("Failed to find particle type in query");
+        (particle_type.id(), entity)
     };
 
-    let particle_type = particle_types
-        .get(pt_entity)
-        .expect("Failed to find particle type in query")
-        .clone();
-
     commands.entity(brush.entity()).insert((
-        SelectedParticle(particle_type),
+        SelectedParticle(particle_type_id),
         SelectedParticleType(pt_entity),
     ));
 }

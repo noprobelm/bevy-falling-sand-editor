@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_falling_sand::prelude::{LoadParticleTypesSignal, PersistParticleTypesSignal};
 use bevy_persistent::Persistent;
 
-use super::default::spawn_default_particles;
+use super::default::{DefaultParticleIds, spawn_default_particles};
 use crate::{
     config::{ActiveWorldPath, ParticleTypesFile, WorldConfig},
     setup::SetupSystems,
@@ -31,6 +31,8 @@ fn load_world_particle_types_file(
     mut msgw_load_particles_scene: MessageWriter<LoadParticleTypesSignal>,
     mut msgw_persist: MessageWriter<PersistParticleTypesSignal>,
 ) {
+    commands.insert_resource(DefaultParticleIds::default());
+
     let particle_types_file = active_world_path
         .0
         .join(world_config.get().particle_types_file.clone());
