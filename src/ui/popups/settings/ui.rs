@@ -1,5 +1,5 @@
 use avian2d::prelude::PhysicsGizmos;
-use bevy::{ecs::system::SystemParam, prelude::*, reflect::Enum};
+use bevy::{ecs::system::SystemParam, prelude::*, reflect::enums::Enum};
 use bevy_egui::{EguiContexts, EguiPrimaryContextPass, egui};
 use bevy_falling_sand::debug::{ChunkColor, DebugDirtyRects, DebugParticleMap, DirtyRectColor};
 use leafwing_input_manager::prelude::{InputMap, MouseScrollAxis};
@@ -69,7 +69,7 @@ fn show(mut contexts: EguiContexts, mut settings_param: SettingsParam) -> Result
     let ctx = contexts.ctx_mut()?;
 
     egui::Window::new("Settings")
-        .constrain_to(ctx.available_rect())
+        .constrain_to(ctx.content_rect())
         .show(ctx, |ui| {
             ui.horizontal(|ui| {
                 for variant in [

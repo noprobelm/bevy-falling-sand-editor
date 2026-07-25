@@ -1,4 +1,4 @@
-use bevy::reflect::Enum;
+use bevy::reflect::enums::Enum;
 use bevy_egui::egui;
 
 use crate::tools::select::{SelectOptions, states::SelectModeState};

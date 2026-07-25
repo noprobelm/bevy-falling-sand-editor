@@ -42,26 +42,41 @@ fn show(
         information_area.is_open = !information_area.is_open;
     }
 
-    egui::TopBottomPanel::top("information_area").show_animated(
-        ctx,
-        information_area.is_open,
-        |ui| {
-            information_area_ui(ui, &information_area);
-        },
-    );
+    let console_width = ctx.content_rect().width();
+    let console_y = if information_area.is_open { 400.0 } else { 0.0 };
 
-    egui::TopBottomPanel::top("console").show(ctx, |ui| {
-        prompt_ui(
-            ui,
-            &mut msgw_console_command_queued,
-            &mut prompt,
-            &mut command_history,
-            toggle_info_area,
-            &action_state,
-        );
-    });
+    if information_area.is_open {
+        egui::Area::new("information_area".into())
+            .fixed_pos(egui::pos2(0.0, 0.0))
+            .show(ctx, |ui| {
+                ui.set_width(console_width);
+                egui::Frame::NONE
+                    .fill(console_background())
+                    .show(ui, |ui| information_area_ui(ui, &information_area));
+            });
+    }
+
+    egui::Area::new("console".into())
+        .fixed_pos(egui::pos2(0.0, console_y))
+        .show(ctx, |ui| {
+            ui.set_width(console_width);
+            egui::Frame::NONE.fill(console_background()).show(ui, |ui| {
+                prompt_ui(
+                    ui,
+                    &mut msgw_console_command_queued,
+                    &mut prompt,
+                    &mut command_history,
+                    toggle_info_area,
+                    &action_state,
+                );
+            });
+        });
 
     Ok(())
+}
+
+fn console_background() -> egui::Color32 {
+    egui::Color32::from_rgba_unmultiplied(12, 12, 12, 230)
 }
 
 fn information_area_ui(ui: &mut egui::Ui, state: &ConsoleInformationAreaState) {

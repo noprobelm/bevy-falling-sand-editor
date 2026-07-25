@@ -1,4 +1,4 @@
-use bevy::{prelude::*, reflect::Enum};
+use bevy::{prelude::*, reflect::enums::Enum};
 use bevy_egui::egui;
 use bevy_falling_sand::prelude::RestConversionType;
 

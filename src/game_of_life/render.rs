@@ -159,7 +159,7 @@ pub(super) fn finish_render_app(app: &mut App) {
         shader: shader.clone(),
         shader_defs: vec![],
         entry_point: Some("update".into()),
-        push_constant_ranges: vec![],
+        immediate_size: 0,
         zero_initialize_workgroup_memory: true,
     });
 
@@ -169,7 +169,7 @@ pub(super) fn finish_render_app(app: &mut App) {
         shader,
         shader_defs: vec![],
         entry_point: Some("spawn".into()),
-        push_constant_ranges: vec![],
+        immediate_size: 0,
         zero_initialize_workgroup_memory: true,
     });
 

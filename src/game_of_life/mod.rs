@@ -24,8 +24,8 @@ impl Plugin for GameOfLifePlugin {
                 Update,
                 setup_gol_textures.run_if(
                     resource_exists::<GolEnabled>
-                        .and(resource_exists::<WorldColorTexture>)
-                        .and(not(resource_exists::<GolTextures>)),
+                        .and_then(resource_exists::<WorldColorTexture>)
+                        .and_then(not(resource_exists::<GolTextures>)),
                 ),
             )
             .add_systems(

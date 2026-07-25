@@ -7,7 +7,7 @@ pub use states::*;
 use ui::*;
 
 use bevy::prelude::*;
-pub use signals::*;
+pub use signals::UiToggleSettingsEvent;
 use states::KeybindsListeningState;
 
 pub(super) struct SettingsPlugin;

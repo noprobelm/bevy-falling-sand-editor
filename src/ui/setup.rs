@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_egui::EguiContextSettings;
+use bevy_egui::EguiContexts;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -35,6 +35,7 @@ impl Default for GeneralKeyBindings {
     }
 }
 
-fn set_default_ui_scale(mut egui_settings: Single<&mut EguiContextSettings>) {
-    egui_settings.scale_factor = 1.25;
+fn set_default_ui_scale(mut contexts: EguiContexts) -> Result {
+    contexts.ctx_mut()?.set_zoom_factor(1.25);
+    Ok(())
 }

@@ -1,4 +1,4 @@
-use bevy::{ecs::system::SystemParam, prelude::*, reflect::Enum};
+use bevy::{ecs::system::SystemParam, prelude::*, reflect::enums::Enum};
 use bevy_egui::{
     EguiContexts, EguiPrimaryContextPass,
     egui::{self},
@@ -61,7 +61,7 @@ fn show(
     let ctx = contexts.ctx_mut()?;
 
     egui::Window::new("Particle Editor")
-        .constrain_to(ctx.available_rect())
+        .constrain_to(ctx.content_rect())
         .show(ctx, |ui| {
             show_top_options(
                 ui,
@@ -332,7 +332,7 @@ fn show_load_particle_types_popup(
     let ctx = contexts.ctx_mut()?;
 
     egui::Window::new("Load Particle Set")
-        .constrain_to(ctx.available_rect())
+        .constrain_to(ctx.content_rect())
         .show(ctx, |ui| {
             ui.vertical(|ui| {
                 ui.vertical(|ui| {
@@ -956,7 +956,7 @@ fn show_chance_mutation(
 
 fn particle_combo(
     ui: &mut egui::Ui,
-    id_salt: impl std::hash::Hash,
+    id_salt: impl std::hash::Hash + std::fmt::Debug,
     current: &str,
     registry: &ParticleTypeRegistry,
 ) -> Option<String> {

@@ -1,4 +1,4 @@
-use bevy::{ecs::system::ParamSet, prelude::*, reflect::Enum};
+use bevy::{ecs::system::ParamSet, prelude::*, reflect::enums::Enum};
 use bevy_egui::{
     EguiContexts, EguiPrimaryContextPass,
     egui::{self},
@@ -39,7 +39,7 @@ fn show(
 
     let title = format!("Tool Options - {}", selected_tool.0.variant_name());
     egui::Window::new(title)
-        .constrain_to(ctx.available_rect())
+        .constrain_to(ctx.content_rect())
         .show(ctx, |ui| {
             match selected_tool.0 {
                 SelectedTool::Painter => show_painter_options(ui, brush_options.p0()),

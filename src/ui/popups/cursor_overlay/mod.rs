@@ -4,7 +4,7 @@ use signals::*;
 use ui::*;
 
 use bevy::prelude::*;
-pub use signals::*;
+pub use signals::UiToggleCursorOverlayEvent;
 
 pub(super) struct CursorOverlayPlugin;
 

@@ -42,7 +42,7 @@ fn modify_icon_color(mut images: ResMut<Assets<Image>>, icons: Res<SidePanelIcon
     let bg_color: [u8; 3] = [27, 27, 27];
 
     for handle in [&icons.particle_editor, &icons.settings] {
-        let Some(image) = images.get_mut(handle) else {
+        let Some(mut image) = images.get_mut(handle) else {
             continue;
         };
         let Some(data) = image.data.as_mut() else {
