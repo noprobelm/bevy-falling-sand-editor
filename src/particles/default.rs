@@ -156,20 +156,9 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             0.54901963, 0.85882354, 0.972549, 0.5019608,
         )]),
         StaticRigidBodyParticle,
-        Flammable {
-            duration: Duration::from_secs(2),
-            tick_rate: Duration::from_millis(100),
-            chance_despawn_per_tick: 0.01,
-            reaction: Some(BurnProduct {
-                produces: ids.water,
-                chance_to_produce: 0.2,
-            }),
-            chance_to_ignite: 0.0,
-            spreads_fire: false,
-            spread_radius: 1.0,
-            despawn_on_extinguish: false,
-            ignites_on_spawn: false,
-        },
+        Flammable::new(Duration::from_secs(2), Duration::from_millis(100))
+            .with_chance_despawn_per_tick(0.01)
+            .with_reaction(BurnProduct::new(ids.water, 0.2)),
         Corrodible,
     ));
 
@@ -178,20 +167,12 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         ParticleCategory("Wall".into()),
         texture("textures/created/wood_grain.png"),
         StaticRigidBodyParticle,
-        Flammable {
-            duration: Duration::from_secs(10),
-            tick_rate: Duration::from_millis(100),
-            chance_despawn_per_tick: 0.015,
-            reaction: Some(BurnProduct {
-                produces: ids.smoke,
-                chance_to_produce: 0.035,
-            }),
-            chance_to_ignite: 0.2,
-            spreads_fire: true,
-            spread_radius: 1.0,
-            despawn_on_extinguish: true,
-            ignites_on_spawn: false,
-        },
+        Flammable::new(Duration::from_secs(10), Duration::from_millis(100))
+            .with_chance_despawn_per_tick(0.015)
+            .with_reaction(BurnProduct::new(ids.smoke, 0.035))
+            .with_chance_to_ignite(0.2)
+            .with_fire_spread(1.0)
+            .with_despawn_on_extinguish(),
         Corrodible,
     ));
 
@@ -200,20 +181,11 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         ParticleCategory("Wall".into()),
         texture("textures/created/flowered_grass.png"),
         StaticRigidBodyParticle,
-        Flammable {
-            duration: Duration::from_secs(1),
-            tick_rate: Duration::from_millis(100),
-            chance_despawn_per_tick: 0.5,
-            reaction: Some(BurnProduct {
-                produces: ids.fire,
-                chance_to_produce: 1.0,
-            }),
-            chance_to_ignite: 0.36,
-            spreads_fire: true,
-            spread_radius: 1.0,
-            despawn_on_extinguish: false,
-            ignites_on_spawn: false,
-        },
+        Flammable::new(Duration::from_secs(1), Duration::from_millis(100))
+            .with_chance_despawn_per_tick(0.5)
+            .with_reaction(BurnProduct::new(ids.fire, 1.0))
+            .with_chance_to_ignite(0.36)
+            .with_fire_spread(1.0),
         Corrodible,
     ));
 
@@ -524,20 +496,11 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         liquid_movement(4),
         ParticleResistor(0.5),
         Speed::new(0, 3),
-        Flammable {
-            duration: Duration::from_secs(5),
-            tick_rate: Duration::from_millis(100),
-            chance_despawn_per_tick: 0.1,
-            reaction: Some(BurnProduct {
-                produces: ids.smoke,
-                chance_to_produce: 0.035,
-            }),
-            chance_to_ignite: 0.2,
-            spreads_fire: true,
-            spread_radius: 1.0,
-            despawn_on_extinguish: false,
-            ignites_on_spawn: false,
-        },
+        Flammable::new(Duration::from_secs(5), Duration::from_millis(100))
+            .with_chance_despawn_per_tick(0.1)
+            .with_reaction(BurnProduct::new(ids.smoke, 0.035))
+            .with_chance_to_ignite(0.2)
+            .with_fire_spread(1.0),
         Corrodible,
     ));
 
@@ -574,20 +537,9 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         Density::new(250),
         gas_movement(3),
         Speed::new(0, 1),
-        Flammable {
-            duration: Duration::from_millis(200),
-            tick_rate: Duration::from_millis(100),
-            chance_despawn_per_tick: 1.0,
-            reaction: Some(BurnProduct {
-                produces: ids.water,
-                chance_to_produce: 1.0,
-            }),
-            chance_to_ignite: 0.0,
-            spreads_fire: false,
-            spread_radius: 1.0,
-            despawn_on_extinguish: false,
-            ignites_on_spawn: false,
-        },
+        Flammable::new(Duration::from_millis(200), Duration::from_millis(100))
+            .with_chance_despawn_per_tick(1.0)
+            .with_reaction(BurnProduct::new(ids.water, 1.0)),
         Corrodible,
     ));
 
@@ -619,17 +571,11 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         Density::new(450),
         gas_movement(3),
         Speed::new(0, 3),
-        Flammable {
-            duration: Duration::from_secs(1),
-            tick_rate: Duration::from_millis(100),
-            chance_despawn_per_tick: 0.5,
-            reaction: None,
-            chance_to_ignite: 0.0,
-            spreads_fire: true,
-            spread_radius: 1.0,
-            despawn_on_extinguish: true,
-            ignites_on_spawn: true,
-        },
+        Flammable::new(Duration::from_secs(1), Duration::from_millis(100))
+            .with_chance_despawn_per_tick(0.5)
+            .with_fire_spread(1.0)
+            .with_despawn_on_extinguish()
+            .with_ignites_on_spawn(),
     ));
 
     commands.spawn((
@@ -643,16 +589,9 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         Density::new(200),
         gas_movement(1),
         Speed::new(0, 1),
-        Flammable {
-            duration: Duration::from_secs(1),
-            tick_rate: Duration::from_millis(100),
-            chance_despawn_per_tick: 0.5,
-            reaction: None,
-            chance_to_ignite: 0.35,
-            spreads_fire: true,
-            spread_radius: 1.0,
-            despawn_on_extinguish: false,
-            ignites_on_spawn: false,
-        },
+        Flammable::new(Duration::from_secs(1), Duration::from_millis(100))
+            .with_chance_despawn_per_tick(0.5)
+            .with_chance_to_ignite(0.35)
+            .with_fire_spread(1.0),
     ));
 }

@@ -166,17 +166,10 @@ impl Default for ParticleData {
         let chance_mutation =
             ChanceMutation::new(ParticleTypeId::default(), 0.01, Duration::from_millis(100));
         let static_rigid_body = StaticRigidBodyParticle;
-        let burns = Flammable::new(
-            Duration::from_millis(1000),
-            Duration::from_millis(100),
-            0.5,
-            None,
-            0.01,
-            true,
-            1.0,
-            false,
-            false,
-        );
+        let burns = Flammable::new(Duration::from_millis(1000), Duration::from_millis(100))
+            .with_chance_despawn_per_tick(0.5)
+            .with_chance_to_ignite(0.01)
+            .with_fire_spread(1.0);
         let palette = Palette::default();
         let gradient = default_editor_gradient();
         let texture = default_editor_texture();
