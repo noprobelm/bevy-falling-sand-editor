@@ -160,11 +160,10 @@ impl Default for ParticleData {
     fn default() -> Self {
         let cached_movement = CachedMovementState::default();
         let timed_lifetime = TimedLifetime::new(Duration::from_millis(10000));
-        let chance_lifetime = ChanceLifetime::new(0.01, Duration::from_millis(100));
+        let chance_lifetime = ChanceLifetime::new(0.01);
         let timed_mutation =
             TimedMutation::new(ParticleTypeId::default(), Duration::from_millis(10000));
-        let chance_mutation =
-            ChanceMutation::new(ParticleTypeId::default(), 0.01, Duration::from_millis(100));
+        let chance_mutation = ChanceMutation::new(ParticleTypeId::default(), 0.01);
         let static_rigid_body = StaticRigidBodyParticle;
         let burns = Flammable::new(Duration::from_millis(1000), Duration::from_millis(100))
             .with_chance_despawn_per_tick(0.5)
@@ -174,7 +173,7 @@ impl Default for ParticleData {
         let gradient = default_editor_gradient();
         let texture = default_editor_texture();
         let contact_reaction = ContactReaction::default();
-        let corrosive = Corrosive::new(0.5, Duration::from_millis(100));
+        let corrosive = Corrosive::new(0.5);
         let corrodible = Corrodible;
         Self {
             cached_movement,

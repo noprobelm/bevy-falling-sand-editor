@@ -382,7 +382,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         liquid_movement(6),
         ParticleResistor(0.75),
         Speed::new(0, 3),
-        Corrosive::new(0.01, Duration::from_millis(100)),
+        Corrosive::new(0.01).with_tick_rate(Duration::from_millis(100)),
         ContactReaction::new([
             ContactRule {
                 target: ids.water,
