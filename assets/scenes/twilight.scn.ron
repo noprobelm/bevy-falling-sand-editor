@@ -5,14 +5,14 @@
     Particles((
       image: "twilight.water_particles.png",
       colors: {
-        (74, 122, 150, 255): "Water",
-        (194, 213, 216, 255): "Water",
+        (74, 122, 150, 255): 14,
+        (194, 213, 216, 255): 14,
       },
     )),
     Particles((
       image: "twilight.ground_particles.png",
       colors: {
-        (41, 40, 49, 255): "Dense Rock Wall",
+        (41, 40, 49, 255): 5,
       },
     )),
   ],

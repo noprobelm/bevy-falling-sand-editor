@@ -9,7 +9,7 @@ use std::{fs, path::Path, time::Duration};
 use crate::{
     chunk_effects::{BurnEffect, GasEffect, GlowEffect, LiquidEffect},
     config::{ActiveWorldPath, ParticleTypesFile},
-    particles::ParticleCategory,
+    particles::{ParticleCategory, ParticleName},
     ui::*,
 };
 
@@ -56,7 +56,7 @@ fn show(
     mut next_synchronize_brush_state: ResMut<NextState<SynchronizeWithBrush>>,
     mut selected_particle: Option<ResMut<SelectedParticle>>,
     mut editor_params: ParticleEditorParams,
-    particle_query: Query<ParticleDataQuery>,
+    mut particle_query: Query<ParticleDataQuery>,
 ) -> Result {
     let ctx = contexts.ctx_mut()?;
 
@@ -69,6 +69,7 @@ fn show(
                 &mut next_synchronize_brush_state,
                 selected_particle.as_ref().map(|s| s.0),
                 &mut editor_params,
+                &mut particle_query,
             );
 
             ui.separator();
@@ -78,7 +79,7 @@ fn show(
                 &mut selected_particle,
                 editor_params,
                 synchronize_brush_state,
-                particle_query,
+                &mut particle_query,
             );
         });
 
@@ -91,6 +92,7 @@ fn show_top_options(
     next_synchronize_brush_state: &mut ResMut<NextState<SynchronizeWithBrush>>,
     selected_entity: Option<Entity>,
     editor_params: &mut ParticleEditorParams,
+    particle_query: &mut Query<ParticleDataQuery>,
 ) {
     ui.horizontal(|ui| {
         ui.label("Link to brush");
@@ -113,13 +115,20 @@ fn show_top_options(
         let new_particle_clicked = ui.button("New Particle").clicked();
         if new_particle_clicked {
             if let Some(entity) = selected_entity {
-                spawn_new_particle_from(entity, synchronize_brush_state, editor_params);
+                spawn_new_particle_from(
+                    entity,
+                    synchronize_brush_state,
+                    editor_params,
+                    particle_query,
+                );
             } else {
                 let entity = editor_params
                     .commands
                     .spawn((
-                        ParticleType::from_string(unique_new_particle_name(
+                        ParticleType::new(),
+                        ParticleName(unique_new_particle_name(
                             &editor_params.particle_registry,
+                            particle_query,
                         )),
                         ParticleCategory(String::from("Other")),
                         ColorProfile::default(),
@@ -158,19 +167,22 @@ fn show_top_options(
             .clicked()
             && let Some(entity) = selected_entity
         {
-            save_particle_name(entity, synchronize_brush_state, editor_params);
+            save_particle_name(
+                entity,
+                synchronize_brush_state,
+                editor_params,
+                particle_query,
+            );
         }
     });
 }
 
-/// Commit the buffered name in `NameDraft` to the entity. Refuses names that are empty,
-/// equal to the entity's current registered name (no-op), or already used by another
-/// particle. Re-inserting `ParticleType` triggers the registry hooks that keep the
-/// `ParticleTypeRegistry` in sync with the new name.
+/// Commit the buffered name in `NameDraft` to the editor-owned [`ParticleName`] component.
 fn save_particle_name(
     entity: Entity,
     synchronize_brush_state: &Res<State<SynchronizeWithBrush>>,
     editor_params: &mut ParticleEditorParams,
+    particle_query: &mut Query<ParticleDataQuery>,
 ) {
     if editor_params.name_draft.entity != Some(entity) {
         return;
@@ -180,8 +192,9 @@ fn save_particle_name(
         warn!("Save Particle: refusing to save an empty particle name");
         return;
     }
-    if let Some(existing) = editor_params.particle_registry.get(new_name.as_str())
-        && *existing != entity
+    if let Some(existing) =
+        find_particle_by_name(&new_name, &editor_params.particle_registry, particle_query)
+        && existing != entity
     {
         warn!("Save Particle: name '{new_name}' already used by another particle type");
         return;
@@ -190,23 +203,27 @@ fn save_particle_name(
     editor_params
         .commands
         .entity(entity)
-        .remove::<ParticleType>()
-        .insert(ParticleType::from_string(new_name.clone()));
+        .insert(ParticleName(new_name.clone()));
 
-    if synchronize_brush_state.get() == &SynchronizeWithBrush::Enabled {
-        editor_params.brush.0 = ParticleType::from(new_name);
+    if synchronize_brush_state.get() == &SynchronizeWithBrush::Enabled
+        && let Ok(data) = particle_query.get(entity)
+    {
+        editor_params.brush.0 = data.core.particle_type.id();
     }
 }
 
-fn unique_new_particle_name(registry: &ParticleTypeRegistry) -> String {
+fn unique_new_particle_name(
+    registry: &ParticleTypeRegistry,
+    particle_query: &mut Query<ParticleDataQuery>,
+) -> String {
     const BASE: &str = "New Particle";
-    if !registry.contains(BASE) {
+    if find_particle_by_name(BASE, registry, particle_query).is_none() {
         return BASE.to_string();
     }
     let mut i = 2;
     loop {
         let candidate = format!("{BASE} {i}");
-        if !registry.contains(&candidate) {
+        if find_particle_by_name(&candidate, registry, particle_query).is_none() {
             return candidate;
         }
         i += 1;
@@ -217,8 +234,10 @@ fn spawn_new_particle_from(
     source_entity: Entity,
     synchronize_brush_state: &Res<State<SynchronizeWithBrush>>,
     editor_params: &mut ParticleEditorParams,
+    particle_query: &mut Query<ParticleDataQuery>,
 ) {
-    let new_name = unique_new_particle_name(&editor_params.particle_registry);
+    let new_name = unique_new_particle_name(&editor_params.particle_registry, particle_query);
+    let particle_type = ParticleType::new();
 
     let new_entity = editor_params
         .commands
@@ -226,7 +245,8 @@ fn spawn_new_particle_from(
         .clone_and_spawn_with_opt_out(|builder| {
             builder.deny::<ParticleType>();
         })
-        .insert(ParticleType::from_string(new_name.clone()))
+        .insert(particle_type.clone())
+        .insert(ParticleName(new_name))
         .id();
 
     editor_params
@@ -234,7 +254,7 @@ fn spawn_new_particle_from(
         .insert_resource(SelectedParticle(new_entity));
 
     if synchronize_brush_state.get() == &SynchronizeWithBrush::Enabled {
-        editor_params.brush.0 = ParticleType::from(new_name);
+        editor_params.brush.0 = particle_type.id();
     }
 }
 
@@ -243,13 +263,14 @@ fn show_editor(
     selected_particle: &mut Option<ResMut<SelectedParticle>>,
     mut editor_params: ParticleEditorParams,
     synchronize_brush_selection: Res<State<SynchronizeWithBrush>>,
-    particle_query: Query<ParticleDataQuery>,
+    particle_query: &mut Query<ParticleDataQuery>,
 ) {
     ui.columns(2, |columns| {
         show_category_labels(
             &mut columns[0],
             &mut editor_params,
-            synchronize_brush_selection,
+            &synchronize_brush_selection,
+            particle_query,
         );
         show_editing_area(
             &mut columns[1],
@@ -261,6 +282,17 @@ fn show_editor(
     ui.separator();
     ui.horizontal(|ui| {
         if ui.button("Save").clicked() {
+            if let Some(selected_particle) = selected_particle.as_deref()
+                && editor_params.name_draft.entity == Some(selected_particle.0)
+            {
+                save_particle_name(
+                    selected_particle.0,
+                    &synchronize_brush_selection,
+                    &mut editor_params,
+                    particle_query,
+                );
+            }
+
             editor_params
                 .msgw_save_particle
                 .write(PersistParticleTypesSignal(
@@ -383,7 +415,8 @@ fn show_load_particle_types_popup(
 fn show_category_labels(
     ui: &mut egui::Ui,
     editor_params: &mut ParticleEditorParams,
-    synchronize_brush_selection: Res<State<SynchronizeWithBrush>>,
+    synchronize_brush_selection: &Res<State<SynchronizeWithBrush>>,
+    particle_query: &mut Query<ParticleDataQuery>,
 ) {
     let categories: Vec<_> = editor_params
         .category_labels
@@ -391,7 +424,7 @@ fn show_category_labels(
         .map(|(h, items)| (h.to_string(), items.clone()))
         .collect();
 
-    let mut selected_label: Option<String> = None;
+    let mut selected_label: Option<ParticleLabel> = None;
 
     egui::ScrollArea::vertical()
         .id_salt("category_labels")
@@ -401,7 +434,7 @@ fn show_category_labels(
                     .default_open(false)
                     .show(ui, |ui| {
                         for label in items {
-                            if ui.button(label).clicked() {
+                            if ui.button(&label.name).clicked() {
                                 selected_label = Some(label.clone());
                             }
                         }
@@ -409,14 +442,15 @@ fn show_category_labels(
             }
         });
 
-    if let Some(label) = selected_label
-        && let Some(entity) = editor_params.particle_registry.get(&label)
-    {
+    if let Some(label) = selected_label {
+        let entity = label.entity;
         editor_params
             .commands
-            .insert_resource(SelectedParticle(*entity));
-        if synchronize_brush_selection.get() == &SynchronizeWithBrush::Enabled {
-            editor_params.brush.0 = ParticleType::from(label);
+            .insert_resource(SelectedParticle(entity));
+        if synchronize_brush_selection.get() == &SynchronizeWithBrush::Enabled
+            && let Ok(data) = particle_query.get(entity)
+        {
+            editor_params.brush.0 = data.core.particle_type.id();
         }
     }
 }
@@ -425,7 +459,7 @@ fn show_editing_area(
     ui: &mut egui::Ui,
     selected_particle: &mut Option<ResMut<SelectedParticle>>,
     editor_params: &mut ParticleEditorParams,
-    mut particle_query: Query<ParticleDataQuery>,
+    particle_query: &mut Query<ParticleDataQuery>,
 ) {
     egui::ScrollArea::vertical()
         .id_salt("editing_area")
@@ -441,9 +475,11 @@ fn show_editing_area(
                         return;
                     };
 
+                    let particle_options =
+                        particle_options(&editor_params.particle_registry, particle_query);
+
                     if let Ok(data) = particle_query.get_mut(selected_particle.0) {
-                        let (particle_type, timed_lifetime, chance_lifetime, chance_mutation) = (
-                            data.core.particle_type,
+                        let (timed_lifetime, chance_lifetime, chance_mutation) = (
                             data.core.timed_lifetime,
                             data.core.chance_lifetime,
                             data.core.chance_mutation,
@@ -489,7 +525,6 @@ fn show_editing_area(
                                 show_particle_type_text_edit(
                                     ui,
                                     selected_particle.0,
-                                    &particle_type,
                                     &mut editor_params.name_draft,
                                 );
                                 show_category(
@@ -567,6 +602,7 @@ fn show_editing_area(
                                             chance_mutation,
                                             &mut state.chance_mutation,
                                             &editor_params.particle_registry,
+                                            &particle_options,
                                         );
                                     });
                             });
@@ -630,6 +666,7 @@ fn show_editing_area(
                                             burns,
                                             &mut state.burns,
                                             &editor_params.particle_registry,
+                                            &particle_options,
                                         );
                                     },
                                 );
@@ -648,6 +685,7 @@ fn show_editing_area(
                                             contact_reaction,
                                             &mut state.contact_reaction,
                                             &editor_params.particle_registry,
+                                            &particle_options,
                                         );
                                     });
                             });
@@ -673,19 +711,11 @@ fn show_editing_area(
         });
 }
 
-fn show_particle_type_text_edit(
-    ui: &mut egui::Ui,
-    entity: Entity,
-    particle_type: &Mut<'_, ParticleType>,
-    name_draft: &mut NameDraft,
-) {
-    // Editor input is buffered in NameDraft; the live ParticleType is only updated by
-    // the "Save Particle" button. This prevents partial values typed into the Name field
-    // from being committed to the registry mid-edit and stealing another particle's
-    // identity (e.g. typing "Colorful Smoke" passing through "Colorful").
+fn show_particle_type_text_edit(ui: &mut egui::Ui, entity: Entity, name_draft: &mut NameDraft) {
+    // Buffer edits so partially-typed names don't collide with existing labels.
     if name_draft.entity != Some(entity) {
         name_draft.entity = Some(entity);
-        name_draft.name = particle_type.name.to_string();
+        name_draft.name.clear();
     }
     ui.label("Name:");
     ui.add(egui::TextEdit::singleline(&mut name_draft.name));
@@ -896,6 +926,7 @@ fn show_chance_mutation(
     chance_mutation: Option<Mut<'_, ChanceMutation>>,
     mutation_state: &mut ChanceMutation,
     particle_registry: &ParticleTypeRegistry,
+    particle_options: &[(String, ParticleTypeId)],
 ) {
     let enabled = chance_mutation.is_some();
     let new_value = add_label_with_toggle_switch(ui, 0, "Mutation (Chance)", enabled);
@@ -908,15 +939,15 @@ fn show_chance_mutation(
     }
     if let Some(mut mutation) = chance_mutation {
         ui.label("    Target:");
-        let current = mutation.target.name.to_string();
         if let Some(new_target) = particle_combo(
             ui,
             format!("chance_mutation_target_{entity:?}"),
-            &current,
+            mutation.target,
             particle_registry,
+            particle_options,
         ) {
-            mutation.target = new_target.clone().into();
-            mutation_state.target = new_target.into();
+            mutation.target = new_target;
+            mutation_state.target = new_target;
         }
         ui.end_row();
 
@@ -957,34 +988,72 @@ fn show_chance_mutation(
 fn particle_combo(
     ui: &mut egui::Ui,
     id_salt: impl std::hash::Hash + std::fmt::Debug,
-    current: &str,
-    registry: &ParticleTypeRegistry,
-) -> Option<String> {
-    let mut names: Vec<String> = registry.names().map(str::to_string).collect();
-    names.sort();
-    let selected_text = if current.is_empty() {
-        "<unset>"
-    } else {
-        current
-    };
+    current: ParticleTypeId,
+    _registry: &ParticleTypeRegistry,
+    particle_options: &[(String, ParticleTypeId)],
+) -> Option<ParticleTypeId> {
+    let mut options = particle_options.to_vec();
+    options.sort_by(|a, b| a.0.cmp(&b.0));
+    let selected_text = options
+        .iter()
+        .find_map(|(name, id)| (*id == current).then(|| name.clone()))
+        .unwrap_or_else(|| "<unset>".to_string());
     let new_value = ui
         .push_id(id_salt, |ui| {
-            let mut value = current.to_string();
+            let mut value = current;
             egui::ComboBox::from_id_salt("particle_combo")
-                .selected_text(selected_text)
+                .selected_text(selected_text.as_str())
                 .show_ui(ui, |ui| {
-                    for name in &names {
-                        ui.selectable_value(&mut value, name.clone(), name);
+                    for (name, id) in options {
+                        ui.selectable_value(&mut value, id, name);
                     }
                 });
             value
         })
         .inner;
-    if new_value != current {
-        Some(new_value)
-    } else {
+    if new_value == current {
         None
+    } else {
+        Some(new_value)
     }
+}
+
+fn particle_options(
+    registry: &ParticleTypeRegistry,
+    particle_query: &mut Query<ParticleDataQuery>,
+) -> Vec<(String, ParticleTypeId)> {
+    registry
+        .entities()
+        .filter_map(|entity| {
+            particle_query.get(*entity).ok().map(|data| {
+                (
+                    data.core
+                        .name
+                        .as_ref()
+                        .map(|name| name.0.clone())
+                        .unwrap_or_else(|| {
+                            format!("Particle {}", data.core.particle_type.id().get())
+                        }),
+                    data.core.particle_type.id(),
+                )
+            })
+        })
+        .collect()
+}
+
+fn find_particle_by_name(
+    name: &str,
+    registry: &ParticleTypeRegistry,
+    particle_query: &mut Query<ParticleDataQuery>,
+) -> Option<Entity> {
+    registry.entities().copied().find(|entity| {
+        particle_query.get(*entity).is_ok_and(|data| {
+            data.core
+                .name
+                .as_ref()
+                .is_some_and(|particle_name| particle_name.0 == name)
+        })
+    })
 }
 
 fn show_color_source(
@@ -1315,6 +1384,7 @@ fn show_flammability(
     burns: Option<Mut<'_, Flammable>>,
     burns_state: &mut Flammable,
     particle_registry: &ParticleTypeRegistry,
+    particle_options: &[(String, ParticleTypeId)],
 ) {
     let enabled = burns.is_some();
     let new_value = add_label_with_toggle_switch(ui, 0, "Flammable", enabled);
@@ -1329,7 +1399,13 @@ fn show_flammability(
     if let Some(mut burns) = burns {
         show_burns_timing(ui, &mut burns, burns_state);
         show_burns_ignites_on_spawn(ui, &mut burns, burns_state);
-        show_burns_reaction(ui, &mut burns, burns_state, particle_registry);
+        show_burns_reaction(
+            ui,
+            &mut burns,
+            burns_state,
+            particle_registry,
+            particle_options,
+        );
 
         add_minor_grid_separator(ui);
 
@@ -1411,6 +1487,7 @@ fn show_burns_reaction(
     burns: &mut Mut<'_, Flammable>,
     burns_state: &mut Flammable,
     particle_registry: &ParticleTypeRegistry,
+    particle_options: &[(String, ParticleTypeId)],
 ) {
     let reaction_enabled = burns.reaction.is_some();
     let new_value = add_label_with_toggle_switch(ui, 0, "    Reaction", reaction_enabled);
@@ -1433,17 +1510,17 @@ fn show_burns_reaction(
             }
         }
 
-        let produces_name = reaction.produces.name.to_string();
         ui.label("        Produces");
-        if let Some(new_name) = particle_combo(
+        if let Some(new_produces) = particle_combo(
             ui,
             "burns_reaction_produces",
-            &produces_name,
+            reaction.produces,
             particle_registry,
+            particle_options,
         ) {
-            reaction.produces = ParticleType::from(new_name.clone());
+            reaction.produces = new_produces;
             if let Some(ref mut state_reaction) = burns_state.reaction {
-                state_reaction.produces = ParticleType::from(new_name);
+                state_reaction.produces = new_produces;
             }
         }
         ui.end_row();
@@ -1480,6 +1557,7 @@ fn show_contact_reactions(
     contact_reaction: Option<Mut<'_, ContactReaction>>,
     contact_reaction_state: &mut ContactReaction,
     particle_registry: &ParticleTypeRegistry,
+    particle_options: &[(String, ParticleTypeId)],
 ) {
     let enabled = contact_reaction.is_some();
     let new_value = add_label_with_toggle_switch(ui, 0, "Enabled", enabled);
@@ -1499,6 +1577,7 @@ fn show_contact_reactions(
             &mut contact_reaction,
             contact_reaction_state,
             particle_registry,
+            particle_options,
         );
     }
 }
@@ -1508,12 +1587,13 @@ fn show_contact_rules(
     contact_reaction: &mut Mut<'_, ContactReaction>,
     contact_reaction_state: &mut ContactReaction,
     particle_registry: &ParticleTypeRegistry,
+    particle_options: &[(String, ParticleTypeId)],
 ) {
     ui.label("    Rules");
     if ui.button("Add Rule").clicked() {
         let rule = ContactRule {
-            target: ParticleType::default(),
-            becomes: ParticleType::default(),
+            target: ParticleTypeId::default(),
+            becomes: ParticleTypeId::default(),
             chance: 0.1,
             radius: 1.0,
             consumes: Consumes::Source,
@@ -1537,29 +1617,29 @@ fn show_contact_rules(
         });
         ui.end_row();
 
-        let target_name = rule.target.name.to_string();
         ui.label("        Target");
-        if let Some(new_name) = particle_combo(
+        if let Some(new_target) = particle_combo(
             ui,
             format!("contact_rule_target_{i}"),
-            &target_name,
+            rule.target,
             particle_registry,
+            particle_options,
         ) {
-            rule.target = ParticleType::from(new_name.clone());
-            contact_reaction_state.rules[i].target = ParticleType::from(new_name);
+            rule.target = new_target;
+            contact_reaction_state.rules[i].target = new_target;
         }
         ui.end_row();
 
-        let becomes_name = rule.becomes.name.to_string();
         ui.label("        Becomes");
-        if let Some(new_name) = particle_combo(
+        if let Some(new_becomes) = particle_combo(
             ui,
             format!("contact_rule_becomes_{i}"),
-            &becomes_name,
+            rule.becomes,
             particle_registry,
+            particle_options,
         ) {
-            rule.becomes = ParticleType::from(new_name.clone());
-            contact_reaction_state.rules[i].becomes = ParticleType::from(new_name);
+            rule.becomes = new_becomes;
+            contact_reaction_state.rules[i].becomes = new_becomes;
         }
         ui.end_row();
 

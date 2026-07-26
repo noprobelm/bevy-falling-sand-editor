@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use bevy::prelude::*;
-use bevy_falling_sand::core::{ParticleType, SpawnParticleSignal};
+use bevy_falling_sand::core::SpawnParticleSignal;
 use bevy_rand::prelude::{GlobalRng, WyRand};
 use rand::Rng;
 
@@ -246,6 +246,7 @@ pub fn spawn_barnsley(
     trigger: On<SpawnBarnsleyEvent>,
     mut particles: MessageWriter<SpawnParticleSignal>,
     mut rng: Single<&mut WyRand, With<GlobalRng>>,
+    default_ids: Res<crate::particles::DefaultParticleIds>,
 ) {
     let ev = trigger.event();
     let fern = generate_fern(
@@ -258,13 +259,10 @@ pub fn spawn_barnsley(
         ev.num_iterations,
     );
 
-    let wood = ParticleType::new("Wood Wall");
-    let grass = ParticleType::new("Grass Wall");
-
     for point in &fern {
         let particle = match point.element {
-            FernElement::Stem => wood.clone(),
-            _ => grass.clone(),
+            FernElement::Stem => default_ids.wood_wall,
+            _ => default_ids.grass_wall,
         };
         particles.write(SpawnParticleSignal::new(particle, point.position));
     }

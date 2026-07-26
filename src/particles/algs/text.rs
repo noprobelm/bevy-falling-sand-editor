@@ -35,10 +35,7 @@ pub fn spawn_text(
     let offset = event.center - text_center;
 
     for pos in positions {
-        msgw_spawn_particles.write(SpawnParticleSignal::new(
-            selected_particle.0.clone(),
-            pos + offset,
-        ));
+        msgw_spawn_particles.write(SpawnParticleSignal::new(selected_particle.0, pos + offset));
     }
 }
 

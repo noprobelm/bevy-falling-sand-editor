@@ -1,8 +1,12 @@
 use bevy::prelude::*;
 use bevy_falling_sand::prelude::*;
 
-use crate::ui::{
-    EditorState, ParticleCategoryLabels, ParticleTypesSavedMessageConfiguration, SelectedParticle,
+use crate::{
+    particles::DefaultParticleIds,
+    ui::{
+        EditorState, ParticleCategoryLabels, ParticleTypesSavedMessageConfiguration,
+        SelectedParticle,
+    },
 };
 
 pub struct SetupPlugin;
@@ -21,10 +25,13 @@ impl Plugin for SetupPlugin {
     }
 }
 
-fn set_initial_selected_particle(mut commands: Commands, registry: Res<ParticleTypeRegistry>) {
-    const DEFAULT_PARTICLE_NAME: &str = "Flammable Gas";
+fn set_initial_selected_particle(
+    mut commands: Commands,
+    registry: Res<ParticleTypeRegistry>,
+    default_ids: Res<DefaultParticleIds>,
+) {
     let entity = registry
-        .get(DEFAULT_PARTICLE_NAME)
+        .get(default_ids.flammable_gas)
         .or_else(|| registry.entities().next())
         .copied()
         .expect("No particle types found in the world");

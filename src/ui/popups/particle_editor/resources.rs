@@ -5,7 +5,7 @@ use bevy_egui::EguiPrimaryContextPass;
 use bevy_falling_sand::prelude::*;
 
 use crate::chunk_effects::{BurnEffect, GasEffect, GlowEffect, LiquidEffect};
-use crate::particles::ParticleCategory;
+use crate::particles::{ParticleCategory, ParticleName};
 use crate::ui::UiSystems;
 
 pub struct ResourcesPlugin;
@@ -13,6 +13,7 @@ pub struct ResourcesPlugin;
 impl Plugin for ResourcesPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<NameDraft>()
+            .init_resource::<ParticleCategoryLabels>()
             .add_systems(
                 EguiPrimaryContextPass,
                 (
@@ -53,16 +54,16 @@ const CATEGORY_ORDER: &[&str] = &["Wall", "Solid", "Movable Solid", "Liquid", "G
 
 #[derive(Resource, Default)]
 pub struct ParticleCategoryLabels {
-    /// Ordered list of (category_name, particle_names).
-    pub categories: Vec<(String, Vec<String>)>,
+    /// Ordered list of (category_name, particle labels).
+    pub categories: Vec<(String, Vec<ParticleLabel>)>,
 }
 
 impl ParticleCategoryLabels {
-    pub fn push(&mut self, category: &str, name: String) {
+    pub fn push(&mut self, category: &str, label: ParticleLabel) {
         if let Some((_, names)) = self.categories.iter_mut().find(|(c, _)| c == category) {
-            names.push(name);
+            names.push(label);
         } else {
-            self.categories.push((category.to_string(), vec![name]));
+            self.categories.push((category.to_string(), vec![label]));
         }
     }
 
@@ -83,9 +84,16 @@ impl ParticleCategoryLabels {
         });
     }
 
-    pub fn categories(&self) -> impl Iterator<Item = (&str, &Vec<String>)> {
+    pub fn categories(&self) -> impl Iterator<Item = (&str, &Vec<ParticleLabel>)> {
         self.categories.iter().map(|(k, v)| (k.as_str(), v))
     }
+}
+
+#[derive(Clone, Eq, PartialEq, Debug)]
+pub struct ParticleLabel {
+    pub entity: Entity,
+    pub id: ParticleTypeId,
+    pub name: String,
 }
 
 #[derive(Resource, Copy, Clone, PartialEq, Debug, Reflect)]
@@ -152,7 +160,8 @@ impl Default for ParticleData {
         let cached_movement = CachedMovementState::default();
         let timed_lifetime = TimedLifetime::new(Duration::from_millis(10000));
         let chance_lifetime = ChanceLifetime::new(0.01, Duration::from_millis(100));
-        let chance_mutation = ChanceMutation::new(String::new(), 0.01, Duration::from_millis(100));
+        let chance_mutation =
+            ChanceMutation::new(ParticleTypeId::default(), 0.01, Duration::from_millis(100));
         let static_rigid_body = StaticRigidBodyParticle;
         let burns = Flammable::new(
             Duration::from_millis(1000),
@@ -203,6 +212,7 @@ pub(crate) struct ParticleDataQuery {
 #[query_data(mutable)]
 pub(crate) struct CoreQuery {
     pub particle_type: &'static mut ParticleType,
+    pub name: Option<&'static mut ParticleName>,
     pub timed_lifetime: Option<&'static mut TimedLifetime>,
     pub chance_lifetime: Option<&'static mut ChanceLifetime>,
     pub chance_mutation: Option<&'static mut ChanceMutation>,
@@ -373,12 +383,29 @@ fn synchronize_editor_registry(
 
 fn refresh_particle_labels(
     mut commands: Commands,
-    particles: Query<(&ParticleType, Option<&ParticleCategory>), With<ParticleType>>,
+    particles: Query<(
+        Entity,
+        &ParticleType,
+        Option<&ParticleName>,
+        Option<&ParticleCategory>,
+    )>,
 ) {
     let mut labels = ParticleCategoryLabels::default();
-    for (ptype, category) in &particles {
+    for (entity, ptype, name, category) in &particles {
         let cat = category.map(|c| c.0.as_str()).unwrap_or("Other");
-        labels.push(cat, ptype.name.to_string());
+        labels.push(
+            cat,
+            ParticleLabel {
+                entity,
+                id: ptype.id(),
+                name: name
+                    .map(|n| n.0.clone())
+                    .unwrap_or_else(|| format!("Particle {}", ptype.id().get())),
+            },
+        );
+    }
+    for (_, labels) in &mut labels.categories {
+        labels.sort_by(|a, b| a.name.cmp(&b.name));
     }
     labels.sort();
     commands.insert_resource(labels);
@@ -387,16 +414,17 @@ fn refresh_particle_labels(
 fn condition_particle_movement_changed(
     movement: Query<Entity, Changed<Movement>>,
     categories: Query<Entity, Changed<ParticleCategory>>,
+    names: Query<Entity, Changed<ParticleName>>,
 ) -> bool {
-    !movement.is_empty() || !categories.is_empty()
+    !movement.is_empty() || !categories.is_empty() || !names.is_empty()
 }
 
 /// Buffered name for the currently-selected particle.
 ///
 /// The Name text field in the editor writes to this buffer instead of the live
-/// `ParticleType` component, so partially-typed values can't collide with another
-/// particle's registered name (which would otherwise clobber the other particle's
-/// identity). The buffer is committed to the entity by the "Save Particle" button.
+/// `ParticleName` component, so partially-typed values can't collide with another
+/// particle's display name. The buffer is committed to the entity by the
+/// "Update Name" button or by saving particle definitions.
 #[derive(Resource, Default)]
 pub struct NameDraft {
     pub entity: Option<Entity>,
@@ -433,7 +461,7 @@ fn condition_should_refresh_name_draft(
 fn refresh_name_draft(
     selected: Option<Res<SelectedParticle>>,
     mut draft: ResMut<NameDraft>,
-    query: Query<&ParticleType>,
+    query: Query<(&ParticleType, Option<&ParticleName>)>,
 ) {
     let Some(selected) = selected else {
         draft.entity = None;
@@ -442,9 +470,11 @@ fn refresh_name_draft(
     };
 
     match query.get(selected.0) {
-        Ok(particle_type) => {
+        Ok((particle_type, name)) => {
             draft.entity = Some(selected.0);
-            draft.name = particle_type.name.to_string();
+            draft.name = name
+                .map(|n| n.0.clone())
+                .unwrap_or_else(|| format!("Particle {}", particle_type.id().get()));
         }
         Err(_) => {
             draft.entity = None;
