@@ -117,7 +117,7 @@ impl Default for CachedMovementState {
     fn default() -> Self {
         Self {
             movement: Movement::default(),
-            density: Density(1000),
+            density: Density::new(1000),
             speed: Speed::new(1, 3),
             momentum: Momentum::default(),
             resistor: ParticleResistor(0.0),
@@ -160,28 +160,20 @@ impl Default for ParticleData {
     fn default() -> Self {
         let cached_movement = CachedMovementState::default();
         let timed_lifetime = TimedLifetime::new(Duration::from_millis(10000));
-        let chance_lifetime = ChanceLifetime::new(0.01, Duration::from_millis(100));
+        let chance_lifetime = ChanceLifetime::new(0.01);
         let timed_mutation =
             TimedMutation::new(ParticleTypeId::default(), Duration::from_millis(10000));
-        let chance_mutation =
-            ChanceMutation::new(ParticleTypeId::default(), 0.01, Duration::from_millis(100));
+        let chance_mutation = ChanceMutation::new(ParticleTypeId::default(), 0.01);
         let static_rigid_body = StaticRigidBodyParticle;
-        let burns = Flammable::new(
-            Duration::from_millis(1000),
-            Duration::from_millis(100),
-            0.5,
-            None,
-            0.01,
-            true,
-            1.0,
-            false,
-            false,
-        );
+        let burns = Flammable::new(Duration::from_millis(1000), Duration::from_millis(100))
+            .with_chance_despawn_per_tick(0.5)
+            .with_chance_to_ignite(0.01)
+            .with_fire_spread(1.0);
         let palette = Palette::default();
         let gradient = default_editor_gradient();
         let texture = default_editor_texture();
         let contact_reaction = ContactReaction::default();
-        let corrosive = Corrosive::new(0.5, Duration::from_millis(100));
+        let corrosive = Corrosive::new(0.5);
         let corrodible = Corrodible;
         Self {
             cached_movement,

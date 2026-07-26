@@ -86,13 +86,12 @@ fn particle_type(id: ParticleTypeId, name: &str) -> (ParticleType, ParticleName)
 }
 
 fn movable_solid_movement() -> Movement {
-    Movement::new(
-        vec![
-            NeighborGroup::new(vec![IVec2::new(0, -1)].into()),
-            NeighborGroup::new(vec![IVec2::new(-1, -1), IVec2::new(1, -1)].into()),
-        ]
-        .into(),
-    )
+    [
+        NeighborGroup::new(vec![IVec2::new(0, -1)].into()),
+        NeighborGroup::new(vec![IVec2::new(-1, -1), IVec2::new(1, -1)].into()),
+    ]
+    .into_iter()
+    .collect()
 }
 
 fn liquid_movement(spread: i32) -> Movement {
@@ -105,7 +104,7 @@ fn liquid_movement(spread: i32) -> Movement {
             vec![IVec2::new(i, 0), IVec2::new(-i, 0)].into(),
         ));
     }
-    Movement::new(groups.into())
+    groups.into_iter().collect()
 }
 
 fn gas_movement(horizontal_spread: i32) -> Movement {
@@ -118,7 +117,7 @@ fn gas_movement(horizontal_spread: i32) -> Movement {
             vec![IVec2::new(dist, 0), IVec2::new(-dist, 0)].into(),
         ));
     }
-    Movement::new(groups.into())
+    groups.into_iter().collect()
 }
 
 pub(super) fn spawn_default_particles(commands: &mut Commands) {
@@ -157,20 +156,9 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             0.54901963, 0.85882354, 0.972549, 0.5019608,
         )]),
         StaticRigidBodyParticle,
-        Flammable {
-            duration: Duration::from_secs(2),
-            tick_rate: Duration::from_millis(100),
-            chance_despawn_per_tick: 0.01,
-            reaction: Some(BurnProduct {
-                produces: ids.water,
-                chance_to_produce: 0.2,
-            }),
-            chance_to_ignite: 0.0,
-            spreads_fire: false,
-            spread_radius: 1.0,
-            despawn_on_extinguish: false,
-            ignites_on_spawn: false,
-        },
+        Flammable::new(Duration::from_secs(2), Duration::from_millis(100))
+            .with_chance_despawn_per_tick(0.01)
+            .with_reaction(BurnProduct::new(ids.water, 0.2)),
         Corrodible,
     ));
 
@@ -179,20 +167,12 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         ParticleCategory("Wall".into()),
         texture("textures/created/wood_grain.png"),
         StaticRigidBodyParticle,
-        Flammable {
-            duration: Duration::from_secs(10),
-            tick_rate: Duration::from_millis(100),
-            chance_despawn_per_tick: 0.015,
-            reaction: Some(BurnProduct {
-                produces: ids.smoke,
-                chance_to_produce: 0.035,
-            }),
-            chance_to_ignite: 0.2,
-            spreads_fire: true,
-            spread_radius: 1.0,
-            despawn_on_extinguish: true,
-            ignites_on_spawn: false,
-        },
+        Flammable::new(Duration::from_secs(10), Duration::from_millis(100))
+            .with_chance_despawn_per_tick(0.015)
+            .with_reaction(BurnProduct::new(ids.smoke, 0.035))
+            .with_chance_to_ignite(0.2)
+            .with_fire_spread(1.0)
+            .with_despawn_on_extinguish(),
         Corrodible,
     ));
 
@@ -201,20 +181,11 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         ParticleCategory("Wall".into()),
         texture("textures/created/flowered_grass.png"),
         StaticRigidBodyParticle,
-        Flammable {
-            duration: Duration::from_secs(1),
-            tick_rate: Duration::from_millis(100),
-            chance_despawn_per_tick: 0.5,
-            reaction: Some(BurnProduct {
-                produces: ids.fire,
-                chance_to_produce: 1.0,
-            }),
-            chance_to_ignite: 0.36,
-            spreads_fire: true,
-            spread_radius: 1.0,
-            despawn_on_extinguish: false,
-            ignites_on_spawn: false,
-        },
+        Flammable::new(Duration::from_secs(1), Duration::from_millis(100))
+            .with_chance_despawn_per_tick(0.5)
+            .with_reaction(BurnProduct::new(ids.fire, 1.0))
+            .with_chance_to_ignite(0.36)
+            .with_fire_spread(1.0),
         Corrodible,
     ));
 
@@ -262,8 +233,8 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             Color::srgba(1.0, 0.92156863, 0.5411765, 1.0),
             Color::srgba(0.9490196, 0.8784314, 0.41960785, 1.0),
         ]),
-        Density(1250),
-        Momentum(IVec2::ZERO),
+        Density::new(1250),
+        Momentum::ZERO,
         movable_solid_movement(),
         AirResistance::new([0.0, 0.9]),
         Speed::new(5, 10),
@@ -278,8 +249,8 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             Color::srgba(0.91764706, 0.99215686, 0.972549, 1.0),
             Color::srgba(1.0, 1.0, 1.0, 1.0),
         ]),
-        Density(1250),
-        Momentum(IVec2::ZERO),
+        Density::new(1250),
+        Momentum::ZERO,
         movable_solid_movement(),
         AirResistance::new([0.0, 0.2]),
         Speed::new(5, 10),
@@ -294,8 +265,8 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             Color::srgba(0.5686275, 0.41960785, 0.29803923, 1.0),
             Color::srgba(0.4509804, 0.34117648, 0.23921569, 1.0),
         ]),
-        Density(1250),
-        Momentum(IVec2::ZERO),
+        Density::new(1250),
+        Momentum::ZERO,
         movable_solid_movement(),
         AirResistance::new([0.0, 0.6]),
         Speed::new(5, 10),
@@ -313,8 +284,8 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             Color::srgba(0.9098039, 0.8862745, 0.70980394, 1.0),
             Color::srgba(0.9490196, 0.60784316, 0.42745098, 1.0),
         ]),
-        Density(1250),
-        Momentum(IVec2::ZERO),
+        Density::new(1250),
+        Momentum::ZERO,
         movable_solid_movement(),
         AirResistance::new([0.0, 0.4]),
         Speed::new(5, 10),
@@ -336,8 +307,8 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             }),
             assignment: ColorAssignment::Sequential,
         },
-        Density(1250),
-        Momentum(IVec2::ZERO),
+        Density::new(1250),
+        Momentum::ZERO,
         movable_solid_movement(),
         AirResistance::new([0.0, 0.4]),
         Speed::new(5, 10),
@@ -355,7 +326,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             Color::srgba(0.54901963, 0.5882353, 0.67058825, 1.0),
             Color::srgba(0.69803923, 0.76862746, 0.8392157, 1.0),
         ]),
-        Density(1250),
+        Density::new(1250),
         Movement::new(vec![NeighborGroup::new(vec![IVec2::new(0, -1)].into())].into()),
         Speed::new(0, 3),
         StaticRigidBodyParticle,
@@ -372,33 +343,31 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             0.67058825,
             0.5019608,
         )]),
-        ContactReaction {
-            rules: vec![
-                ContactRule {
-                    target: ids.slime,
-                    becomes: ids.water,
-                    chance: 0.005,
-                    radius: 1.0,
-                    consumes: Consumes::Target,
-                },
-                ContactRule {
-                    target: ids.lava,
-                    becomes: ids.obsidian,
-                    chance: 0.45,
-                    radius: 1.0,
-                    consumes: Consumes::Source,
-                },
-                ContactRule {
-                    target: ids.acid,
-                    becomes: ids.steam,
-                    chance: 1.0,
-                    radius: 1.0,
-                    consumes: Consumes::Source,
-                },
-            ],
-        },
-        Density(750),
-        Momentum(IVec2::ZERO),
+        ContactReaction::new([
+            ContactRule {
+                target: ids.slime,
+                becomes: ids.water,
+                chance: 0.005,
+                radius: 1.0,
+                consumes: Consumes::Target,
+            },
+            ContactRule {
+                target: ids.lava,
+                becomes: ids.obsidian,
+                chance: 0.45,
+                radius: 1.0,
+                consumes: Consumes::Source,
+            },
+            ContactRule {
+                target: ids.acid,
+                becomes: ids.steam,
+                chance: 1.0,
+                radius: 1.0,
+                consumes: Consumes::Source,
+            },
+        ]),
+        Density::new(750),
+        Momentum::ZERO,
         liquid_movement(6),
         ParticleResistor(0.75),
         Speed::new(0, 3),
@@ -408,30 +377,28 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         particle_type(ids.acid, "Acid"),
         ParticleCategory("Liquid".into()),
         palette(vec![Color::srgba(0.25490198, 0.6862745, 0.0, 1.)]),
-        Density(750),
-        Momentum(IVec2::ZERO),
+        Density::new(750),
+        Momentum::ZERO,
         liquid_movement(6),
         ParticleResistor(0.75),
         Speed::new(0, 3),
-        Corrosive::new(0.01, Duration::from_millis(100)),
-        ContactReaction {
-            rules: vec![
-                ContactRule {
-                    target: ids.water,
-                    becomes: ids.steam,
-                    chance: 1.0,
-                    radius: 1.0,
-                    consumes: Consumes::Target,
-                },
-                ContactRule {
-                    target: ids.slime,
-                    becomes: ids.congealed_slime,
-                    chance: 1.0,
-                    radius: 1.0,
-                    consumes: Consumes::Target,
-                },
-            ],
-        },
+        Corrosive::new(0.01).with_tick_rate(Duration::from_millis(100)),
+        ContactReaction::new([
+            ContactRule {
+                target: ids.water,
+                becomes: ids.steam,
+                chance: 1.0,
+                radius: 1.0,
+                consumes: Consumes::Target,
+            },
+            ContactRule {
+                target: ids.slime,
+                becomes: ids.congealed_slime,
+                chance: 1.0,
+                radius: 1.0,
+                consumes: Consumes::Target,
+            },
+        ]),
     ));
 
     commands.spawn((
@@ -442,20 +409,18 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             Color::srgba(0.56078434, 0.654902, 0.22352941, 0.5019608),
         ]),
         LiquidEffect,
-        Density(850),
-        Momentum(IVec2::ZERO),
+        Density::new(850),
+        Momentum::ZERO,
         liquid_movement(2),
         ParticleResistor(0.6),
         Speed::new(0, 2),
-        ContactReaction {
-            rules: vec![ContactRule {
-                target: ids.acid,
-                becomes: ids.congealed_slime,
-                chance: 1.0,
-                radius: 1.0,
-                consumes: Consumes::Source,
-            }],
-        },
+        ContactReaction::new([ContactRule {
+            target: ids.acid,
+            becomes: ids.congealed_slime,
+            chance: 1.0,
+            radius: 1.0,
+            consumes: Consumes::Source,
+        }]),
     ));
 
     commands.spawn((
@@ -466,8 +431,8 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             Color::srgba(0.56078434, 0.654902, 0.22352941, 0.5019608),
         ]),
         LiquidEffect,
-        Density(850),
-        Momentum(IVec2::ZERO),
+        Density::new(850),
+        Momentum::ZERO,
         liquid_movement(1),
         ParticleResistor(0.8),
         Speed::new(0, 2),
@@ -485,8 +450,8 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             Color::srgba(0.9411765, 0.36078432, 0.36862746, 1.0),
         ]),
         LiquidEffect,
-        Density(850),
-        Momentum(IVec2::ZERO),
+        Density::new(850),
+        Momentum::ZERO,
         liquid_movement(2),
         ParticleResistor(0.5),
         Speed::new(0, 2),
@@ -502,8 +467,8 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             0.023529412,
             1.0,
         )]),
-        Density(800),
-        Momentum(IVec2::ZERO),
+        Density::new(800),
+        Momentum::ZERO,
         liquid_movement(6),
         ParticleResistor(0.5),
         Speed::new(0, 3),
@@ -514,8 +479,8 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         particle_type(ids.whiskey, "Whiskey"),
         ParticleCategory("Liquid".into()),
         palette(vec![Color::srgba(0.8392157, 0.6, 0.4392157, 0.5019608)]),
-        Density(850),
-        Momentum(IVec2::ZERO),
+        Density::new(850),
+        Momentum::ZERO,
         liquid_movement(6),
         ParticleResistor(0.4),
         Speed::new(0, 3),
@@ -526,25 +491,16 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         particle_type(ids.oil, "Oil"),
         ParticleCategory("Liquid".into()),
         palette(vec![Color::srgba(0.16862746, 0.07058824, 0.16078432, 1.0)]),
-        Density(730),
-        Momentum(IVec2::ZERO),
+        Density::new(730),
+        Momentum::ZERO,
         liquid_movement(4),
         ParticleResistor(0.5),
         Speed::new(0, 3),
-        Flammable {
-            duration: Duration::from_secs(5),
-            tick_rate: Duration::from_millis(100),
-            chance_despawn_per_tick: 0.1,
-            reaction: Some(BurnProduct {
-                produces: ids.smoke,
-                chance_to_produce: 0.035,
-            }),
-            chance_to_ignite: 0.2,
-            spreads_fire: true,
-            spread_radius: 1.0,
-            despawn_on_extinguish: false,
-            ignites_on_spawn: false,
-        },
+        Flammable::new(Duration::from_secs(5), Duration::from_millis(100))
+            .with_chance_despawn_per_tick(0.1)
+            .with_reaction(BurnProduct::new(ids.smoke, 0.035))
+            .with_chance_to_ignite(0.2)
+            .with_fire_spread(1.0),
         Corrodible,
     ));
 
@@ -553,21 +509,19 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         ParticleCategory("Liquid".into()),
         palette(vec![Color::srgba(0.9, 0.4, 0.05, 1.0)]),
         GlowEffect,
-        Density(750),
-        Momentum(IVec2::ZERO),
+        Density::new(750),
+        Momentum::ZERO,
         liquid_movement(2),
         ParticleResistor(0.7),
         Speed::new(0, 2),
         Fire { radius: 1.0 },
-        ContactReaction {
-            rules: vec![ContactRule {
-                target: ids.acid,
-                becomes: ids.flammable_gas,
-                chance: 1.0,
-                radius: 1.0,
-                consumes: Consumes::Target,
-            }],
-        },
+        ContactReaction::new([ContactRule {
+            target: ids.acid,
+            becomes: ids.flammable_gas,
+            chance: 1.0,
+            radius: 1.0,
+            consumes: Consumes::Target,
+        }]),
     ));
 
     // ── Gases ──
@@ -580,23 +534,12 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             Color::srgba(0.78039217, 0.8392157, 0.8784314, 1.0),
         ]),
         GasEffect,
-        Density(250),
+        Density::new(250),
         gas_movement(3),
         Speed::new(0, 1),
-        Flammable {
-            duration: Duration::from_millis(200),
-            tick_rate: Duration::from_millis(100),
-            chance_despawn_per_tick: 1.0,
-            reaction: Some(BurnProduct {
-                produces: ids.water,
-                chance_to_produce: 1.0,
-            }),
-            chance_to_ignite: 0.0,
-            spreads_fire: false,
-            spread_radius: 1.0,
-            despawn_on_extinguish: false,
-            ignites_on_spawn: false,
-        },
+        Flammable::new(Duration::from_millis(200), Duration::from_millis(100))
+            .with_chance_despawn_per_tick(1.0)
+            .with_reaction(BurnProduct::new(ids.water, 1.0)),
         Corrodible,
     ));
 
@@ -609,7 +552,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             Color::srgba(0.52156866, 0.5019608, 0.4509804, 1.0),
         ]),
         GasEffect,
-        Density(275),
+        Density::new(275),
         gas_movement(1),
         Speed::new(0, 1),
     ));
@@ -625,20 +568,14 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         ]),
         GasEffect,
         BurnEffect,
-        Density(450),
+        Density::new(450),
         gas_movement(3),
         Speed::new(0, 3),
-        Flammable {
-            duration: Duration::from_secs(1),
-            tick_rate: Duration::from_millis(100),
-            chance_despawn_per_tick: 0.5,
-            reaction: None,
-            chance_to_ignite: 0.0,
-            spreads_fire: true,
-            spread_radius: 1.0,
-            despawn_on_extinguish: true,
-            ignites_on_spawn: true,
-        },
+        Flammable::new(Duration::from_secs(1), Duration::from_millis(100))
+            .with_chance_despawn_per_tick(0.5)
+            .with_fire_spread(1.0)
+            .with_despawn_on_extinguish()
+            .with_ignites_on_spawn(),
     ));
 
     commands.spawn((
@@ -649,19 +586,12 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             Color::srgba(0.2901961, 0.4509804, 0.10980392, 0.5019608),
         ]),
         GasEffect,
-        Density(200),
+        Density::new(200),
         gas_movement(1),
         Speed::new(0, 1),
-        Flammable {
-            duration: Duration::from_secs(1),
-            tick_rate: Duration::from_millis(100),
-            chance_despawn_per_tick: 0.5,
-            reaction: None,
-            chance_to_ignite: 0.35,
-            spreads_fire: true,
-            spread_radius: 1.0,
-            despawn_on_extinguish: false,
-            ignites_on_spawn: false,
-        },
+        Flammable::new(Duration::from_secs(1), Duration::from_millis(100))
+            .with_chance_despawn_per_tick(0.5)
+            .with_chance_to_ignite(0.35)
+            .with_fire_spread(1.0),
     ));
 }
