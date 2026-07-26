@@ -117,7 +117,7 @@ impl Default for CachedMovementState {
     fn default() -> Self {
         Self {
             movement: Movement::default(),
-            density: Density(1000),
+            density: Density::new(1000),
             speed: Speed::new(1, 3),
             momentum: Momentum::default(),
             resistor: ParticleResistor(0.0),

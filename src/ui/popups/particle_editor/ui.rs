@@ -777,8 +777,9 @@ fn show_movement_toggle(
 
 fn show_density(ui: &mut egui::Ui, density: Option<Mut<'_, Density>>) {
     if let Some(mut density) = density {
-        let new_value = add_label_with_drag_value(ui, 0, "Density", density.0, 0..=u32::MAX, 1.0);
-        density.set_if_neq(Density(new_value));
+        let new_value =
+            add_label_with_drag_value(ui, 0, "Density", density.get(), 0..=u32::MAX, 1.0);
+        density.set_if_neq(Density::from(new_value));
     }
 }
 
