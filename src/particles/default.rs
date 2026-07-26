@@ -86,13 +86,12 @@ fn particle_type(id: ParticleTypeId, name: &str) -> (ParticleType, ParticleName)
 }
 
 fn movable_solid_movement() -> Movement {
-    Movement::new(
-        vec![
-            NeighborGroup::new(vec![IVec2::new(0, -1)].into()),
-            NeighborGroup::new(vec![IVec2::new(-1, -1), IVec2::new(1, -1)].into()),
-        ]
-        .into(),
-    )
+    [
+        NeighborGroup::new(vec![IVec2::new(0, -1)].into()),
+        NeighborGroup::new(vec![IVec2::new(-1, -1), IVec2::new(1, -1)].into()),
+    ]
+    .into_iter()
+    .collect()
 }
 
 fn liquid_movement(spread: i32) -> Movement {
@@ -105,7 +104,7 @@ fn liquid_movement(spread: i32) -> Movement {
             vec![IVec2::new(i, 0), IVec2::new(-i, 0)].into(),
         ));
     }
-    Movement::new(groups.into())
+    groups.into_iter().collect()
 }
 
 fn gas_movement(horizontal_spread: i32) -> Movement {
@@ -118,7 +117,7 @@ fn gas_movement(horizontal_spread: i32) -> Movement {
             vec![IVec2::new(dist, 0), IVec2::new(-dist, 0)].into(),
         ));
     }
-    Movement::new(groups.into())
+    groups.into_iter().collect()
 }
 
 pub(super) fn spawn_default_particles(commands: &mut Commands) {
@@ -372,31 +371,29 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             0.67058825,
             0.5019608,
         )]),
-        ContactReaction {
-            rules: vec![
-                ContactRule {
-                    target: ids.slime,
-                    becomes: ids.water,
-                    chance: 0.005,
-                    radius: 1.0,
-                    consumes: Consumes::Target,
-                },
-                ContactRule {
-                    target: ids.lava,
-                    becomes: ids.obsidian,
-                    chance: 0.45,
-                    radius: 1.0,
-                    consumes: Consumes::Source,
-                },
-                ContactRule {
-                    target: ids.acid,
-                    becomes: ids.steam,
-                    chance: 1.0,
-                    radius: 1.0,
-                    consumes: Consumes::Source,
-                },
-            ],
-        },
+        ContactReaction::new([
+            ContactRule {
+                target: ids.slime,
+                becomes: ids.water,
+                chance: 0.005,
+                radius: 1.0,
+                consumes: Consumes::Target,
+            },
+            ContactRule {
+                target: ids.lava,
+                becomes: ids.obsidian,
+                chance: 0.45,
+                radius: 1.0,
+                consumes: Consumes::Source,
+            },
+            ContactRule {
+                target: ids.acid,
+                becomes: ids.steam,
+                chance: 1.0,
+                radius: 1.0,
+                consumes: Consumes::Source,
+            },
+        ]),
         Density::new(750),
         Momentum::ZERO,
         liquid_movement(6),
@@ -414,24 +411,22 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         ParticleResistor(0.75),
         Speed::new(0, 3),
         Corrosive::new(0.01, Duration::from_millis(100)),
-        ContactReaction {
-            rules: vec![
-                ContactRule {
-                    target: ids.water,
-                    becomes: ids.steam,
-                    chance: 1.0,
-                    radius: 1.0,
-                    consumes: Consumes::Target,
-                },
-                ContactRule {
-                    target: ids.slime,
-                    becomes: ids.congealed_slime,
-                    chance: 1.0,
-                    radius: 1.0,
-                    consumes: Consumes::Target,
-                },
-            ],
-        },
+        ContactReaction::new([
+            ContactRule {
+                target: ids.water,
+                becomes: ids.steam,
+                chance: 1.0,
+                radius: 1.0,
+                consumes: Consumes::Target,
+            },
+            ContactRule {
+                target: ids.slime,
+                becomes: ids.congealed_slime,
+                chance: 1.0,
+                radius: 1.0,
+                consumes: Consumes::Target,
+            },
+        ]),
     ));
 
     commands.spawn((
@@ -447,15 +442,13 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         liquid_movement(2),
         ParticleResistor(0.6),
         Speed::new(0, 2),
-        ContactReaction {
-            rules: vec![ContactRule {
-                target: ids.acid,
-                becomes: ids.congealed_slime,
-                chance: 1.0,
-                radius: 1.0,
-                consumes: Consumes::Source,
-            }],
-        },
+        ContactReaction::new([ContactRule {
+            target: ids.acid,
+            becomes: ids.congealed_slime,
+            chance: 1.0,
+            radius: 1.0,
+            consumes: Consumes::Source,
+        }]),
     ));
 
     commands.spawn((
@@ -559,15 +552,13 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         ParticleResistor(0.7),
         Speed::new(0, 2),
         Fire { radius: 1.0 },
-        ContactReaction {
-            rules: vec![ContactRule {
-                target: ids.acid,
-                becomes: ids.flammable_gas,
-                chance: 1.0,
-                radius: 1.0,
-                consumes: Consumes::Target,
-            }],
-        },
+        ContactReaction::new([ContactRule {
+            target: ids.acid,
+            becomes: ids.flammable_gas,
+            chance: 1.0,
+            radius: 1.0,
+            consumes: Consumes::Target,
+        }]),
     ));
 
     // ── Gases ──

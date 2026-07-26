@@ -1655,13 +1655,13 @@ fn show_contact_rules(
             radius: 1.0,
             consumes: Consumes::Source,
         };
-        contact_reaction.rules.push(rule.clone());
-        contact_reaction_state.rules.push(rule);
+        contact_reaction.push(rule.clone());
+        contact_reaction_state.push(rule);
     }
     ui.end_row();
 
     let mut to_remove: Option<usize> = None;
-    for (i, rule) in contact_reaction.rules.iter_mut().enumerate() {
+    for (i, rule) in contact_reaction.iter_mut().enumerate() {
         if i > 0 {
             add_minor_grid_separator(ui);
         }
@@ -1868,7 +1868,7 @@ fn show_neighbor_groups(
     skip_grid_column(ui);
     let mut tier_to_remove: Option<usize> = None;
     ui.vertical(|ui| {
-        for tier_idx in 0..movement.neighbor_groups.len() {
+        for tier_idx in 0..movement.len() {
             ui.push_id(format!("tier_{tier_idx}"), |ui| {
                 egui::CollapsingHeader::new(format!("Tier {tier_idx}"))
                     .default_open(false)
