@@ -479,9 +479,10 @@ fn show_editing_area(
                         particle_options(&editor_params.particle_registry, particle_query);
 
                     if let Ok(data) = particle_query.get_mut(selected_particle.0) {
-                        let (timed_lifetime, chance_lifetime, chance_mutation) = (
+                        let (timed_lifetime, chance_lifetime, timed_mutation, chance_mutation) = (
                             data.core.timed_lifetime,
                             data.core.chance_lifetime,
+                            data.core.timed_mutation,
                             data.core.chance_mutation,
                         );
                         let (
@@ -601,6 +602,15 @@ fn show_editing_area(
                                             ui,
                                             chance_mutation,
                                             &mut state.chance_mutation,
+                                            &editor_params.particle_registry,
+                                            &particle_options,
+                                        );
+                                        show_timed_mutation(
+                                            &mut editor_params.commands,
+                                            selected_particle.0,
+                                            ui,
+                                            timed_mutation,
+                                            &mut state.timed_mutation,
                                             &editor_params.particle_registry,
                                             &particle_options,
                                         );
@@ -980,6 +990,52 @@ fn show_chance_mutation(
                 .set_duration(Duration::from_millis(new_value));
             mutation_state
                 .tick_timer
+                .set_duration(Duration::from_millis(new_value));
+        }
+    }
+}
+
+fn show_timed_mutation(
+    commands: &mut Commands,
+    entity: Entity,
+    ui: &mut egui::Ui,
+    timed_mutation: Option<Mut<'_, TimedMutation>>,
+    mutation_state: &mut TimedMutation,
+    particle_registry: &ParticleTypeRegistry,
+    particle_options: &[(String, ParticleTypeId)],
+) {
+    let enabled = timed_mutation.is_some();
+    let new_value = add_label_with_toggle_switch(ui, 0, "Mutation (Timed)", enabled);
+    if new_value != enabled {
+        if new_value {
+            commands.entity(entity).insert(mutation_state.clone());
+        } else {
+            commands.entity(entity).remove::<TimedMutation>();
+        }
+    }
+    if let Some(mut mutation) = timed_mutation {
+        ui.label("    Target:");
+        if let Some(new_target) = particle_combo(
+            ui,
+            format!("timed_mutation_target_{entity:?}"),
+            mutation.target,
+            particle_registry,
+            particle_options,
+        ) {
+            mutation.target = new_target;
+            mutation_state.target = new_target;
+        }
+        ui.end_row();
+
+        let duration_ms = mutation.duration().as_millis() as u64;
+        let new_value =
+            add_label_with_drag_value(ui, 0, "    Timer (ms):", duration_ms, 0..=u64::MAX, 1.0);
+        if new_value != duration_ms {
+            mutation
+                .timer
+                .set_duration(Duration::from_millis(new_value));
+            mutation_state
+                .timer
                 .set_duration(Duration::from_millis(new_value));
         }
     }

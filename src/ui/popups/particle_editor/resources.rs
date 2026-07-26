@@ -144,6 +144,7 @@ pub struct ParticleData {
     pub cached_movement: CachedMovementState,
     pub timed_lifetime: TimedLifetime,
     pub chance_lifetime: ChanceLifetime,
+    pub timed_mutation: TimedMutation,
     pub chance_mutation: ChanceMutation,
     pub static_rigid_body: StaticRigidBodyParticle,
     pub palette: Palette,
@@ -160,6 +161,8 @@ impl Default for ParticleData {
         let cached_movement = CachedMovementState::default();
         let timed_lifetime = TimedLifetime::new(Duration::from_millis(10000));
         let chance_lifetime = ChanceLifetime::new(0.01, Duration::from_millis(100));
+        let timed_mutation =
+            TimedMutation::new(ParticleTypeId::default(), Duration::from_millis(10000));
         let chance_mutation =
             ChanceMutation::new(ParticleTypeId::default(), 0.01, Duration::from_millis(100));
         let static_rigid_body = StaticRigidBodyParticle;
@@ -184,6 +187,7 @@ impl Default for ParticleData {
             cached_movement,
             timed_lifetime,
             chance_lifetime,
+            timed_mutation,
             chance_mutation,
             static_rigid_body,
             palette,
@@ -215,6 +219,7 @@ pub(crate) struct CoreQuery {
     pub name: Option<&'static mut ParticleName>,
     pub timed_lifetime: Option<&'static mut TimedLifetime>,
     pub chance_lifetime: Option<&'static mut ChanceLifetime>,
+    pub timed_mutation: Option<&'static mut TimedMutation>,
     pub chance_mutation: Option<&'static mut ChanceMutation>,
 }
 
@@ -339,6 +344,11 @@ fn synchronize_editor_registry(
                     .chance_lifetime
                     .cloned()
                     .unwrap_or_else(|| defaults.chance_lifetime.clone()),
+                timed_mutation: data
+                    .core
+                    .timed_mutation
+                    .cloned()
+                    .unwrap_or_else(|| defaults.timed_mutation.clone()),
                 chance_mutation: data
                     .core
                     .chance_mutation
