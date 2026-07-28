@@ -158,7 +158,8 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         StaticRigidBodyParticle,
         Flammable::new(Duration::from_secs(2), Duration::from_millis(100))
             .with_chance_despawn_per_tick(0.01)
-            .with_reaction(BurnProduct::new(ids.water, 0.2)),
+            .with_chance_to_ignite(0.1)
+            .with_reaction(BurnProduct::new(ids.water, 0.1)),
         Corrodible,
     ));
 
