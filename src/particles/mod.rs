@@ -1,5 +1,6 @@
 mod algs;
 mod default;
+mod save;
 mod setup;
 
 use bevy::prelude::*;
@@ -25,7 +26,7 @@ pub struct ParticlesPlugin;
 
 impl Plugin for ParticlesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((SetupPlugin, PatternsPlugin))
+        app.add_plugins((SetupPlugin, PatternsPlugin, save::SavePlugin))
             .register_type::<ParticleCategory>()
             .register_type::<ParticleName>()
             .register_particle_sync_component::<ParticleCategory>()
