@@ -1650,10 +1650,10 @@ fn show_contact_rules(
     if ui.button("Add Rule").clicked() {
         let rule = ContactRule {
             target: ParticleTypeId::default(),
-            becomes: ParticleTypeId::default(),
+            source_outcome: ContactOutcome::Unchanged,
+            target_outcome: ContactOutcome::Unchanged,
             chance: 0.1,
             radius: 1.0,
-            consumes: Consumes::Source,
         };
         contact_reaction.push(rule.clone());
         contact_reaction_state.push(rule);
@@ -1687,18 +1687,31 @@ fn show_contact_rules(
         }
         ui.end_row();
 
-        ui.label("        Becomes");
-        if let Some(new_becomes) = particle_combo(
+        let fallback_type = particle_options
+            .first()
+            .map_or(rule.target, |(_, particle_type)| *particle_type);
+        show_contact_outcome(
             ui,
-            format!("contact_rule_becomes_{i}"),
-            rule.becomes,
+            i,
+            "Source",
+            "source",
+            &mut rule.source_outcome,
+            &mut contact_reaction_state.rules[i].source_outcome,
+            fallback_type,
             particle_registry,
             particle_options,
-        ) {
-            rule.becomes = new_becomes;
-            contact_reaction_state.rules[i].becomes = new_becomes;
-        }
-        ui.end_row();
+        );
+        show_contact_outcome(
+            ui,
+            i,
+            "Target",
+            "target",
+            &mut rule.target_outcome,
+            &mut contact_reaction_state.rules[i].target_outcome,
+            fallback_type,
+            particle_registry,
+            particle_options,
+        );
 
         let chance = rule.chance;
         ui.label("        Chance");
@@ -1741,34 +1754,64 @@ fn show_contact_rules(
             rule.radius = new_radius;
             contact_reaction_state.rules[i].radius = new_radius;
         }
-
-        let consumes = rule.consumes;
-        ui.label("        Consumes");
-        let new_consumes = ui
-            .push_id(format!("contact_rule_consumes_{i}"), |ui| {
-                let mut value = consumes;
-                egui::ComboBox::from_id_salt(format!("consumes_combo_{i}"))
-                    .selected_text(match value {
-                        Consumes::Source => "Source",
-                        Consumes::Target => "Target",
-                    })
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut value, Consumes::Source, "Source");
-                        ui.selectable_value(&mut value, Consumes::Target, "Target");
-                    });
-                value
-            })
-            .inner;
-        ui.end_row();
-        if new_consumes != consumes {
-            rule.consumes = new_consumes;
-            contact_reaction_state.rules[i].consumes = new_consumes;
-        }
     }
 
     if let Some(idx) = to_remove {
         contact_reaction.rules.remove(idx);
         contact_reaction_state.rules.remove(idx);
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn show_contact_outcome(
+    ui: &mut egui::Ui,
+    rule_index: usize,
+    label: &str,
+    id: &str,
+    outcome: &mut ContactOutcome,
+    cached_outcome: &mut ContactOutcome,
+    fallback_type: ParticleTypeId,
+    particle_registry: &ParticleTypeRegistry,
+    particle_options: &[(String, ParticleTypeId)],
+) {
+    let previous = *outcome;
+    ui.label(format!("        {label} Outcome"));
+    egui::ComboBox::from_id_salt(format!("contact_rule_{id}_outcome_{rule_index}"))
+        .selected_text(match previous {
+            ContactOutcome::Unchanged => "Unchanged",
+            ContactOutcome::Destroy => "Destroy",
+            ContactOutcome::Becomes(_) => "Becomes",
+        })
+        .show_ui(ui, |ui| {
+            ui.selectable_value(outcome, ContactOutcome::Unchanged, "Unchanged");
+            ui.selectable_value(outcome, ContactOutcome::Destroy, "Destroy");
+            ui.selectable_value(
+                outcome,
+                ContactOutcome::Becomes(match previous {
+                    ContactOutcome::Becomes(particle_type) => particle_type,
+                    ContactOutcome::Unchanged | ContactOutcome::Destroy => fallback_type,
+                }),
+                "Becomes",
+            );
+        });
+    ui.end_row();
+
+    if let ContactOutcome::Becomes(current) = *outcome {
+        ui.label(format!("        {label} Becomes"));
+        if let Some(particle_type) = particle_combo(
+            ui,
+            format!("contact_rule_{id}_becomes_{rule_index}"),
+            current,
+            particle_registry,
+            particle_options,
+        ) {
+            *outcome = ContactOutcome::Becomes(particle_type);
+        }
+        ui.end_row();
+    }
+
+    if *outcome != previous {
+        *cached_outcome = *outcome;
     }
 }
 

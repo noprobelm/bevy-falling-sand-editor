@@ -348,24 +348,24 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         ContactReaction::new([
             ContactRule {
                 target: ids.slime,
-                becomes: ids.water,
+                source_outcome: ContactOutcome::Unchanged,
+                target_outcome: ContactOutcome::Becomes(ids.water),
                 chance: 0.005,
                 radius: 1.0,
-                consumes: Consumes::Target,
             },
             ContactRule {
                 target: ids.lava,
-                becomes: ids.obsidian,
+                source_outcome: ContactOutcome::Becomes(ids.obsidian),
+                target_outcome: ContactOutcome::Unchanged,
                 chance: 0.45,
                 radius: 1.0,
-                consumes: Consumes::Source,
             },
             ContactRule {
                 target: ids.acid,
-                becomes: ids.steam,
+                source_outcome: ContactOutcome::Becomes(ids.steam),
+                target_outcome: ContactOutcome::Unchanged,
                 chance: 1.0,
                 radius: 1.0,
-                consumes: Consumes::Source,
             },
         ]),
         Density::new(750),
@@ -388,17 +388,17 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         ContactReaction::new([
             ContactRule {
                 target: ids.water,
-                becomes: ids.steam,
+                source_outcome: ContactOutcome::Unchanged,
+                target_outcome: ContactOutcome::Becomes(ids.steam),
                 chance: 1.0,
                 radius: 1.0,
-                consumes: Consumes::Target,
             },
             ContactRule {
                 target: ids.slime,
-                becomes: ids.congealed_slime,
+                source_outcome: ContactOutcome::Unchanged,
+                target_outcome: ContactOutcome::Becomes(ids.congealed_slime),
                 chance: 1.0,
                 radius: 1.0,
-                consumes: Consumes::Target,
             },
         ]),
     ));
@@ -418,10 +418,10 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         Speed::new(0, 2),
         ContactReaction::new([ContactRule {
             target: ids.acid,
-            becomes: ids.congealed_slime,
+            source_outcome: ContactOutcome::Becomes(ids.congealed_slime),
+            target_outcome: ContactOutcome::Unchanged,
             chance: 1.0,
             radius: 1.0,
-            consumes: Consumes::Source,
         }]),
     ));
 
@@ -519,10 +519,10 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         Fire { radius: 1.0 },
         ContactReaction::new([ContactRule {
             target: ids.acid,
-            becomes: ids.flammable_gas,
+            source_outcome: ContactOutcome::Unchanged,
+            target_outcome: ContactOutcome::Becomes(ids.flammable_gas),
             chance: 1.0,
             radius: 1.0,
-            consumes: Consumes::Target,
         }]),
     ));
 
