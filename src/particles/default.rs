@@ -171,7 +171,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         Flammable::new(Duration::from_secs(10), Duration::from_millis(100))
             .with_chance_despawn_per_tick(0.015)
             .with_reaction(BurnProduct::new(ids.smoke, 0.035))
-            .with_chance_to_ignite(0.2)
+            .with_chance_to_ignite(0.02)
             .with_fire_spread(1.0)
             .with_despawn_on_extinguish(),
         Corrodible,
