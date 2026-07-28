@@ -331,6 +331,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         Movement::new(vec![NeighborGroup::new(vec![IVec2::new(0, -1)].into())].into()),
         Speed::new(0, 3),
         StaticRigidBodyParticle,
+        Corrodible,
     ));
 
     // ── Liquids ──
