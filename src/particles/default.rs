@@ -354,13 +354,6 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
                 radius: 1.0,
             },
             ContactRule {
-                target: ids.lava,
-                source_outcome: ContactOutcome::Becomes(ids.obsidian),
-                target_outcome: ContactOutcome::Unchanged,
-                chance: 0.45,
-                radius: 1.0,
-            },
-            ContactRule {
                 target: ids.acid,
                 source_outcome: ContactOutcome::Becomes(ids.steam),
                 target_outcome: ContactOutcome::Destroy,
@@ -518,6 +511,13 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         Speed::new(0, 2),
         Fire { radius: 1.0 },
         ContactReaction::new([
+            ContactRule {
+                target: ids.water,
+                source_outcome: ContactOutcome::Becomes(ids.obsidian),
+                target_outcome: ContactOutcome::Destroy,
+                chance: 0.45,
+                radius: 2.0,
+            },
             ContactRule {
                 target: ids.acid,
                 source_outcome: ContactOutcome::Unchanged,
