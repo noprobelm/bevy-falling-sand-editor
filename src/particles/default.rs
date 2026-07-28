@@ -363,7 +363,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             ContactRule {
                 target: ids.acid,
                 source_outcome: ContactOutcome::Becomes(ids.steam),
-                target_outcome: ContactOutcome::Unchanged,
+                target_outcome: ContactOutcome::Destroy,
                 chance: 1.0,
                 radius: 1.0,
             },
@@ -388,7 +388,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         ContactReaction::new([
             ContactRule {
                 target: ids.water,
-                source_outcome: ContactOutcome::Unchanged,
+                source_outcome: ContactOutcome::Destroy,
                 target_outcome: ContactOutcome::Becomes(ids.steam),
                 chance: 1.0,
                 radius: 1.0,
