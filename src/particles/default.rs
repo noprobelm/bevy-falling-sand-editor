@@ -517,13 +517,22 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         ParticleResistor(0.7),
         Speed::new(0, 2),
         Fire { radius: 1.0 },
-        ContactReaction::new([ContactRule {
-            target: ids.acid,
-            source_outcome: ContactOutcome::Unchanged,
-            target_outcome: ContactOutcome::Becomes(ids.flammable_gas),
-            chance: 1.0,
-            radius: 1.0,
-        }]),
+        ContactReaction::new([
+            ContactRule {
+                target: ids.acid,
+                source_outcome: ContactOutcome::Unchanged,
+                target_outcome: ContactOutcome::Becomes(ids.flammable_gas),
+                chance: 1.0,
+                radius: 1.0,
+            },
+            ContactRule {
+                target: ids.snow,
+                source_outcome: ContactOutcome::Unchanged,
+                target_outcome: ContactOutcome::Becomes(ids.water),
+                chance: 1.0,
+                radius: 3.0,
+            },
+        ]),
     ));
 
     // ── Gases ──
