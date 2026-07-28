@@ -11,7 +11,7 @@ edition = "2024"
 [dependencies]
 bevy = { version = "0.19.0" }
 rand = "0.9"
-bevy_falling_sand = { git = "https://github.com/noprobelm/bevy_falling_sand", rev = "dae2fe1" }
+bevy_falling_sand = { git = "https://github.com/noprobelm/bevy_falling_sand", branch = "main" }
 # Compile out low-severity logs to improve performance.
 # Remove these features if you want to profile your game with tracy.
 # (see <https://github.com/bevyengine/bevy/blob/main/docs/profiling.md#tracy-profiler>)
@@ -20,6 +20,8 @@ tracing = { version = "0.1", features = [
     "release_max_level_warn",
 ] }
 serde = "1.0.228"
+serde_json = "1.0"
+sha2 = "0.10"
 bevy_egui = "0.41.0"
 avian2d = { version = "0.7.0", features = ["serialize"] }
 ron = "0.12.0"
