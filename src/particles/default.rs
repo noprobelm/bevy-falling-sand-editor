@@ -213,7 +213,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
     ));
 
     commands.spawn((
-        particle_type(ids.custom_wall, "My Custom Wall Particle"),
+        particle_type(ids.custom_wall, "Smart Plastic Wall"),
         ParticleCategory("Wall".into()),
         palette(vec![
             Color::srgba(0.21960784, 0.10980392, 0.15686275, 1.0),
@@ -276,7 +276,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
     ));
 
     commands.spawn((
-        particle_type(ids.custom, "My Custom Particle"),
+        particle_type(ids.custom, "Smart Plastic"),
         ParticleCategory("Movable Solid".into()),
         palette(vec![
             Color::srgba(0.21960784, 0.10980392, 0.15686275, 1.0),
