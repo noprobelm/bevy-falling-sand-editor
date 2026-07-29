@@ -14,11 +14,11 @@ pub struct DefaultParticleIds {
     pub grass_wall: ParticleTypeId,
     pub dense_rock_wall: ParticleTypeId,
     pub obsidian: ParticleTypeId,
-    pub custom_wall: ParticleTypeId,
+    pub smart_plastic_wall: ParticleTypeId,
     pub sand: ParticleTypeId,
     pub snow: ParticleTypeId,
     pub dirt: ParticleTypeId,
-    pub custom: ParticleTypeId,
+    pub smart_plastic: ParticleTypeId,
     pub colorful: ParticleTypeId,
     pub rock: ParticleTypeId,
     pub water: ParticleTypeId,
@@ -34,6 +34,7 @@ pub struct DefaultParticleIds {
     pub smoke: ParticleTypeId,
     pub fire: ParticleTypeId,
     pub flammable_gas: ParticleTypeId,
+    pub unstable_atom: ParticleTypeId,
 }
 
 impl Default for DefaultParticleIds {
@@ -46,11 +47,11 @@ impl Default for DefaultParticleIds {
             grass_wall: ParticleTypeId::from_raw(4),
             dense_rock_wall: ParticleTypeId::from_raw(5),
             obsidian: ParticleTypeId::from_raw(6),
-            custom_wall: ParticleTypeId::from_raw(7),
+            smart_plastic_wall: ParticleTypeId::from_raw(7),
             sand: ParticleTypeId::from_raw(8),
             snow: ParticleTypeId::from_raw(9),
             dirt: ParticleTypeId::from_raw(10),
-            custom: ParticleTypeId::from_raw(11),
+            smart_plastic: ParticleTypeId::from_raw(11),
             colorful: ParticleTypeId::from_raw(12),
             rock: ParticleTypeId::from_raw(13),
             water: ParticleTypeId::from_raw(14),
@@ -66,6 +67,7 @@ impl Default for DefaultParticleIds {
             smoke: ParticleTypeId::from_raw(24),
             fire: ParticleTypeId::from_raw(25),
             flammable_gas: ParticleTypeId::from_raw(26),
+            unstable_atom: ParticleTypeId::from_raw(27),
         }
     }
 }
@@ -120,7 +122,7 @@ fn gas_movement(horizontal_spread: i32) -> Movement {
     groups.into_iter().collect()
 }
 
-pub(super) fn spawn_default_particles(commands: &mut Commands) {
+pub(crate) fn spawn_default_particles(commands: &mut Commands) {
     let ids = DefaultParticleIds::default();
 
     // ── Walls ──
@@ -158,7 +160,8 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         StaticRigidBodyParticle,
         Flammable::new(Duration::from_secs(2), Duration::from_millis(100))
             .with_chance_despawn_per_tick(0.01)
-            .with_reaction(BurnProduct::new(ids.water, 0.2)),
+            .with_chance_to_ignite(0.1)
+            .with_reaction(BurnProduct::new(ids.water, 0.1)),
         Corrodible,
     ));
 
@@ -170,7 +173,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         Flammable::new(Duration::from_secs(10), Duration::from_millis(100))
             .with_chance_despawn_per_tick(0.015)
             .with_reaction(BurnProduct::new(ids.smoke, 0.035))
-            .with_chance_to_ignite(0.2)
+            .with_chance_to_ignite(0.02)
             .with_fire_spread(1.0)
             .with_despawn_on_extinguish(),
         Corrodible,
@@ -212,7 +215,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
     ));
 
     commands.spawn((
-        particle_type(ids.custom_wall, "My Custom Wall Particle"),
+        particle_type(ids.smart_plastic_wall, "Smart Plastic Wall"),
         ParticleCategory("Wall".into()),
         palette(vec![
             Color::srgba(0.21960784, 0.10980392, 0.15686275, 1.0),
@@ -272,10 +275,17 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         Speed::new(5, 10),
         StaticRigidBodyParticle,
         Corrodible,
+        ContactReaction::new([ContactRule {
+            target: ids.lava,
+            source_outcome: ContactOutcome::Becomes(ids.smoke),
+            target_outcome: ContactOutcome::Unchanged,
+            chance: 1.0,
+            radius: 1.0,
+        }]),
     ));
 
     commands.spawn((
-        particle_type(ids.custom, "My Custom Particle"),
+        particle_type(ids.smart_plastic, "Smart Plastic"),
         ParticleCategory("Movable Solid".into()),
         palette(vec![
             Color::srgba(0.21960784, 0.10980392, 0.15686275, 1.0),
@@ -290,6 +300,13 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         AirResistance::new([0.0, 0.4]),
         Speed::new(5, 10),
         StaticRigidBodyParticle,
+        ContactReaction::new([ContactRule {
+            target: ids.lava,
+            source_outcome: ContactOutcome::Becomes(ids.flammable_gas),
+            target_outcome: ContactOutcome::Unchanged,
+            chance: 1.0,
+            radius: 1.0,
+        }]),
     ));
 
     commands.spawn((
@@ -314,6 +331,13 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         Speed::new(5, 10),
         StaticRigidBodyParticle,
         Corrodible,
+        ContactReaction::new([ContactRule {
+            target: ids.lava,
+            source_outcome: ContactOutcome::Becomes(ids.smoke),
+            target_outcome: ContactOutcome::Unchanged,
+            chance: 1.0,
+            radius: 1.0,
+        }]),
     ));
 
     // ── Solid ──
@@ -330,6 +354,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         Movement::new(vec![NeighborGroup::new(vec![IVec2::new(0, -1)].into())].into()),
         Speed::new(0, 3),
         StaticRigidBodyParticle,
+        Corrodible,
     ));
 
     // ── Liquids ──
@@ -343,34 +368,18 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             0.67058825,
             0.5019608,
         )]),
-        ContactReaction::new([
-            ContactRule {
-                target: ids.slime,
-                source_outcome: ContactOutcome::Unchanged,
-                target_outcome: ContactOutcome::Becomes(ids.water),
-                chance: 0.005,
-                radius: 1.0,
-            },
-            ContactRule {
-                target: ids.lava,
-                source_outcome: ContactOutcome::Becomes(ids.obsidian),
-                target_outcome: ContactOutcome::Unchanged,
-                chance: 0.45,
-                radius: 1.0,
-            },
-            ContactRule {
-                target: ids.acid,
-                source_outcome: ContactOutcome::Becomes(ids.steam),
-                target_outcome: ContactOutcome::Unchanged,
-                chance: 1.0,
-                radius: 1.0,
-            },
-        ]),
         Density::new(750),
         Momentum::ZERO,
         liquid_movement(6),
         ParticleResistor(0.75),
         Speed::new(0, 3),
+        ContactReaction::new([ContactRule {
+            target: ids.lava,
+            source_outcome: ContactOutcome::Becomes(ids.steam),
+            target_outcome: ContactOutcome::Destroy,
+            chance: 1.0,
+            radius: 1.0,
+        }]),
     ));
 
     commands.spawn((
@@ -382,23 +391,9 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         liquid_movement(6),
         ParticleResistor(0.75),
         Speed::new(0, 3),
+        GlowEffect,
         Corrosive::new(0.01).with_tick_rate(Duration::from_millis(100)),
-        ContactReaction::new([
-            ContactRule {
-                target: ids.water,
-                source_outcome: ContactOutcome::Unchanged,
-                target_outcome: ContactOutcome::Becomes(ids.steam),
-                chance: 1.0,
-                radius: 1.0,
-            },
-            ContactRule {
-                target: ids.slime,
-                source_outcome: ContactOutcome::Unchanged,
-                target_outcome: ContactOutcome::Becomes(ids.congealed_slime),
-                chance: 1.0,
-                radius: 1.0,
-            },
-        ]),
+        ChanceMutation::new(ids.flammable_gas, 0.00001),
     ));
 
     commands.spawn((
@@ -456,6 +451,13 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         ParticleResistor(0.5),
         Speed::new(0, 2),
         Corrodible,
+        ContactReaction::new([ContactRule {
+            target: ids.lava,
+            source_outcome: ContactOutcome::Becomes(ids.smoke),
+            target_outcome: ContactOutcome::Unchanged,
+            chance: 1.0,
+            radius: 1.0,
+        }]),
     ));
 
     commands.spawn((
@@ -473,6 +475,13 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         ParticleResistor(0.5),
         Speed::new(0, 3),
         Corrodible,
+        ContactReaction::new([ContactRule {
+            target: ids.lava,
+            source_outcome: ContactOutcome::Becomes(ids.steam),
+            target_outcome: ContactOutcome::Unchanged,
+            chance: 1.0,
+            radius: 1.0,
+        }]),
     ));
 
     commands.spawn((
@@ -485,6 +494,13 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         ParticleResistor(0.4),
         Speed::new(0, 3),
         Corrodible,
+        ContactReaction::new([ContactRule {
+            target: ids.lava,
+            source_outcome: ContactOutcome::Becomes(ids.fire),
+            target_outcome: ContactOutcome::Unchanged,
+            chance: 1.0,
+            radius: 1.0,
+        }]),
     ));
 
     commands.spawn((
@@ -515,13 +531,29 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         ParticleResistor(0.7),
         Speed::new(0, 2),
         Fire { radius: 1.0 },
-        ContactReaction::new([ContactRule {
-            target: ids.acid,
-            source_outcome: ContactOutcome::Unchanged,
-            target_outcome: ContactOutcome::Becomes(ids.flammable_gas),
-            chance: 1.0,
-            radius: 1.0,
-        }]),
+        ContactReaction::new([
+            ContactRule {
+                target: ids.water,
+                source_outcome: ContactOutcome::Becomes(ids.obsidian),
+                target_outcome: ContactOutcome::Becomes(ids.steam),
+                chance: 0.45,
+                radius: 2.0,
+            },
+            ContactRule {
+                target: ids.acid,
+                source_outcome: ContactOutcome::Unchanged,
+                target_outcome: ContactOutcome::Becomes(ids.flammable_gas),
+                chance: 1.0,
+                radius: 1.0,
+            },
+            ContactRule {
+                target: ids.snow,
+                source_outcome: ContactOutcome::Unchanged,
+                target_outcome: ContactOutcome::Becomes(ids.water),
+                chance: 1.0,
+                radius: 4.0,
+            },
+        ]),
     ));
 
     // ── Gases ──
@@ -541,6 +573,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             .with_chance_despawn_per_tick(1.0)
             .with_reaction(BurnProduct::new(ids.water, 1.0)),
         Corrodible,
+        ChanceMutation::new(ids.water, 0.0001).with_tick_rate(Duration::from_millis(100)),
     ));
 
     commands.spawn((
@@ -555,6 +588,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         Density::new(275),
         gas_movement(1),
         Speed::new(0, 1),
+        ChanceLifetime::new(0.0001).with_tick_rate(Duration::from_millis(100)),
     ));
 
     commands.spawn((
@@ -593,5 +627,48 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             .with_chance_despawn_per_tick(0.5)
             .with_chance_to_ignite(0.35)
             .with_fire_spread(1.0),
+        ChanceLifetime::new(0.0001),
+    ));
+
+    commands.spawn((
+        particle_type(ids.unstable_atom, "Anomolous Atom"),
+        ParticleCategory("Anomolous".into()),
+        palette(vec![
+            Srgba::hex("#931621").unwrap().into(),
+            Srgba::hex("#F3A712").unwrap().into(),
+        ]),
+        Density::new(1),
+        Speed::new(150, 3),
+        Movement::from(vec![
+            vec![
+                IVec2::new(0, 2),
+                IVec2::new(2, 2),
+                IVec2::new(2, 0),
+                IVec2::new(2, -2),
+                IVec2::new(0, -2),
+                IVec2::new(-2, -2),
+                IVec2::new(-2, 0),
+                IVec2::new(-2, 2),
+            ],
+            vec![
+                IVec2::new(0, 8),
+                IVec2::new(8, 8),
+                IVec2::new(8, 0),
+                IVec2::new(8, -8),
+                IVec2::new(0, -8),
+                IVec2::new(-8, -8),
+                IVec2::new(-8, 0),
+                IVec2::new(-8, 8),
+            ],
+        ]),
+        GlowEffect,
+        ChanceMutation::new(ids.smart_plastic, 0.001).with_tick_rate(Duration::from_millis(100)),
+        Flammable::new(Duration::from_secs(10), Duration::from_millis(100))
+            .with_chance_despawn_per_tick(0.015)
+            .with_reaction(BurnProduct::new(ids.acid, 0.5))
+            .with_chance_to_ignite(0.02)
+            .with_fire_spread(1.0)
+            .with_despawn_on_extinguish(),
+        Corrosive::new(0.5),
     ));
 }
