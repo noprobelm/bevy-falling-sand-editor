@@ -120,7 +120,7 @@ fn gas_movement(horizontal_spread: i32) -> Movement {
     groups.into_iter().collect()
 }
 
-pub(super) fn spawn_default_particles(commands: &mut Commands) {
+pub(crate) fn spawn_default_particles(commands: &mut Commands) {
     let ids = DefaultParticleIds::default();
 
     // ── Walls ──
@@ -273,6 +273,13 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         Speed::new(5, 10),
         StaticRigidBodyParticle,
         Corrodible,
+        ContactReaction::new([ContactRule {
+            target: ids.lava,
+            source_outcome: ContactOutcome::Becomes(ids.smoke),
+            target_outcome: ContactOutcome::Unchanged,
+            chance: 1.0,
+            radius: 1.0,
+        }]),
     ));
 
     commands.spawn((
@@ -291,6 +298,13 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         AirResistance::new([0.0, 0.4]),
         Speed::new(5, 10),
         StaticRigidBodyParticle,
+        ContactReaction::new([ContactRule {
+            target: ids.lava,
+            source_outcome: ContactOutcome::Becomes(ids.flammable_gas),
+            target_outcome: ContactOutcome::Unchanged,
+            chance: 1.0,
+            radius: 1.0,
+        }]),
     ));
 
     commands.spawn((
@@ -315,6 +329,13 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         Speed::new(5, 10),
         StaticRigidBodyParticle,
         Corrodible,
+        ContactReaction::new([ContactRule {
+            target: ids.lava,
+            source_outcome: ContactOutcome::Becomes(ids.smoke),
+            target_outcome: ContactOutcome::Unchanged,
+            chance: 1.0,
+            radius: 1.0,
+        }]),
     ));
 
     // ── Solid ──
@@ -345,27 +366,18 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             0.67058825,
             0.5019608,
         )]),
-        ContactReaction::new([
-            ContactRule {
-                target: ids.slime,
-                source_outcome: ContactOutcome::Unchanged,
-                target_outcome: ContactOutcome::Becomes(ids.water),
-                chance: 0.005,
-                radius: 1.0,
-            },
-            ContactRule {
-                target: ids.acid,
-                source_outcome: ContactOutcome::Becomes(ids.steam),
-                target_outcome: ContactOutcome::Destroy,
-                chance: 1.0,
-                radius: 1.0,
-            },
-        ]),
         Density::new(750),
         Momentum::ZERO,
         liquid_movement(6),
         ParticleResistor(0.75),
         Speed::new(0, 3),
+        ContactReaction::new([ContactRule {
+            target: ids.lava,
+            source_outcome: ContactOutcome::Becomes(ids.steam),
+            target_outcome: ContactOutcome::Destroy,
+            chance: 1.0,
+            radius: 1.0,
+        }]),
     ));
 
     commands.spawn((
@@ -378,22 +390,6 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         ParticleResistor(0.75),
         Speed::new(0, 3),
         Corrosive::new(0.01).with_tick_rate(Duration::from_millis(100)),
-        ContactReaction::new([
-            ContactRule {
-                target: ids.water,
-                source_outcome: ContactOutcome::Destroy,
-                target_outcome: ContactOutcome::Becomes(ids.steam),
-                chance: 1.0,
-                radius: 1.0,
-            },
-            ContactRule {
-                target: ids.slime,
-                source_outcome: ContactOutcome::Unchanged,
-                target_outcome: ContactOutcome::Becomes(ids.congealed_slime),
-                chance: 1.0,
-                radius: 1.0,
-            },
-        ]),
     ));
 
     commands.spawn((
@@ -451,6 +447,13 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         ParticleResistor(0.5),
         Speed::new(0, 2),
         Corrodible,
+        ContactReaction::new([ContactRule {
+            target: ids.lava,
+            source_outcome: ContactOutcome::Becomes(ids.smoke),
+            target_outcome: ContactOutcome::Unchanged,
+            chance: 1.0,
+            radius: 1.0,
+        }]),
     ));
 
     commands.spawn((
@@ -468,6 +471,13 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         ParticleResistor(0.5),
         Speed::new(0, 3),
         Corrodible,
+        ContactReaction::new([ContactRule {
+            target: ids.lava,
+            source_outcome: ContactOutcome::Becomes(ids.steam),
+            target_outcome: ContactOutcome::Unchanged,
+            chance: 1.0,
+            radius: 1.0,
+        }]),
     ));
 
     commands.spawn((
@@ -480,6 +490,13 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         ParticleResistor(0.4),
         Speed::new(0, 3),
         Corrodible,
+        ContactReaction::new([ContactRule {
+            target: ids.lava,
+            source_outcome: ContactOutcome::Becomes(ids.fire),
+            target_outcome: ContactOutcome::Unchanged,
+            chance: 1.0,
+            radius: 1.0,
+        }]),
     ));
 
     commands.spawn((
@@ -514,7 +531,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             ContactRule {
                 target: ids.water,
                 source_outcome: ContactOutcome::Becomes(ids.obsidian),
-                target_outcome: ContactOutcome::Destroy,
+                target_outcome: ContactOutcome::Becomes(ids.steam),
                 chance: 0.45,
                 radius: 2.0,
             },
@@ -530,7 +547,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
                 source_outcome: ContactOutcome::Unchanged,
                 target_outcome: ContactOutcome::Becomes(ids.water),
                 chance: 1.0,
-                radius: 3.0,
+                radius: 4.0,
             },
         ]),
     ));
@@ -552,6 +569,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
             .with_chance_despawn_per_tick(1.0)
             .with_reaction(BurnProduct::new(ids.water, 1.0)),
         Corrodible,
+        ChanceMutation::new(ids.water, 0.0001).with_tick_rate(Duration::from_millis(100)),
     ));
 
     commands.spawn((
@@ -566,6 +584,7 @@ pub(super) fn spawn_default_particles(commands: &mut Commands) {
         Density::new(275),
         gas_movement(1),
         Speed::new(0, 1),
+        ChanceLifetime::new(0.0001).with_tick_rate(Duration::from_millis(100)),
     ));
 
     commands.spawn((
