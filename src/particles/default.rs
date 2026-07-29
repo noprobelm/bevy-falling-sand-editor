@@ -14,11 +14,11 @@ pub struct DefaultParticleIds {
     pub grass_wall: ParticleTypeId,
     pub dense_rock_wall: ParticleTypeId,
     pub obsidian: ParticleTypeId,
-    pub custom_wall: ParticleTypeId,
+    pub smart_plastic_wall: ParticleTypeId,
     pub sand: ParticleTypeId,
     pub snow: ParticleTypeId,
     pub dirt: ParticleTypeId,
-    pub custom: ParticleTypeId,
+    pub smart_plastic: ParticleTypeId,
     pub colorful: ParticleTypeId,
     pub rock: ParticleTypeId,
     pub water: ParticleTypeId,
@@ -34,6 +34,7 @@ pub struct DefaultParticleIds {
     pub smoke: ParticleTypeId,
     pub fire: ParticleTypeId,
     pub flammable_gas: ParticleTypeId,
+    pub unstable_atom: ParticleTypeId,
 }
 
 impl Default for DefaultParticleIds {
@@ -46,11 +47,11 @@ impl Default for DefaultParticleIds {
             grass_wall: ParticleTypeId::from_raw(4),
             dense_rock_wall: ParticleTypeId::from_raw(5),
             obsidian: ParticleTypeId::from_raw(6),
-            custom_wall: ParticleTypeId::from_raw(7),
+            smart_plastic_wall: ParticleTypeId::from_raw(7),
             sand: ParticleTypeId::from_raw(8),
             snow: ParticleTypeId::from_raw(9),
             dirt: ParticleTypeId::from_raw(10),
-            custom: ParticleTypeId::from_raw(11),
+            smart_plastic: ParticleTypeId::from_raw(11),
             colorful: ParticleTypeId::from_raw(12),
             rock: ParticleTypeId::from_raw(13),
             water: ParticleTypeId::from_raw(14),
@@ -66,6 +67,7 @@ impl Default for DefaultParticleIds {
             smoke: ParticleTypeId::from_raw(24),
             fire: ParticleTypeId::from_raw(25),
             flammable_gas: ParticleTypeId::from_raw(26),
+            unstable_atom: ParticleTypeId::from_raw(27),
         }
     }
 }
@@ -213,7 +215,7 @@ pub(crate) fn spawn_default_particles(commands: &mut Commands) {
     ));
 
     commands.spawn((
-        particle_type(ids.custom_wall, "Smart Plastic Wall"),
+        particle_type(ids.smart_plastic_wall, "Smart Plastic Wall"),
         ParticleCategory("Wall".into()),
         palette(vec![
             Color::srgba(0.21960784, 0.10980392, 0.15686275, 1.0),
@@ -283,7 +285,7 @@ pub(crate) fn spawn_default_particles(commands: &mut Commands) {
     ));
 
     commands.spawn((
-        particle_type(ids.custom, "Smart Plastic"),
+        particle_type(ids.smart_plastic, "Smart Plastic"),
         ParticleCategory("Movable Solid".into()),
         palette(vec![
             Color::srgba(0.21960784, 0.10980392, 0.15686275, 1.0),
@@ -389,7 +391,9 @@ pub(crate) fn spawn_default_particles(commands: &mut Commands) {
         liquid_movement(6),
         ParticleResistor(0.75),
         Speed::new(0, 3),
+        GlowEffect,
         Corrosive::new(0.01).with_tick_rate(Duration::from_millis(100)),
+        ChanceMutation::new(ids.flammable_gas, 0.00001),
     ));
 
     commands.spawn((
@@ -623,5 +627,48 @@ pub(crate) fn spawn_default_particles(commands: &mut Commands) {
             .with_chance_despawn_per_tick(0.5)
             .with_chance_to_ignite(0.35)
             .with_fire_spread(1.0),
+        ChanceLifetime::new(0.0001),
+    ));
+
+    commands.spawn((
+        particle_type(ids.unstable_atom, "Anomolous Atom"),
+        ParticleCategory("Anomolous".into()),
+        palette(vec![
+            Srgba::hex("#931621").unwrap().into(),
+            Srgba::hex("#F3A712").unwrap().into(),
+        ]),
+        Density::new(1),
+        Speed::new(150, 3),
+        Movement::from(vec![
+            vec![
+                IVec2::new(0, 2),
+                IVec2::new(2, 2),
+                IVec2::new(2, 0),
+                IVec2::new(2, -2),
+                IVec2::new(0, -2),
+                IVec2::new(-2, -2),
+                IVec2::new(-2, 0),
+                IVec2::new(-2, 2),
+            ],
+            vec![
+                IVec2::new(0, 8),
+                IVec2::new(8, 8),
+                IVec2::new(8, 0),
+                IVec2::new(8, -8),
+                IVec2::new(0, -8),
+                IVec2::new(-8, -8),
+                IVec2::new(-8, 0),
+                IVec2::new(-8, 8),
+            ],
+        ]),
+        GlowEffect,
+        ChanceMutation::new(ids.smart_plastic, 0.001).with_tick_rate(Duration::from_millis(100)),
+        Flammable::new(Duration::from_secs(10), Duration::from_millis(100))
+            .with_chance_despawn_per_tick(0.015)
+            .with_reaction(BurnProduct::new(ids.acid, 0.5))
+            .with_chance_to_ignite(0.02)
+            .with_fire_spread(1.0)
+            .with_despawn_on_extinguish(),
+        Corrosive::new(0.5),
     ));
 }
